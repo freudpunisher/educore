@@ -33,10 +33,10 @@ export default function AttendancePage() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: "default" | "destructive" | "secondary" | "outline"; label: string }> = {
-      present: { variant: "default", label: "Présent" },
+      present: { variant: "default", label: "Present" },
       absent: { variant: "destructive", label: "Absent" },
-      late: { variant: "secondary", label: "Retard" },
-      excused: { variant: "outline", label: "Excusé" },
+      late: { variant: "secondary", label: "Late" },
+      excused: { variant: "outline", label: "Excused" },
     }
     const config = variants[status] || variants.present
     return <Badge variant={config.variant}>{config.label}</Badge>
@@ -46,57 +46,57 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestion des présences</h1>
-          <p className="text-muted-foreground">Suivi quotidien de la présence des élèves</p>
+          <h1 className="text-3xl font-bold text-foreground">Attendance Management</h1>
+          <p className="text-muted-foreground">Daily tracking of student attendance</p>
         </div>
         <Button>
           <Download className="w-4 h-4 mr-2" />
-          Exporter
+          Export
         </Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Présents</CardTitle>
+            <CardTitle className="text-sm font-medium">Present</CardTitle>
             <UserCheck className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{todayStats.present}</div>
-            <p className="text-xs text-muted-foreground">élèves présents</p>
+            <p className="text-xs text-muted-foreground">students present</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Absents</CardTitle>
+            <CardTitle className="text-sm font-medium">Absent</CardTitle>
             <UserX className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{todayStats.absent}</div>
-            <p className="text-xs text-muted-foreground">élèves absents</p>
+            <p className="text-xs text-muted-foreground">students absent</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Retards</CardTitle>
+            <CardTitle className="text-sm font-medium">Late</CardTitle>
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{todayStats.late}</div>
-            <p className="text-xs text-muted-foreground">élèves en retard</p>
+            <p className="text-xs text-muted-foreground">students late</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Excusés</CardTitle>
+            <CardTitle className="text-sm font-medium">Excused</CardTitle>
             <FileCheck className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{todayStats.excused}</div>
-            <p className="text-xs text-muted-foreground">absences justifiées</p>
+            <p className="text-xs text-muted-foreground">justified absences</p>
           </CardContent>
         </Card>
       </div>
@@ -105,16 +105,16 @@ export default function AttendancePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ClipboardCheck className="w-5 h-5" />
-            Registre de présence
+            Attendance Register
           </CardTitle>
-          <CardDescription>Liste des présences pour la date sélectionnée</CardDescription>
+          <CardDescription>Attendance list for the selected date</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un élève..."
+                placeholder="Search for a student..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -122,16 +122,16 @@ export default function AttendancePage() {
             </div>
             <Select value={selectedClass} onValueChange={setSelectedClass}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Classe" />
+                <SelectValue placeholder="Class" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les classes</SelectItem>
-                <SelectItem value="6ème A">6ème A</SelectItem>
-                <SelectItem value="6ème B">6ème B</SelectItem>
-                <SelectItem value="5ème A">5ème A</SelectItem>
-                <SelectItem value="5ème B">5ème B</SelectItem>
-                <SelectItem value="4ème A">4ème A</SelectItem>
-                <SelectItem value="4ème B">4ème B</SelectItem>
+                <SelectItem value="all">All classes</SelectItem>
+                <SelectItem value="6th A">6th A</SelectItem>
+                <SelectItem value="6th B">6th B</SelectItem>
+                <SelectItem value="5th A">5th A</SelectItem>
+                <SelectItem value="5th B">5th B</SelectItem>
+                <SelectItem value="4th A">4th A</SelectItem>
+                <SelectItem value="4th B">4th B</SelectItem>
               </SelectContent>
             </Select>
             <Input
@@ -145,10 +145,10 @@ export default function AttendancePage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Élève</TableHead>
-                <TableHead>Classe</TableHead>
+                <TableHead>Student</TableHead>
+                <TableHead>Class</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Statut</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Notes</TableHead>
               </TableRow>
             </TableHeader>
@@ -157,7 +157,7 @@ export default function AttendancePage() {
                 <TableRow key={record.id}>
                   <TableCell className="font-medium">{record.studentName}</TableCell>
                   <TableCell>{record.class}</TableCell>
-                  <TableCell>{new Date(record.date).toLocaleDateString("fr-FR")}</TableCell>
+                  <TableCell>{new Date(record.date).toLocaleDateString("en-US")}</TableCell>
                   <TableCell>{getStatusBadge(record.status)}</TableCell>
                   <TableCell className="text-muted-foreground">{record.notes || "-"}</TableCell>
                 </TableRow>

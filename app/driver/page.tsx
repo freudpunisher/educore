@@ -18,7 +18,7 @@ interface Stop {
 const mockStops: Stop[] = [
   {
     id: "1",
-    name: "Arrêt Place de la République",
+    name: "Place de la République Stop",
     address: "12 Place de la République",
     students: 8,
     time: "07:05",
@@ -26,7 +26,7 @@ const mockStops: Stop[] = [
   },
   {
     id: "2",
-    name: "Arrêt Rue Victor Hugo",
+    name: "Victor Hugo Street Stop",
     address: "45 Rue Victor Hugo",
     students: 6,
     time: "07:15",
@@ -34,7 +34,7 @@ const mockStops: Stop[] = [
   },
   {
     id: "3",
-    name: "Arrêt Avenue des Champs",
+    name: "Avenue des Champs Stop",
     address: "78 Avenue des Champs",
     students: 5,
     time: "07:25",
@@ -42,7 +42,7 @@ const mockStops: Stop[] = [
   },
   {
     id: "4",
-    name: "Arrêt Boulevard Saint-Germain",
+    name: "Boulevard Saint-Germain Stop",
     address: "23 Boulevard Saint-Germain",
     students: 7,
     time: "07:35",
@@ -50,7 +50,7 @@ const mockStops: Stop[] = [
   },
   {
     id: "5",
-    name: "École",
+    name: "School",
     address: "1 Rue de l'École",
     students: 0,
     time: "08:00",
@@ -81,21 +81,21 @@ export default function DriverPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Interface Chauffeur</h1>
-          <p className="text-muted-foreground mt-1">Route Nord - Bus A</p>
-          <div className="text-2xl font-mono mt-2">{currentTime.toLocaleTimeString("fr-FR")}</div>
+          <h1 className="text-3xl font-bold">Driver Interface</h1>
+          <p className="text-muted-foreground mt-1">North Route - Bus A</p>
+          <div className="text-2xl font-mono mt-2">{currentTime.toLocaleTimeString("en-US")}</div>
         </div>
 
         {/* Progress Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Progression du Trajet</CardTitle>
+            <CardTitle>Journey Progress</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary" />
-                <span className="font-medium">Arrêts</span>
+                <span className="font-medium">Stops</span>
               </div>
               <span className="text-2xl font-bold">
                 {completedStops}/{totalStops}
@@ -108,8 +108,8 @@ export default function DriverPage() {
               />
             </div>
             <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{totalStudents} élèves à transporter</span>
-              <span>{Math.round((completedStops / totalStops) * 100)}% complété</span>
+              <span>{totalStudents} students to transport</span>
+              <span>{Math.round((completedStops / totalStops) * 100)}% completed</span>
             </div>
           </CardContent>
         </Card>
@@ -119,8 +119,8 @@ export default function DriverPage() {
           <Card className="border-primary">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Arrêt Actuel</CardTitle>
-                <Badge>En cours</Badge>
+                <CardTitle>Current Stop</CardTitle>
+                <Badge>In progress</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -131,14 +131,14 @@ export default function DriverPage() {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  <span className="text-sm font-medium">Élèves à récupérer</span>
+                  <span className="text-sm font-medium">Students to pick up</span>
                 </div>
                 <span className="text-xl font-bold">{currentStop.students}</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4" />
-                  <span className="text-sm font-medium">Heure prévue</span>
+                  <span className="text-sm font-medium">Scheduled time</span>
                 </div>
                 <span className="text-xl font-bold">{currentStop.time}</span>
               </div>
@@ -154,7 +154,7 @@ export default function DriverPage() {
                   onClick={() => handleCompleteStop(currentStop.id)}
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Valider
+                  Validate
                 </Button>
               </div>
             </CardContent>
@@ -164,20 +164,19 @@ export default function DriverPage() {
         {/* All Stops List */}
         <Card>
           <CardHeader>
-            <CardTitle>Tous les Arrêts</CardTitle>
+            <CardTitle>All Stops</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {stops.map((stop, index) => (
                 <div
                   key={stop.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border ${
-                    stop.completed
+                  className={`flex items-start gap-3 p-3 rounded-lg border ${stop.completed
                       ? "bg-muted border-muted"
                       : stop.id === currentStop?.id
                         ? "bg-primary/5 border-primary"
                         : "border-border"
-                  }`}
+                    }`}
                 >
                   <div className="mt-1">
                     {stop.completed ? (
@@ -197,7 +196,7 @@ export default function DriverPage() {
                     {stop.students > 0 && (
                       <div className="flex items-center gap-1 mt-2 text-sm text-muted-foreground">
                         <Users className="w-4 h-4" />
-                        <span>{stop.students} élèves</span>
+                        <span>{stop.students} students</span>
                       </div>
                     )}
                   </div>

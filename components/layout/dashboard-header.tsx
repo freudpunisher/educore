@@ -21,9 +21,9 @@ export function DashboardHeader() {
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      admin: "Administrateur",
-      teacher: "Enseignant",
-      driver: "Chauffeur",
+      admin: "Administrator",
+      teacher: "Teacher",
+      driver: "Driver",
       parent: "Parent",
     }
     return labels[role] || role
@@ -34,7 +34,7 @@ export function DashboardHeader() {
       <div className="flex-1 max-w-md">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input type="search" placeholder="Rechercher..." className="pl-10" />
+          <Input type="search" placeholder="Search..." className="pl-10" />
         </div>
       </div>
 
@@ -67,13 +67,13 @@ export function DashboardHeader() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profil</DropdownMenuItem>
-            <DropdownMenuItem>Paramètres</DropdownMenuItem>
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={logout}>
-              Déconnexion
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

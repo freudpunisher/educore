@@ -8,37 +8,37 @@ import { Plus, UtensilsCrossed, Users, Calendar } from "lucide-react"
 
 const weekMenu = [
   {
-    day: "Lundi",
-    starter: "Salade verte",
-    main: "Poulet rôti et légumes",
-    dessert: "Yaourt",
+    day: "Monday",
+    starter: "Green salad",
+    main: "Roast chicken and vegetables",
+    dessert: "Yogurt",
     meals: 145,
   },
   {
-    day: "Mardi",
-    starter: "Carottes râpées",
-    main: "Poisson pané et riz",
+    day: "Tuesday",
+    starter: "Grated carrots",
+    main: "Breaded fish and rice",
     dessert: "Fruit",
     meals: 152,
   },
   {
-    day: "Mercredi",
-    starter: "Tomates mozzarella",
-    main: "Pâtes bolognaise",
+    day: "Wednesday",
+    starter: "Tomato mozzarella",
+    main: "Pasta bolognese",
     dessert: "Compote",
     meals: 138,
   },
   {
-    day: "Jeudi",
-    starter: "Concombre vinaigrette",
-    main: "Rôti de bœuf et purée",
-    dessert: "Crème dessert",
+    day: "Thursday",
+    starter: "Cucumber salad",
+    main: "Roast beef and mashed potatoes",
+    dessert: "Pudding",
     meals: 148,
   },
   {
-    day: "Vendredi",
-    starter: "Salade de tomates",
-    main: "Pizza maison et salade",
+    day: "Friday",
+    starter: "Tomato salad",
+    main: "Homemade pizza and salad",
     dessert: "Fruit",
     meals: 156,
   },
@@ -52,12 +52,12 @@ export default function MealsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Restauration</h1>
-          <p className="text-muted-foreground mt-1">Gérez les menus et les inscriptions à la cantine</p>
+          <h1 className="text-3xl font-bold">Catering</h1>
+          <p className="text-muted-foreground mt-1">Manage menus and canteen registration</p>
         </div>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Nouveau Menu
+          New Menu
         </Button>
       </div>
 
@@ -65,23 +65,23 @@ export default function MealsPage() {
       <div className="grid gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Repas Cette Semaine</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Meals This Week</CardTitle>
             <UtensilsCrossed className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalMeals}</div>
-            <p className="text-xs text-muted-foreground mt-1">{avgMeals} repas/jour en moyenne</p>
+            <p className="text-xs text-muted-foreground mt-1">{avgMeals} meals/day average</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Inscrits Aujourd'hui</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Enrolled Today</CardTitle>
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">145</div>
-            <p className="text-xs text-muted-foreground mt-1">Sur 1,234 élèves</p>
+            <p className="text-xs text-muted-foreground mt-1">Out of 1,234 students</p>
           </CardContent>
         </Card>
 
@@ -92,7 +92,7 @@ export default function MealsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground mt-1">11h30, 12h30, 13h30</p>
+            <p className="text-xs text-muted-foreground mt-1">11:30, 12:30, 13:30</p>
           </CardContent>
         </Card>
       </div>
@@ -101,8 +101,8 @@ export default function MealsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Menu de la Semaine</CardTitle>
-            <Badge>Semaine 25</Badge>
+            <CardTitle>Weekly Menu</CardTitle>
+            <Badge>Week 25</Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -110,11 +110,11 @@ export default function MealsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Jour</TableHead>
-                  <TableHead>Entrée</TableHead>
-                  <TableHead>Plat Principal</TableHead>
+                  <TableHead>Day</TableHead>
+                  <TableHead>Starter</TableHead>
+                  <TableHead>Main Dish</TableHead>
                   <TableHead>Dessert</TableHead>
-                  <TableHead>Repas Servis</TableHead>
+                  <TableHead>Meals Served</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,30 +136,30 @@ export default function MealsPage() {
       {/* Dietary Restrictions */}
       <Card>
         <CardHeader>
-          <CardTitle>Régimes Spéciaux</CardTitle>
+          <CardTitle>Special Diets</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Sans Gluten</span>
-                <Badge variant="outline">12 élèves</Badge>
+                <span className="font-medium">Gluten-Free</span>
+                <Badge variant="outline">12 students</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">Menu adapté disponible</p>
+              <p className="text-sm text-muted-foreground">Adapted menu available</p>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
-                <span className="font-medium">Végétarien</span>
-                <Badge variant="outline">28 élèves</Badge>
+                <span className="font-medium">Vegetarian</span>
+                <Badge variant="outline">28 students</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">Alternative végétarienne</p>
+              <p className="text-sm text-muted-foreground">Vegetarian alternative</p>
             </div>
             <div className="p-4 border rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-medium">Allergies</span>
-                <Badge variant="outline">8 élèves</Badge>
+                <Badge variant="outline">8 students</Badge>
               </div>
-              <p className="text-sm text-muted-foreground">Suivi personnalisé</p>
+              <p className="text-sm text-muted-foreground">Personalized tracking</p>
             </div>
           </div>
         </CardContent>

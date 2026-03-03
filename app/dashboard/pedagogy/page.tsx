@@ -28,12 +28,12 @@ export default function PedagogyPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Pédagogie</h1>
-          <p className="text-muted-foreground mt-1">Gérez les classes, cours et notes des élèves</p>
+          <h1 className="text-3xl font-bold">Pedagogy</h1>
+          <p className="text-muted-foreground mt-1">Manage classes, courses, and student grades</p>
         </div>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Nouveau Cours
+          New Course
         </Button>
       </div>
 
@@ -48,46 +48,46 @@ export default function PedagogyPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalClasses}</div>
-            <p className="text-xs text-muted-foreground mt-1">{totalStudents} élèves au total</p>
+            <p className="text-xs text-muted-foreground mt-1">{totalStudents} students total</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Cours Actifs</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Courses</CardTitle>
             <div className="p-2 rounded-lg bg-purple-100">
               <BookOpen className="w-4 h-4 text-purple-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalCourses}</div>
-            <p className="text-xs text-muted-foreground mt-1">Tous niveaux confondus</p>
+            <p className="text-xs text-muted-foreground mt-1">All levels combined</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Moyenne Générale</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">General Average</CardTitle>
             <div className="p-2 rounded-lg bg-green-100">
               <GraduationCap className="w-4 h-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{averageGrade}/20</div>
-            <p className="text-xs text-muted-foreground mt-1">Toutes matières</p>
+            <p className="text-xs text-muted-foreground mt-1">All subjects</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Évaluations</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Evaluations</CardTitle>
             <div className="p-2 rounded-lg bg-orange-100">
               <Calendar className="w-4 h-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{mockGrades.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Ce mois-ci</p>
+            <p className="text-xs text-muted-foreground mt-1">This month</p>
           </CardContent>
         </Card>
       </div>
@@ -95,7 +95,7 @@ export default function PedagogyPage() {
       {/* Grade Distribution Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Distribution des Notes</CardTitle>
+          <CardTitle>Grade Distribution</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -114,25 +114,25 @@ export default function PedagogyPage() {
       <Tabs defaultValue="classes" className="space-y-4">
         <TabsList>
           <TabsTrigger value="classes">Classes</TabsTrigger>
-          <TabsTrigger value="courses">Cours</TabsTrigger>
-          <TabsTrigger value="grades">Notes</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="grades">Grades</TabsTrigger>
         </TabsList>
 
         <TabsContent value="classes">
           <Card>
             <CardHeader>
-              <CardTitle>Liste des Classes</CardTitle>
+              <CardTitle>Class List</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Classe</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead>Professeur Principal</TableHead>
-                      <TableHead>Nombre d'Élèves</TableHead>
-                      <TableHead>Horaires</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Level</TableHead>
+                      <TableHead>Main Teacher</TableHead>
+                      <TableHead>No. of Students</TableHead>
+                      <TableHead>Schedule</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -148,7 +148,7 @@ export default function PedagogyPage() {
                         <TableCell className="text-sm text-muted-foreground">{cls.schedule}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">
-                            Voir
+                            View
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -163,18 +163,18 @@ export default function PedagogyPage() {
         <TabsContent value="courses">
           <Card>
             <CardHeader>
-              <CardTitle>Liste des Cours</CardTitle>
+              <CardTitle>Course List</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Matière</TableHead>
-                      <TableHead>Enseignant</TableHead>
-                      <TableHead>Classe</TableHead>
-                      <TableHead>Horaires</TableHead>
-                      <TableHead>Salle</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Schedule</TableHead>
+                      <TableHead>Room</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -190,7 +190,7 @@ export default function PedagogyPage() {
                         <TableCell>{course.room}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">
-                            Modifier
+                            Edit
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -205,16 +205,16 @@ export default function PedagogyPage() {
         <TabsContent value="grades">
           <Card>
             <CardHeader>
-              <CardTitle>Notes Récentes</CardTitle>
+              <CardTitle>Recent Grades</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Élève</TableHead>
-                      <TableHead>Matière</TableHead>
-                      <TableHead>Note</TableHead>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Grade</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Date</TableHead>
                     </TableRow>
@@ -235,10 +235,10 @@ export default function PedagogyPage() {
                               grade.type === "exam" ? "default" : grade.type === "quiz" ? "secondary" : "outline"
                             }
                           >
-                            {grade.type === "exam" ? "Examen" : grade.type === "quiz" ? "Contrôle" : "Devoir"}
+                            {grade.type === "exam" ? "Exam" : grade.type === "quiz" ? "Quiz" : "Homework"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(grade.date).toLocaleDateString("fr-FR")}</TableCell>
+                        <TableCell>{new Date(grade.date).toLocaleDateString("en-US")}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
