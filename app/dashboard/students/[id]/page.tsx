@@ -13,11 +13,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   if (!student) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-2xl font-bold mb-2">Élève non trouvé</h2>
-        <p className="text-muted-foreground mb-4">L'élève que vous recherchez n'existe pas.</p>
+        <h2 className="text-2xl font-bold mb-2">Student not found</h2>
+        <p className="text-muted-foreground mb-4">The student you are looking for does not exist.</p>
         <Button onClick={() => redirect("/dashboard/students")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour à la liste
+          Back to list
         </Button>
       </div>
     )

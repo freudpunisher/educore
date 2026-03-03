@@ -34,27 +34,27 @@ export default function StudentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Élèves</h1>
-          <p className="text-muted-foreground mt-1">Gérez les informations des élèves de votre établissement</p>
+          <h1 className="text-3xl font-bold">Students</h1>
+          <p className="text-muted-foreground mt-1">Manage student information in your school</p>
         </div>
         <Link href="/dashboard/students/new">
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            Nouvel Élève
+            New Student
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Liste des Élèves</CardTitle>
+          <CardTitle>Student List</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom ou email..."
+                placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -63,10 +63,10 @@ export default function StudentsPage() {
             <Select value={classFilter} onValueChange={setClassFilter}>
               <SelectTrigger className="w-full md:w-[180px]">
                 <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Classe" />
+                <SelectValue placeholder="Class" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les classes</SelectItem>
+                <SelectItem value="all">All Classes</SelectItem>
                 {classes.map((cls) => (
                   <SelectItem key={cls} value={cls}>
                     {cls}
@@ -76,17 +76,17 @@ export default function StudentsPage() {
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Statut" />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="active">Actif</SelectItem>
-                <SelectItem value="inactive">Inactif</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline">
               <Download className="w-4 h-4 mr-2" />
-              Exporter
+              Export
             </Button>
           </div>
 
@@ -94,11 +94,11 @@ export default function StudentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom Complet</TableHead>
-                  <TableHead>Classe</TableHead>
+                  <TableHead>Full Name</TableHead>
+                  <TableHead>Class</TableHead>
                   <TableHead>Parent</TableHead>
                   <TableHead>Contact</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -106,7 +106,7 @@ export default function StudentsPage() {
                 {filteredStudents.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Aucun élève trouvé
+                      No students found
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -125,7 +125,7 @@ export default function StudentsPage() {
                       </TableCell>
                       <TableCell>
                         <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                          {student.status === "active" ? "Actif" : "Inactif"}
+                          {student.status === "active" ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -144,7 +144,7 @@ export default function StudentsPage() {
 
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <div>
-              Affichage de {filteredStudents.length} sur {mockStudents.length} élèves
+              Showing {filteredStudents.length} of {mockStudents.length} students
             </div>
           </div>
         </CardContent>

@@ -21,7 +21,7 @@ interface Route {
 const mockRoutes: Route[] = [
   {
     id: "1",
-    name: "Route Nord",
+    name: "North Route",
     driver: "Pierre Leroy",
     vehicle: "Bus A - AB-123-CD",
     students: 45,
@@ -32,7 +32,7 @@ const mockRoutes: Route[] = [
   },
   {
     id: "2",
-    name: "Route Sud",
+    name: "South Route",
     driver: "Marie Dubois",
     vehicle: "Bus B - EF-456-GH",
     students: 38,
@@ -43,7 +43,7 @@ const mockRoutes: Route[] = [
   },
   {
     id: "3",
-    name: "Route Est",
+    name: "East Route",
     driver: "Jean Martin",
     vehicle: "Bus C - IJ-789-KL",
     students: 42,
@@ -54,7 +54,7 @@ const mockRoutes: Route[] = [
   },
   {
     id: "4",
-    name: "Route Ouest",
+    name: "West Route",
     driver: "Sophie Bernard",
     vehicle: "Bus D - MN-012-OP",
     students: 40,
@@ -70,19 +70,19 @@ export default function TransportPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Transport Scolaire</h1>
-          <p className="text-muted-foreground mt-1">Gérez les itinéraires et suivez les bus en temps réel</p>
+          <h1 className="text-3xl font-bold">School Transport</h1>
+          <p className="text-muted-foreground mt-1">Manage routes and track buses in real-time</p>
         </div>
         <div className="flex gap-2">
           <Link href="/driver">
             <Button variant="outline">
               <Smartphone className="w-4 h-4 mr-2" />
-              Interface Chauffeur
+              Driver Interface
             </Button>
           </Link>
           <Button>
             <Plus className="w-4 h-4 mr-2" />
-            Nouvelle Route
+            New Route
           </Button>
         </div>
       </div>
@@ -91,45 +91,45 @@ export default function TransportPage() {
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Routes Actives</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Routes</CardTitle>
             <MapPin className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground mt-1">En service maintenant</p>
+            <p className="text-xs text-muted-foreground mt-1">In service now</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Élèves Transportés</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Students Transported</CardTitle>
             <Users className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">165</div>
-            <p className="text-xs text-muted-foreground mt-1">Aujourd'hui</p>
+            <p className="text-xs text-muted-foreground mt-1">Today</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Temps Moyen</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Average Time</CardTitle>
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">52 min</div>
-            <p className="text-xs text-muted-foreground mt-1">Par trajet</p>
+            <p className="text-xs text-muted-foreground mt-1">Per trip</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Retards</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Delays</CardTitle>
             <Clock className="w-4 h-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">1</div>
-            <p className="text-xs text-muted-foreground mt-1">Ce matin</p>
+            <p className="text-xs text-muted-foreground mt-1">This morning</p>
           </CardContent>
         </Card>
       </div>
@@ -137,7 +137,7 @@ export default function TransportPage() {
       {/* Routes Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Itinéraires du Jour</CardTitle>
+          <CardTitle>Daily Routes</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -145,12 +145,12 @@ export default function TransportPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Route</TableHead>
-                  <TableHead>Chauffeur</TableHead>
-                  <TableHead>Véhicule</TableHead>
-                  <TableHead>Élèves</TableHead>
-                  <TableHead>Horaires</TableHead>
-                  <TableHead>Arrêts</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Driver</TableHead>
+                  <TableHead>Vehicle</TableHead>
+                  <TableHead>Students</TableHead>
+                  <TableHead>Schedule</TableHead>
+                  <TableHead>Stops</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -174,7 +174,7 @@ export default function TransportPage() {
                               : "secondary"
                         }
                       >
-                        {route.status === "active" ? "En cours" : route.status === "delayed" ? "Retardé" : "Terminé"}
+                        {route.status === "active" ? "In progress" : route.status === "delayed" ? "Delayed" : "Completed"}
                       </Badge>
                     </TableCell>
                   </TableRow>

@@ -44,10 +44,10 @@ export default function AnnouncementsPage() {
 
   const getAudienceBadge = (audience: string) => {
     const labels: Record<string, string> = {
-      all: "Tous",
-      teachers: "Enseignants",
+      all: "All",
+      teachers: "Teachers",
       parents: "Parents",
-      students: "Élèves",
+      students: "Students",
     }
     return <Badge variant="outline">{labels[audience] || audience}</Badge>
   }
@@ -56,12 +56,12 @@ export default function AnnouncementsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Annonces</h1>
-          <p className="text-muted-foreground">Communications et informations importantes</p>
+          <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
+          <p className="text-muted-foreground">Important communications and information</p>
         </div>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Nouvelle annonce
+          New Announcement
         </Button>
       </div>
 
@@ -73,7 +73,7 @@ export default function AnnouncementsPage() {
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher une annonce..."
+                    placeholder="Search an announcement..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -81,10 +81,10 @@ export default function AnnouncementsPage() {
                 </div>
                 <Select value={selectedPriority} onValueChange={setSelectedPriority}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Priorité" />
+                    <SelectValue placeholder="Priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les priorités</SelectItem>
+                    <SelectItem value="all">All Priorities</SelectItem>
                     <SelectItem value="high">Urgent</SelectItem>
                     <SelectItem value="medium">Normal</SelectItem>
                     <SelectItem value="low">Info</SelectItem>
@@ -103,7 +103,7 @@ export default function AnnouncementsPage() {
                     <div className="flex-1">
                       <CardTitle className="text-lg">{announcement.title}</CardTitle>
                       <CardDescription className="mt-1">
-                        Par {announcement.author} • {new Date(announcement.date).toLocaleDateString("fr-FR")}
+                        By {announcement.author} • {new Date(announcement.date).toLocaleDateString("en-US")}
                       </CardDescription>
                     </div>
                   </div>
@@ -118,7 +118,7 @@ export default function AnnouncementsPage() {
                 {!announcement.read && (
                   <div className="mt-4">
                     <Button variant="outline" size="sm">
-                      Marquer comme lu
+                      Mark as read
                     </Button>
                   </div>
                 )}
@@ -131,21 +131,21 @@ export default function AnnouncementsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Megaphone className="w-5 h-5" />
-              Créer une annonce
+              Create Announcement
             </CardTitle>
-            <CardDescription>Publier une nouvelle information</CardDescription>
+            <CardDescription>Publish new information</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-foreground">Titre</label>
-              <Input placeholder="Titre de l'annonce" className="mt-1" />
+              <label className="text-sm font-medium text-foreground">Title</label>
+              <Input placeholder="Announcement title" className="mt-1" />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Message</label>
-              <Textarea placeholder="Contenu de l'annonce..." className="mt-1 min-h-32" />
+              <Textarea placeholder="Announcement content..." className="mt-1 min-h-32" />
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Priorité</label>
+              <label className="text-sm font-medium text-foreground">Priority</label>
               <Select defaultValue="medium">
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -158,20 +158,20 @@ export default function AnnouncementsPage() {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Destinataires</label>
+              <label className="text-sm font-medium text-foreground">Recipients</label>
               <Select defaultValue="all">
                 <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tous</SelectItem>
-                  <SelectItem value="teachers">Enseignants</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="teachers">Teachers</SelectItem>
                   <SelectItem value="parents">Parents</SelectItem>
-                  <SelectItem value="students">Élèves</SelectItem>
+                  <SelectItem value="students">Students</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <Button className="w-full">Publier l'annonce</Button>
+            <Button className="w-full">Publish Announcement</Button>
           </CardContent>
         </Card>
       </div>
