@@ -10,8 +10,8 @@ import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Gestion Scolaire - School Management System",
-  description: "Application de Gestion d'un Établissement Scolaire",
+  title: "School Management System",
+  description: "School Management System Application",
   generator: "v0.app",
 }
 
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <body className={`${inter.className} font-sans antialiased`}>
         <Providers>
 

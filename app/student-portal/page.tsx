@@ -49,12 +49,12 @@ export default function StudentPortalPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-balance">
-              Bonjour, {student.firstName} {student.lastName}
+              Hello, {student.firstName} {student.lastName}
             </h1>
-            <p className="text-muted-foreground mt-1">Classe: {student.class}</p>
+            <p className="text-muted-foreground mt-1">Class: {student.class}</p>
           </div>
           <Badge variant="default" className="text-base px-4 py-2">
-            Élève
+            Student
           </Badge>
         </div>
 
@@ -62,58 +62,58 @@ export default function StudentPortalPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Moyenne Générale</CardTitle>
+              <CardTitle className="text-sm font-medium">Grade Average</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{averageGrade}/20</div>
               <p className="text-xs text-muted-foreground mt-1">
                 {Number.parseFloat(averageGrade) >= 16
-                  ? "Excellent travail!"
+                  ? "Excellent job!"
                   : Number.parseFloat(averageGrade) >= 10
-                    ? "Bon travail"
-                    : "Continue tes efforts"}
+                    ? "Good job"
+                    : "Keep up the effort"}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taux de Présence</CardTitle>
+              <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{attendanceRate}%</div>
-              <p className="text-xs text-muted-foreground mt-1">{presentCount} jours présents</p>
+              <p className="text-xs text-muted-foreground mt-1">{presentCount} days present</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Notes Récentes</CardTitle>
+              <CardTitle className="text-sm font-medium">Recent Grades</CardTitle>
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{studentGrades.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">Évaluations ce trimestre</p>
+              <p className="text-xs text-muted-foreground mt-1">Assessments this term</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Frais Scolaires</CardTitle>
+              <CardTitle className="text-sm font-medium">School Fees</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {paymentStatus === "paid" ? (
-                  <span className="text-green-600">Payé</span>
+                  <span className="text-green-600">Paid</span>
                 ) : (
                   <span className="text-orange-600">{totalDue - totalPaid}€</span>
                 )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {paymentStatus === "paid" ? "Tous les frais réglés" : "Reste à payer"}
+                {paymentStatus === "paid" ? "All fees settled" : "Remaining to pay"}
               </p>
             </CardContent>
           </Card>
@@ -122,15 +122,15 @@ export default function StudentPortalPage() {
         {/* Main Content Tabs */}
         <Card>
           <CardHeader>
-            <CardTitle>Mon Espace Élève</CardTitle>
+            <CardTitle>My Student Space</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="grades" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="grades">Mes Notes</TabsTrigger>
-                <TabsTrigger value="attendance">Ma Présence</TabsTrigger>
-                <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
-                <TabsTrigger value="payments">Paiements</TabsTrigger>
+                <TabsTrigger value="grades">My Grades</TabsTrigger>
+                <TabsTrigger value="attendance">My Attendance</TabsTrigger>
+                <TabsTrigger value="timetable">Timetable</TabsTrigger>
+                <TabsTrigger value="payments">Payments</TabsTrigger>
               </TabsList>
 
               <TabsContent value="grades" className="space-y-4">
@@ -139,8 +139,8 @@ export default function StudentPortalPage() {
                     <table className="w-full">
                       <thead>
                         <tr className="border-b bg-muted/50">
-                          <th className="px-4 py-3 text-left text-sm font-medium">Matière</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Note</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Subject</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Grade</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
                         </tr>
@@ -151,24 +151,23 @@ export default function StudentPortalPage() {
                             <td className="px-4 py-3 text-sm font-medium">{grade.course}</td>
                             <td className="px-4 py-3">
                               <span
-                                className={`text-sm font-semibold ${
-                                  (grade.grade / grade.maxGrade) * 20 >= 16
+                                className={`text-sm font-semibold ${(grade.grade / grade.maxGrade) * 20 >= 16
                                     ? "text-green-600"
                                     : (grade.grade / grade.maxGrade) * 20 >= 10
                                       ? "text-blue-600"
                                       : "text-red-600"
-                                }`}
+                                  }`}
                               >
                                 {grade.grade}/{grade.maxGrade} ({((grade.grade / grade.maxGrade) * 20).toFixed(1)}/20)
                               </span>
                             </td>
                             <td className="px-4 py-3">
                               <Badge variant="outline">
-                                {grade.type === "exam" ? "Examen" : grade.type === "homework" ? "Devoir" : "Contrôle"}
+                                {grade.type === "exam" ? "Exam" : grade.type === "homework" ? "Homework" : "Quiz"}
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {new Date(grade.date).toLocaleDateString("fr-FR")}
+                              {new Date(grade.date).toLocaleDateString("en-US")}
                             </td>
                           </tr>
                         ))}
@@ -185,20 +184,20 @@ export default function StudentPortalPage() {
                       <thead>
                         <tr className="border-b bg-muted/50">
                           <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                           <th className="px-4 py-3 text-left text-sm font-medium">Notes</th>
                         </tr>
                       </thead>
                       <tbody>
                         {studentAttendance.map((record) => (
                           <tr key={record.id} className="border-b">
-                            <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString("fr-FR")}</td>
+                            <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString("en-US")}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 {record.status === "present" && (
                                   <>
                                     <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                    <span className="text-sm text-green-600">Présent</span>
+                                    <span className="text-sm text-green-600">Present</span>
                                   </>
                                 )}
                                 {record.status === "absent" && (
@@ -210,13 +209,13 @@ export default function StudentPortalPage() {
                                 {record.status === "late" && (
                                   <>
                                     <Clock className="w-4 h-4 text-orange-600" />
-                                    <span className="text-sm text-orange-600">Retard</span>
+                                    <span className="text-sm text-orange-600">Late</span>
                                   </>
                                 )}
                                 {record.status === "excused" && (
                                   <>
                                     <AlertCircle className="w-4 h-4 text-blue-600" />
-                                    <span className="text-sm text-blue-600">Excusé</span>
+                                    <span className="text-sm text-blue-600">Excused</span>
                                   </>
                                 )}
                               </div>
@@ -232,7 +231,7 @@ export default function StudentPortalPage() {
 
               <TabsContent value="timetable" className="space-y-4">
                 <div className="grid gap-4">
-                  {["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi"].map((day) => {
+                  {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => {
                     const daySlots = studentTimetable.filter((slot) => slot.day === day)
                     return (
                       <Card key={day}>
@@ -262,7 +261,7 @@ export default function StudentPortalPage() {
                                 </div>
                               ))
                             ) : (
-                              <p className="text-sm text-muted-foreground text-center py-4">Pas de cours ce jour</p>
+                              <p className="text-sm text-muted-foreground text-center py-4">No classes today</p>
                             )}
                           </div>
                         </CardContent>
@@ -279,9 +278,9 @@ export default function StudentPortalPage() {
                       <thead>
                         <tr className="border-b bg-muted/50">
                           <th className="px-4 py-3 text-left text-sm font-medium">Description</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Montant</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Échéance</th>
-                          <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Amount</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Due Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -290,7 +289,7 @@ export default function StudentPortalPage() {
                             <td className="px-4 py-3 text-sm">{invoice.description}</td>
                             <td className="px-4 py-3 text-sm font-semibold">{invoice.amount}€</td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {new Date(invoice.dueDate).toLocaleDateString("fr-FR")}
+                              {new Date(invoice.dueDate).toLocaleDateString("en-US")}
                             </td>
                             <td className="px-4 py-3">
                               <Badge
@@ -303,10 +302,10 @@ export default function StudentPortalPage() {
                                 }
                               >
                                 {invoice.status === "paid"
-                                  ? "Payé"
+                                  ? "Paid"
                                   : invoice.status === "overdue"
-                                    ? "En retard"
-                                    : "En attente"}
+                                    ? "Overdue"
+                                    : "Pending"}
                               </Badge>
                             </td>
                           </tr>

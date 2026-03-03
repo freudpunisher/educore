@@ -51,11 +51,11 @@ export function StudentDetailClient({
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.push("/dashboard/students")}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Retour
+          Back
         </Button>
         <Button>
           <Edit className="w-4 h-4 mr-2" />
-          Modifier
+          Edit
         </Button>
       </div>
 
@@ -67,46 +67,46 @@ export function StudentDetailClient({
                 <CardTitle className="text-2xl">
                   {student.firstName} {student.lastName}
                 </CardTitle>
-                <p className="text-muted-foreground mt-1">Élève - {student.class}</p>
+                <p className="text-muted-foreground mt-1">Student - {student.class}</p>
               </div>
               <Badge variant={student.status === "active" ? "default" : "secondary"}>
-                {student.status === "active" ? "Actif" : "Inactif"}
+                {student.status === "active" ? "Active" : "Inactive"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <h3 className="font-semibold mb-4">Informations Personnelles</h3>
+              <h3 className="font-semibold mb-4">Personal Information</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Date de Naissance</p>
+                    <p className="text-sm font-medium">Date of Birth</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(student.dateOfBirth).toLocaleDateString("fr-FR")}
+                      {new Date(student.dateOfBirth).toLocaleDateString("en-US")}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Genre</p>
-                    <p className="text-sm text-muted-foreground">{student.gender === "M" ? "Masculin" : "Féminin"}</p>
+                    <p className="text-sm font-medium">Gender</p>
+                    <p className="text-sm text-muted-foreground">{student.gender === "M" ? "Male" : "Female"}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Adresse</p>
+                    <p className="text-sm font-medium">Address</p>
                     <p className="text-sm text-muted-foreground">{student.address}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Calendar className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Date d'Inscription</p>
+                    <p className="text-sm font-medium">Enrollment Date</p>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(student.enrollmentDate).toLocaleDateString("fr-FR")}
+                      {new Date(student.enrollmentDate).toLocaleDateString("en-US")}
                     </p>
                   </div>
                 </div>
@@ -116,19 +116,19 @@ export function StudentDetailClient({
             <Separator />
 
             <div>
-              <h3 className="font-semibold mb-4">Informations du Parent</h3>
+              <h3 className="font-semibold mb-4">Parent Information</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <User className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Nom du Parent</p>
+                    <p className="text-sm font-medium">Parent Name</p>
                     <p className="text-sm text-muted-foreground">{student.parentName}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium">Téléphone</p>
+                    <p className="text-sm font-medium">Phone</p>
                     <p className="text-sm text-muted-foreground">{student.parentPhone}</p>
                   </div>
                 </div>
@@ -147,20 +147,20 @@ export function StudentDetailClient({
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Actions Rapides</CardTitle>
+              <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" className="w-full justify-start bg-transparent">
                 <Mail className="w-4 h-4 mr-2" />
-                Envoyer un Email
+                Send Email
               </Button>
               <Button variant="outline" className="w-full justify-start bg-transparent">
                 <Phone className="w-4 h-4 mr-2" />
-                Appeler le Parent
+                Call Parent
               </Button>
               <Button variant="outline" className="w-full justify-start bg-transparent">
                 <Calendar className="w-4 h-4 mr-2" />
-                Voir l'Emploi du Temps
+                View Timetable
               </Button>
             </CardContent>
           </Card>
@@ -169,16 +169,16 @@ export function StudentDetailClient({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5" />
-                Statut des Paiements
+                Payment Status
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total dû</span>
+                <span className="text-sm text-muted-foreground">Total due</span>
                 <span className="font-semibold">{totalDue}€</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Payé</span>
+                <span className="text-sm text-muted-foreground">Paid</span>
                 <span className="font-semibold text-green-600">{totalPaid}€</span>
               </div>
               <Separator />
@@ -186,17 +186,17 @@ export function StudentDetailClient({
                 {paymentStatus === "paid" ? (
                   <>
                     <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="text-sm font-medium text-green-600">Tous les frais payés</span>
+                    <span className="text-sm font-medium text-green-600">All fees paid</span>
                   </>
                 ) : paymentStatus === "partial" ? (
                   <>
                     <AlertCircle className="w-5 h-5 text-orange-600" />
-                    <span className="text-sm font-medium text-orange-600">Paiement partiel</span>
+                    <span className="text-sm font-medium text-orange-600">Partial payment</span>
                   </>
                 ) : (
                   <>
                     <XCircle className="w-5 h-5 text-red-600" />
-                    <span className="text-sm font-medium text-red-600">Impayé</span>
+                    <span className="text-sm font-medium text-red-600">Unpaid</span>
                   </>
                 )}
               </div>
@@ -205,12 +205,12 @@ export function StudentDetailClient({
 
           <Card>
             <CardHeader>
-              <CardTitle>Statistiques</CardTitle>
+              <CardTitle>Statistics</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">Présence</span>
+                  <span className="text-muted-foreground">Attendance</span>
                   <span className="font-medium">{attendanceRate}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
@@ -219,7 +219,7 @@ export function StudentDetailClient({
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
-                  <span className="text-muted-foreground">Moyenne Générale</span>
+                  <span className="text-muted-foreground">Grade Average</span>
                   <span className="font-medium">{averageGrade}/20</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
@@ -236,14 +236,14 @@ export function StudentDetailClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Détails de l'Élève</CardTitle>
+          <CardTitle>Student Details</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="attendance" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="attendance">Présence</TabsTrigger>
-              <TabsTrigger value="grades">Notes</TabsTrigger>
-              <TabsTrigger value="payments">Paiements</TabsTrigger>
+              <TabsTrigger value="attendance">Attendance</TabsTrigger>
+              <TabsTrigger value="grades">Grades</TabsTrigger>
+              <TabsTrigger value="payments">Payments</TabsTrigger>
             </TabsList>
 
             <TabsContent value="attendance" className="space-y-4">
@@ -253,7 +253,7 @@ export function StudentDetailClient({
                     <thead>
                       <tr className="border-b bg-muted/50">
                         <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">Notes</th>
                       </tr>
                     </thead>
@@ -261,13 +261,13 @@ export function StudentDetailClient({
                       {studentAttendance.length > 0 ? (
                         studentAttendance.map((record) => (
                           <tr key={record.id} className="border-b">
-                            <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString("fr-FR")}</td>
+                            <td className="px-4 py-3 text-sm">{new Date(record.date).toLocaleDateString("en-US")}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 {record.status === "present" && (
                                   <>
                                     <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                    <span className="text-sm text-green-600">Présent</span>
+                                    <span className="text-sm text-green-600">Present</span>
                                   </>
                                 )}
                                 {record.status === "absent" && (
@@ -279,13 +279,13 @@ export function StudentDetailClient({
                                 {record.status === "late" && (
                                   <>
                                     <Clock className="w-4 h-4 text-orange-600" />
-                                    <span className="text-sm text-orange-600">Retard</span>
+                                    <span className="text-sm text-orange-600">Late</span>
                                   </>
                                 )}
                                 {record.status === "excused" && (
                                   <>
                                     <AlertCircle className="w-4 h-4 text-blue-600" />
-                                    <span className="text-sm text-blue-600">Excusé</span>
+                                    <span className="text-sm text-blue-600">Excused</span>
                                   </>
                                 )}
                               </div>
@@ -296,7 +296,7 @@ export function StudentDetailClient({
                       ) : (
                         <tr>
                           <td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                            Aucun enregistrement de présence
+                            No attendance records
                           </td>
                         </tr>
                       )}
@@ -312,8 +312,8 @@ export function StudentDetailClient({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left text-sm font-medium">Matière</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Note</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Subject</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Grade</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">Date</th>
                       </tr>
@@ -325,31 +325,30 @@ export function StudentDetailClient({
                             <td className="px-4 py-3 text-sm font-medium">{grade.course}</td>
                             <td className="px-4 py-3">
                               <span
-                                className={`text-sm font-semibold ${
-                                  (grade.grade / grade.maxGrade) * 20 >= 16
+                                className={`text-sm font-semibold ${(grade.grade / grade.maxGrade) * 20 >= 16
                                     ? "text-green-600"
                                     : (grade.grade / grade.maxGrade) * 20 >= 10
                                       ? "text-blue-600"
                                       : "text-red-600"
-                                }`}
+                                  }`}
                               >
                                 {grade.grade}/{grade.maxGrade}
                               </span>
                             </td>
                             <td className="px-4 py-3">
                               <Badge variant="outline">
-                                {grade.type === "exam" ? "Examen" : grade.type === "homework" ? "Devoir" : "Contrôle"}
+                                {grade.type === "exam" ? "Exam" : grade.type === "homework" ? "Homework" : "Quiz"}
                               </Badge>
                             </td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {new Date(grade.date).toLocaleDateString("fr-FR")}
+                              {new Date(grade.date).toLocaleDateString("en-US")}
                             </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
                           <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                            Aucune note enregistrée
+                            No grades recorded
                           </td>
                         </tr>
                       )}
@@ -365,11 +364,11 @@ export function StudentDetailClient({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        <th className="px-4 py-3 text-left text-sm font-medium">Facture</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Invoice</th>
                         <th className="px-4 py-3 text-left text-sm font-medium">Description</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Montant</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Échéance</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium">Statut</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Due Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -380,7 +379,7 @@ export function StudentDetailClient({
                             <td className="px-4 py-3 text-sm">{invoice.description}</td>
                             <td className="px-4 py-3 text-sm font-semibold">{invoice.amount}€</td>
                             <td className="px-4 py-3 text-sm text-muted-foreground">
-                              {new Date(invoice.dueDate).toLocaleDateString("fr-FR")}
+                              {new Date(invoice.dueDate).toLocaleDateString("en-US")}
                             </td>
                             <td className="px-4 py-3">
                               <Badge
@@ -393,10 +392,10 @@ export function StudentDetailClient({
                                 }
                               >
                                 {invoice.status === "paid"
-                                  ? "Payé"
+                                  ? "Paid"
                                   : invoice.status === "overdue"
-                                    ? "En retard"
-                                    : "En attente"}
+                                    ? "Overdue"
+                                    : "Pending"}
                               </Badge>
                             </td>
                           </tr>
@@ -404,7 +403,7 @@ export function StudentDetailClient({
                       ) : (
                         <tr>
                           <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                            Aucune facture enregistrée
+                            No invoices recorded
                           </td>
                         </tr>
                       )}

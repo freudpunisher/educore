@@ -22,9 +22,9 @@ export function DashboardHeader() {
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      admin: "Administrateur",
-      teacher: "Enseignant",
-      driver: "Chauffeur",
+      admin: "Administrator",
+      teacher: "Teacher",
+      driver: "Driver",
       parent: "Parent",
       none: "Utilisateur",
     };
@@ -100,8 +100,8 @@ export function DashboardHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profil</DropdownMenuItem>
-            <DropdownMenuItem>Paramètres</DropdownMenuItem>
+            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"

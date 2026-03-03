@@ -13,18 +13,18 @@ export default function CalendarPage() {
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay()
   const monthNames = [
-    "Janvier",
-    "Février",
-    "Mars",
-    "Avril",
-    "Mai",
-    "Juin",
-    "Juillet",
-    "Août",
-    "Septembre",
-    "Octobre",
-    "Novembre",
-    "Décembre",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ]
 
   const getEventTypeColor = (type: string) => {
@@ -55,12 +55,12 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Calendrier</h1>
-          <p className="text-muted-foreground">Événements, examens et vacances scolaires</p>
+          <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
+          <p className="text-muted-foreground">Events, exams, and school holidays</p>
         </div>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Nouvel événement
+          New Event
         </Button>
       </div>
 
@@ -84,7 +84,7 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-2">
-              {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"].map((day) => (
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <div key={day} className="text-center text-sm font-medium text-muted-foreground p-2">
                   {day}
                 </div>
@@ -128,8 +128,8 @@ export default function CalendarPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Événements à venir</CardTitle>
-            <CardDescription>Prochains événements importants</CardDescription>
+            <CardTitle>Upcoming Events</CardTitle>
+            <CardDescription>Next important events</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -141,7 +141,7 @@ export default function CalendarPage() {
                     <p className="text-xs text-muted-foreground">{event.description}</p>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">
-                        {new Date(event.date).toLocaleDateString("fr-FR")}
+                        {new Date(event.date).toLocaleDateString("en-US")}
                       </Badge>
                       {event.location && <span className="text-xs text-muted-foreground">{event.location}</span>}
                     </div>

@@ -8,8 +8,8 @@ export default function LogisticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Logistique</h1>
-        <p className="text-muted-foreground mt-1">Gérez le transport scolaire et la restauration</p>
+        <h1 className="text-3xl font-bold">Logistics</h1>
+        <p className="text-muted-foreground mt-1">Manage school transport and catering</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -22,7 +22,7 @@ export default function LogisticsPage() {
                 </div>
                 <div>
                   <CardTitle className="text-2xl">Transport</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">Gestion des bus et itinéraires</p>
+                  <p className="text-sm text-muted-foreground mt-1">Bus and route management</p>
                 </div>
               </div>
             </CardHeader>
@@ -30,21 +30,21 @@ export default function LogisticsPage() {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Routes Actives</span>
+                  <span className="text-sm font-medium">Active Routes</span>
                 </div>
                 <span className="text-lg font-bold">8</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Véhicules</span>
+                  <span className="text-sm font-medium">Vehicles</span>
                 </div>
                 <span className="text-lg font-bold">12</span>
               </div>
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">En Service</span>
+                  <span className="text-sm font-medium">In Service</span>
                 </div>
                 <span className="text-lg font-bold">10</span>
               </div>
@@ -60,8 +60,8 @@ export default function LogisticsPage() {
                   <UtensilsCrossed className="w-8 h-8 text-green-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl">Restauration</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">Menus et gestion de la cantine</p>
+                  <CardTitle className="text-2xl">Catering</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">Menus and canteen management</p>
                 </div>
               </div>
             </CardHeader>
@@ -69,7 +69,7 @@ export default function LogisticsPage() {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <UtensilsCrossed className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Repas Aujourd'hui</span>
+                  <span className="text-sm font-medium">Meals Today</span>
                 </div>
                 <span className="text-lg font-bold">456</span>
               </div>
@@ -83,7 +83,7 @@ export default function LogisticsPage() {
               <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Cantines</span>
+                  <span className="text-sm font-medium">Canteens</span>
                 </div>
                 <span className="text-lg font-bold">2</span>
               </div>

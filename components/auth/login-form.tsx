@@ -85,7 +85,7 @@ export function LoginForm() {
 </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
@@ -116,7 +116,7 @@ export function LoginForm() {
 
           <div className="text-center">
             <Button variant="link" className="text-sm text-muted-foreground" type="button">
-              Mot de passe oublié ?
+              Forgot password?
             </Button>
           </div>
         </form>

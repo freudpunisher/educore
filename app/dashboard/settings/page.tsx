@@ -13,8 +13,8 @@ import { Building2, Users, Bell, Shield, Save } from "lucide-react"
 
 const users = [
   { id: "1", name: "Marie Dubois", email: "marie.dubois@school.fr", role: "Admin", status: "active" },
-  { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Enseignant", status: "active" },
-  { id: "3", name: "Pierre Leroy", email: "pierre.leroy@school.fr", role: "Chauffeur", status: "active" },
+  { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Teacher", status: "active" },
+  { id: "3", name: "Pierre Leroy", email: "pierre.leroy@school.fr", role: "Driver", status: "active" },
   { id: "4", name: "Sophie Bernard", email: "sophie.bernard@school.fr", role: "Parent", status: "active" },
 ]
 
@@ -22,19 +22,19 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Paramètres</h1>
-        <p className="text-muted-foreground mt-1">Gérez les paramètres de votre établissement et les permissions</p>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-1">Manage school settings and permissions</p>
       </div>
 
       <Tabs defaultValue="school" className="space-y-4">
         <TabsList>
           <TabsTrigger value="school">
             <Building2 className="w-4 h-4 mr-2" />
-            École
+            School
           </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="w-4 h-4 mr-2" />
-            Utilisateurs
+            Users
           </TabsTrigger>
           <TabsTrigger value="notifications">
             <Bell className="w-4 h-4 mr-2" />
@@ -42,32 +42,32 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="security">
             <Shield className="w-4 h-4 mr-2" />
-            Sécurité
+            Security
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="school">
           <Card>
             <CardHeader>
-              <CardTitle>Informations de l'École</CardTitle>
-              <CardDescription>Gérez les informations générales de votre établissement</CardDescription>
+              <CardTitle>School Information</CardTitle>
+              <CardDescription>Manage general information about your institution</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="schoolName">Nom de l'École</Label>
-                  <Input id="schoolName" defaultValue="École Primaire Saint-Martin" />
+                  <Label htmlFor="schoolName">School Name</Label>
+                  <Input id="schoolName" defaultValue="Saint-Martin Primary School" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="schoolCode">Code Établissement</Label>
+                  <Label htmlFor="schoolCode">School Code</Label>
                   <Input id="schoolCode" defaultValue="ESM-2024" />
                 </div>
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Adresse</Label>
-                  <Input id="address" defaultValue="123 Rue de l'Éducation, 75001 Paris" />
+                  <Label htmlFor="address">Address</Label>
+                  <Input id="address" defaultValue="123 Education Street, 75001 Paris" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Téléphone</Label>
+                  <Label htmlFor="phone">Phone</Label>
                   <Input id="phone" type="tel" defaultValue="01 23 45 67 89" />
                 </div>
                 <div className="space-y-2">
@@ -75,11 +75,11 @@ export default function SettingsPage() {
                   <Input id="email" type="email" defaultValue="contact@ecole-saint-martin.fr" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="director">Directeur/Directrice</Label>
-                  <Input id="director" defaultValue="Mme Catherine Dubois" />
+                  <Label htmlFor="director">Director</Label>
+                  <Input id="director" defaultValue="Mrs Catherine Dubois" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="academicYear">Année Scolaire</Label>
+                  <Label htmlFor="academicYear">Academic Year</Label>
                   <Input id="academicYear" defaultValue="2024-2025" />
                 </div>
               </div>
@@ -87,14 +87,14 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Horaires de l'École</h3>
+                <h3 className="font-semibold">School Hours</h3>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="openTime">Heure d'Ouverture</Label>
+                    <Label htmlFor="openTime">Opening Time</Label>
                     <Input id="openTime" type="time" defaultValue="07:30" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="closeTime">Heure de Fermeture</Label>
+                    <Label htmlFor="closeTime">Closing Time</Label>
                     <Input id="closeTime" type="time" defaultValue="18:00" />
                   </div>
                 </div>
@@ -103,7 +103,7 @@ export default function SettingsPage() {
               <div className="flex justify-end">
                 <Button>
                   <Save className="w-4 h-4 mr-2" />
-                  Enregistrer les Modifications
+                  Save Changes
                 </Button>
               </div>
             </CardContent>
@@ -115,10 +115,10 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Gestion des Utilisateurs</CardTitle>
-                  <CardDescription>Gérez les comptes et les permissions des utilisateurs</CardDescription>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>Manage accounts and user permissions</CardDescription>
                 </div>
-                <Button>Ajouter un Utilisateur</Button>
+                <Button>Add User</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -126,10 +126,10 @@ export default function SettingsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nom</TableHead>
+                      <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Rôle</TableHead>
-                      <TableHead>Statut</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -143,12 +143,12 @@ export default function SettingsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                            {user.status === "active" ? "Actif" : "Inactif"}
+                            {user.status === "active" ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm">
-                            Modifier
+                            Edit
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -160,40 +160,40 @@ export default function SettingsPage() {
               <Separator className="my-6" />
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Permissions par Rôle</h3>
+                <h3 className="font-semibold">Role Permissions</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
-                      <p className="font-medium">Administrateur</p>
-                      <p className="text-sm text-muted-foreground">Accès complet à toutes les fonctionnalités</p>
+                      <p className="font-medium">Administrator</p>
+                      <p className="text-sm text-muted-foreground">Full access to all features</p>
                     </div>
-                    <Badge>Tous les droits</Badge>
+                    <Badge>All rights</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
-                      <p className="font-medium">Enseignant</p>
-                      <p className="text-sm text-muted-foreground">Gestion des classes, notes et présences</p>
+                      <p className="font-medium">Teacher</p>
+                      <p className="text-sm text-muted-foreground">Manage classes, grades, and attendance</p>
                     </div>
                     <Button variant="outline" size="sm">
-                      Configurer
+                      Configure
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
-                      <p className="font-medium">Chauffeur</p>
-                      <p className="text-sm text-muted-foreground">Accès à l'interface de transport uniquement</p>
+                      <p className="font-medium">Driver</p>
+                      <p className="text-sm text-muted-foreground">Access to transport interface only</p>
                     </div>
                     <Button variant="outline" size="sm">
-                      Configurer
+                      Configure
                     </Button>
                   </div>
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <p className="font-medium">Parent</p>
-                      <p className="text-sm text-muted-foreground">Consultation des informations de leurs enfants</p>
+                      <p className="text-sm text-muted-foreground">View information about their children</p>
                     </div>
                     <Button variant="outline" size="sm">
-                      Configurer
+                      Configure
                     </Button>
                   </div>
                 </div>
@@ -205,25 +205,25 @@ export default function SettingsPage() {
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
-              <CardTitle>Préférences de Notification</CardTitle>
-              <CardDescription>Configurez les notifications pour les différents événements</CardDescription>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>Configure notifications for different events</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="font-semibold">Notifications Email</h3>
+                <h3 className="font-semibold">Email Notifications</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Nouvelles Inscriptions</Label>
-                      <p className="text-sm text-muted-foreground">Recevoir un email lors d'une nouvelle inscription</p>
+                      <Label>New Enrollments</Label>
+                      <p className="text-sm text-muted-foreground">Receive an email for new registrations</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Paiements Reçus</Label>
-                      <p className="text-sm text-muted-foreground">Notification lors de la réception d'un paiement</p>
+                      <Label>Payments Received</Label>
+                      <p className="text-sm text-muted-foreground">Notification upon receiving a payment</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -231,15 +231,15 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label>Absences</Label>
-                      <p className="text-sm text-muted-foreground">Alerte en cas d'absence non justifiée</p>
+                      <p className="text-sm text-muted-foreground">Alert for unjustified absences</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Retards de Transport</Label>
-                      <p className="text-sm text-muted-foreground">Notification en cas de retard sur les trajets</p>
+                      <Label>Transport Delays</Label>
+                      <p className="text-sm text-muted-foreground">Notification for travel delays</p>
                     </div>
                     <Switch />
                   </div>
@@ -249,20 +249,20 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Notifications SMS</h3>
+                <h3 className="font-semibold">SMS Notifications</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Urgences</Label>
-                      <p className="text-sm text-muted-foreground">SMS en cas de situation d'urgence</p>
+                      <Label>Emergencies</Label>
+                      <p className="text-sm text-muted-foreground">SMS in case of emergency situations</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Rappels de Paiement</Label>
-                      <p className="text-sm text-muted-foreground">Rappel SMS pour les factures en retard</p>
+                      <Label>Payment Reminders</Label>
+                      <p className="text-sm text-muted-foreground">SMS reminder for overdue invoices</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -272,7 +272,7 @@ export default function SettingsPage() {
               <div className="flex justify-end">
                 <Button>
                   <Save className="w-4 h-4 mr-2" />
-                  Enregistrer les Préférences
+                  Save Preferences
                 </Button>
               </div>
             </CardContent>
@@ -282,33 +282,33 @@ export default function SettingsPage() {
         <TabsContent value="security">
           <Card>
             <CardHeader>
-              <CardTitle>Sécurité et Confidentialité</CardTitle>
-              <CardDescription>Gérez les paramètres de sécurité de votre établissement</CardDescription>
+              <CardTitle>Security and Privacy</CardTitle>
+              <CardDescription>Manage security settings for your institution</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                <h3 className="font-semibold">Politique de Mot de Passe</h3>
+                <h3 className="font-semibold">Password Policy</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Longueur Minimale</Label>
-                      <p className="text-sm text-muted-foreground">Nombre minimum de caractères requis</p>
+                      <Label>Minimum Length</Label>
+                      <p className="text-sm text-muted-foreground">Minimum number of characters required</p>
                     </div>
                     <Input type="number" defaultValue="8" className="w-20" />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Expiration du Mot de Passe</Label>
-                      <p className="text-sm text-muted-foreground">Forcer le changement tous les X jours</p>
+                      <Label>Password Expiration</Label>
+                      <p className="text-sm text-muted-foreground">Force password change every X days</p>
                     </div>
                     <Switch />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Authentification à Deux Facteurs</Label>
-                      <p className="text-sm text-muted-foreground">Activer 2FA pour tous les administrateurs</p>
+                      <Label>Two-Factor Authentication</Label>
+                      <p className="text-sm text-muted-foreground">Enable 2FA for all administrators</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
@@ -318,23 +318,23 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Sauvegarde des Données</h3>
+                <h3 className="font-semibold">Data Backup</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Sauvegarde Automatique</Label>
-                      <p className="text-sm text-muted-foreground">Sauvegarde quotidienne à 2h00</p>
+                      <Label>Automatic Backup</Label>
+                      <p className="text-sm text-muted-foreground">Daily backup at 2:00 AM</p>
                     </div>
                     <Switch defaultChecked />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Dernière Sauvegarde</Label>
-                      <p className="text-sm text-muted-foreground">Aujourd'hui à 02:00</p>
+                      <Label>Last Backup</Label>
+                      <p className="text-sm text-muted-foreground">Today at 2:00 AM</p>
                     </div>
                     <Button variant="outline" size="sm">
-                      Sauvegarder Maintenant
+                      Backup Now
                     </Button>
                   </div>
                 </div>
@@ -343,32 +343,32 @@ export default function SettingsPage() {
               <Separator />
 
               <div className="space-y-4">
-                <h3 className="font-semibold">Journal d'Activité</h3>
+                <h3 className="font-semibold">Activity Log</h3>
                 <div className="p-4 border rounded-lg space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>Connexion - Marie Dubois</span>
-                    <span className="text-muted-foreground">Il y a 2 heures</span>
+                    <span>Login - Marie Dubois</span>
+                    <span className="text-muted-foreground">2 hours ago</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between text-sm">
-                    <span>Modification élève - Jean Martin</span>
-                    <span className="text-muted-foreground">Il y a 4 heures</span>
+                    <span>Student modified - Jean Martin</span>
+                    <span className="text-muted-foreground">4 hours ago</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between text-sm">
-                    <span>Nouvelle facture créée</span>
-                    <span className="text-muted-foreground">Il y a 6 heures</span>
+                    <span>New invoice created</span>
+                    <span className="text-muted-foreground">6 hours ago</span>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full bg-transparent">
-                  Voir Tout le Journal
+                  View Full Log
                 </Button>
               </div>
 
               <div className="flex justify-end">
                 <Button>
                   <Save className="w-4 h-4 mr-2" />
-                  Enregistrer les Paramètres
+                  Save Settings
                 </Button>
               </div>
             </CardContent>

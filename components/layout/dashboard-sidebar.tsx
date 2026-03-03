@@ -23,11 +23,11 @@ import { Button } from "@/components/ui/button"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Élèves", href: "/dashboard/students", icon: Users },
-  { name: "Présences", href: "/dashboard/attendance", icon: ClipboardCheck },
-  { name: "Calendrier", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Emploi du temps", href: "/dashboard/timetable", icon: Clock },
-  { name: "Annonces", href: "/dashboard/announcements", icon: Megaphone },
+  { name: "Students", href: "/dashboard/students", icon: Users },
+  { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },
+  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
+  { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
+  { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
   { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
   { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
@@ -53,7 +53,7 @@ export function DashboardSidebar() {
               <GraduationCap className="w-6 h-6 text-primary-foreground" />
             </div>
             <div>
-              <h2 className="font-bold text-lg text-foreground">École</h2>
+              <h2 className="font-bold text-lg text-foreground">School</h2>
               <p className="text-xs text-muted-foreground">2024-2025</p>
             </div>
           </div>
