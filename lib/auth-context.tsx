@@ -1,106 +1,103 @@
-"use client"
+// src/lib/auth-context.tsx
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { useRouter } from "next/navigation"
+import { createContext, useContext, useState, ReactNode } from "react";
 
-type UserRole = "admin" | "teacher" | "driver" | "parent"
+type BackendUser = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+};
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  avatar?: string
-}
+type BackendProfile = {
+  id: number;
+  user: BackendUser;
+  role: string;
+  active: boolean;
+  address: string;
+  phone_number: string | null;
+};
 
-interface AuthContextType {
-  user: User | null
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
-  isLoading: boolean
-}
+type LoginResponse = {
+  access: string;
+  refresh: string;
+  user: BackendProfile;
+  expires_in: number;
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+// Clean user stored in context
+export type User = {
+  id: number;
+  username: string;
+  role: "admin" | "teacher" | "driver" | "parent" | "none";
+  fullName: string;
+  isActive: boolean;
+  // Helper method
+  is: (role: string) => boolean;
+};
 
-// Mock users for demo
-const MOCK_USERS: Record<string, { password: string; user: User }> = {
-  "admin@school.fr": {
-    password: "admin123",
-    user: {
-      id: "1",
-      name: "Marie Dubois",
-      email: "admin@school.fr",
-      role: "admin",
-    },
-  },
-  "teacher@school.fr": {
-    password: "teacher123",
-    user: {
-      id: "2",
-      name: "Jean Martin",
-      email: "teacher@school.fr",
-      role: "teacher",
-    },
-  },
-  "driver@school.fr": {
-    password: "driver123",
-    user: {
-      id: "3",
-      name: "Pierre Leroy",
-      email: "driver@school.fr",
-      role: "driver",
-    },
-  },
-  "parent@school.fr": {
-    password: "parent123",
-    user: {
-      id: "4",
-      name: "Sophie Bernard",
-      email: "parent@school.fr",
-      role: "parent",
-    },
-  },
-}
+type AuthContextType = {
+  user: User | null;
+  login: (data: LoginResponse) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
+};
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    // Check for stored user on mount
-    const storedUser = localStorage.getItem("school_user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
-    }
-    setIsLoading(false)
-  }, [])
+  const login = (data: LoginResponse) => {
+    const profile = data.user;
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const mockUser = MOCK_USERS[email]
+    const fullName = [profile.user.first_name, profile.user.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || profile.user.username;
 
-    if (mockUser && mockUser.password === password) {
-      setUser(mockUser.user)
-      localStorage.setItem("school_user", JSON.stringify(mockUser.user))
-      return true
-    }
+    const cleanUser: User = {
+      id: profile.id,
+      username: profile.user.username,
+      role: profile.role as User["role"],
+      fullName,
+      isActive: profile.active,
+      is: (role: string) => profile.role === role, // Helper function
+    };
 
-    return false
-  }
+    setUser(cleanUser);
+
+    // Save tokens in localStorage (or use httpOnly cookies if your backend sets them)
+    localStorage.setItem("access_token", data.access);
+    localStorage.setItem("refresh_token", data.refresh);
+  };
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem("school_user")
-    router.push("/login")
-  }
+    setUser(null);
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+  };
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        isAuthenticated: !!user,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
+  return context;
 }

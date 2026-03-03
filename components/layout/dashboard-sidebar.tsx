@@ -29,6 +29,7 @@ const navigation = [
   { name: "Emploi du temps", href: "/dashboard/timetable", icon: Clock },
   { name: "Annonces", href: "/dashboard/announcements", icon: Megaphone },
   { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
+  { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
   { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
   { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
