@@ -1,6 +1,5 @@
-"use client"
-
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { mockStudents, mockGrades, mockAttendance, mockInvoices } from "@/lib/mock-data"
@@ -15,10 +14,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-col items-center justify-center h-full">
         <h2 className="text-2xl font-bold mb-2">Student not found</h2>
         <p className="text-muted-foreground mb-4">The student you are looking for does not exist.</p>
-        <Button onClick={() => redirect("/dashboard/students")}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to list
-        </Button>
+        <Link href="/dashboard/students">
+          <Button variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to list
+          </Button>
+        </Link>
       </div>
     )
   }
