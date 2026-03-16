@@ -1,12 +1,21 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { DM_Sans, DM_Serif_Display } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: '--font-sans',
+})
+
+const dmSerif = DM_Serif_Display({
+  weight: '400',
+  subsets: ["latin"],
+  variable: '--font-serif',
+})
 
 export const metadata: Metadata = {
   title: "School Management System",
@@ -20,8 +29,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} font-sans antialiased`}>
+    <html lang="en" className={`${dmSans.variable} ${dmSerif.variable}`}>
+      <body className={`${dmSans.className} font-sans antialiased`}>
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
