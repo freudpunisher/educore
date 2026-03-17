@@ -1,7 +1,6 @@
-// src/hooks/use-students.ts
 import { useQuery } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { studentsListArraySchema } from "@/types/student";
+import { paginatedStudentListSchema } from "@/types/student";
 
 export function useStudents() {
   return useQuery({
@@ -9,7 +8,7 @@ export function useStudents() {
     queryFn: async () => {
       const { data } = await axiosInstance.get("users/students/");
       // Safe parsing — will throw clear error if API changes
-      return studentsListArraySchema.parse(data);
+      return paginatedStudentListSchema.parse(data);
     },
     staleTime: 1000 * 60 * 5,
   });

@@ -44,7 +44,7 @@ import { useState } from "react";
 import { Student } from "@/types/student";
 import { EnrollStudentDialog } from "./enroll-student-dialog";
 
-const genderLabel = (g: number) => (g === 1 ? "Fille" : "Garçon");
+const genderLabel = (g: number) => (g === 1 ? "Girl" : "Boy");
 
 export default function StudentsTable({ students }: { students: Student[] }) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -76,7 +76,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
           variant="ghost"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          Nom complet
+          Full Name
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -89,7 +89,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
     },
     {
       accessorKey: "enrollment_number",
-      header: "Matricule",
+      header: "Enrollment No.",
       cell: ({ row }) => (
         <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
           {row.getValue("enrollment_number")}
@@ -98,7 +98,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
     },
     {
       accessorKey: "gender",
-      header: "Genre",
+      header: "Gender",
       cell: ({ row }) => (
         <Badge variant={row.original.gender === 1 ? "secondary" : "default"}>
           {genderLabel(row.original.gender)}
@@ -107,23 +107,23 @@ export default function StudentsTable({ students }: { students: Student[] }) {
     },
     {
       accessorKey: "account_active",
-      header: "Compte",
+      header: "Account",
       cell: ({ row }) => (
         <Badge variant={row.original.account_active ? "default" : "destructive"}>
-          {row.original.account_active ? "Actif" : "Inactif"}
+          {row.original.account_active ? "Active" : "Inactive"}
         </Badge>
       ),
     },
     {
       id: "enrollment_status",
-      header: "Inscription actuelle",
+      header: "Current Enrollment",
       cell: ({ row }) => {
         const info = row.original.enrollment_info;
         if (!info) {
           return (
             <div className="flex items-center gap-2 text-muted-foreground">
               <CircleSlash2 className="w-4 h-4" />
-              <span className="text-sm">Non inscrit</span>
+              <span className="text-sm">Not Enrolled</span>
             </div>
           );
         }
@@ -154,7 +154,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
               onClick={() => setOpen(true)}
               className="h-8"
             >
-              {alreadyEnrolled ? "Déjà inscrit" : "Inscrire"}
+              {alreadyEnrolled ? "Already Enrolled" : "Enroll"}
             </Button>
 
             <EnrollStudentDialog
@@ -194,7 +194,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher un élève..."
+            placeholder="Search student..."
             value={globalFilter ?? ""}
             onChange={(e) => setGlobalFilter(e.target.value)}
             className="pl-10"
@@ -205,14 +205,14 @@ export default function StudentsTable({ students }: { students: Student[] }) {
         <Select
           value={(table.getColumn("enrollment_status")?.getFilterValue() as string) ?? ""}
           onValueChange={(value) =>
-            table.getColumn("enrollment_status")?.setFilterValue(value || undefined)
+            table.getColumn("enrollment_status")?.setFilterValue(value === "all" ? undefined : value)
           }
         >
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Toutes les années" />
+            <SelectValue placeholder="All Years" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les années</SelectItem>
+            <SelectItem value="all">All Years</SelectItem>
             {academicYears.map((year) => (
               <SelectItem key={year} value={year}>
                 {year}
@@ -225,14 +225,14 @@ export default function StudentsTable({ students }: { students: Student[] }) {
         <Select
           value={(table.getColumn("enrollment_status")?.getFilterValue() as string) ?? ""}
           onValueChange={(value) =>
-            table.getColumn("enrollment_status")?.setFilterValue(value || undefined)
+            table.getColumn("enrollment_status")?.setFilterValue(value === "all" ? undefined : value)
           }
         >
           <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="Toutes les classes" />
+            <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Toutes les classes</SelectItem>
+            <SelectItem value="all">All Classes</SelectItem>
             {classrooms.map((room) => (
               <SelectItem key={room} value={room}>
                 {room}
@@ -272,7 +272,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  Aucun élève trouvé avec ces filtres.
+                  No students found with these filters.
                 </TableCell>
               </TableRow>
             )}
@@ -283,7 +283,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
-          {table.getFilteredRowModel().rows.length} élève{table.getFilteredRowModel().rows.length > 1 ? "s" : ""} affiché{table.getFilteredRowModel().rows.length < students.length ? ` sur ${students.length}` : ""}
+          {table.getFilteredRowModel().rows.length} student{table.getFilteredRowModel().rows.length > 1 ? "s" : ""} displayed{table.getFilteredRowModel().rows.length < students.length ? ` of ${students.length}` : ""}
         </div>
         <div className="flex gap-2">
           <Button

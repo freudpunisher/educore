@@ -1,22 +1,23 @@
 "use client";
-import StudentsTable  from "@/components/students/students-table";
+import StudentsTable from "@/components/students/students-table";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
-import { Card, CardContent,  CardHeader,  CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Loader2 } from "lucide-react";
 import { useStudents } from "@/hooks/use-students";
 
 
 
 export default function StudentsPage() {
-  const { data: students = [], isLoading, error } = useStudents();
+  const { data: studentsResponse, isLoading, error } = useStudents();
+  const students = studentsResponse?.results || [];
 
   return (
-    <div className="container mx-auto py-10 px-4 max-w-7xl">
+    <div className=" mx-auto py-10 px-4 ">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-4">
             <Users className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl">Liste des élèves</CardTitle>
+            <CardTitle className="text-3xl">Student List</CardTitle>
           </div>
           <CreateStudentDialog />
         </CardHeader>
@@ -28,7 +29,7 @@ export default function StudentsPage() {
             </div>
           ) : error ? (
             <p className="text-center text-destructive py-10">
-              Impossible de charger les élèves.
+              Could not load students.
             </p>
           ) : (
             <StudentsTable students={students} />

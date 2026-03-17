@@ -14,13 +14,13 @@ export function useCreateStudent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
-      toast.success("Élève créé avec succès !");
+      toast.success("Student created successfully!");
     },
     onError: (error: any) => {
       const message =
         error?.response?.data?.detail ||
         error?.response?.data?.message ||
-        "Erreur lors de la création";
+        "Error creating student";
       toast.error(message);
     },
   });

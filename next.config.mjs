@@ -6,6 +6,14 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://192.168.200.68:10000/:path*",
+      },
+    ];
+  },
+};
 
-export default nextConfig
+export default nextConfig;

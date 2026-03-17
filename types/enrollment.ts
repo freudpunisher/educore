@@ -1,5 +1,6 @@
 // src/lib/types/enrollment.ts ← FINAL VERSION
 import { z } from "zod";
+import { createPaginatedSchema } from "./api";
 
 export const academicYearSchema = z.object({
   id: z.number(),
@@ -14,11 +15,14 @@ export const classRoomSchema = z.object({
   code: z.string(),
 });
 
+export const paginatedAcademicYearSchema = createPaginatedSchema(academicYearSchema);
+export const paginatedClassRoomSchema = createPaginatedSchema(classRoomSchema);
+
 export const enrollmentCreateSchema = z.object({
   student: z.number(),
   academic_year: z.number(),
   class_room: z.number(),
-  
+
 });
 
 export type AcademicYear = z.infer<typeof academicYearSchema>;

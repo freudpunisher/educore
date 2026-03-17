@@ -1,5 +1,6 @@
 // src/lib/types/student.ts ← FINAL VERSION
 import { z } from "zod";
+import { createPaginatedSchema } from "./api";
 
 export const enrollmentInfoSchema = z.object({
   classroom: z.string(),
@@ -19,6 +20,7 @@ export const studentListSchema = z.object({
 });
 
 export const studentsListArraySchema = z.array(studentListSchema);
+export const paginatedStudentListSchema = createPaginatedSchema(studentListSchema);
 
 export type Student = z.infer<typeof studentListSchema>;
 export type EnrollmentInfo = z.infer<typeof enrollmentInfoSchema>;

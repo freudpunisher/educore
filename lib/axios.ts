@@ -5,18 +5,19 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL =  process.env.NEXT_PRIVATE_API_URL || "http://192.168.200.68:10000/" // Server-side (SSR, Server Actions, Route Handlers)
-  // Client-side → goes through Next.js proxy (recommended!)
+const baseURL = process.env.NEXT_PRIVATE_API_URL || "http://192.168.200.68:10000/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,
-  timeout: 15_000, // 15 seconds
+  // timeout: 15_000, // 15 seconds
   headers: {
     "Content-Type": "application/json",
+
+
     // You can add common headers here
   },
   // Important for cookies/auth when calling your own Next.js API routes
-  withCredentials: true,
+  // withCredentials: true,
 });
 
 // Request interceptor – add auth token automatically

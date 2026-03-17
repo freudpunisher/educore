@@ -1,5 +1,6 @@
 // src/lib/types/attendance.ts
 import { z } from "zod";
+import { createPaginatedSchema } from "./api";
 
 export const attendanceSessionSchema = z.object({
   id: z.number(),
@@ -15,5 +16,6 @@ export const attendanceSessionSchema = z.object({
 });
 
 export const sessionsArraySchema = z.array(attendanceSessionSchema);
+export const paginatedAttendanceSessionSchema = createPaginatedSchema(attendanceSessionSchema);
 
 export type AttendanceSession = z.infer<typeof attendanceSessionSchema>;

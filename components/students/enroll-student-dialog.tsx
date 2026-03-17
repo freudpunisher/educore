@@ -35,7 +35,7 @@ export function EnrollStudentDialog({ studentId, studentName, open, onOpenChange
   const { data: years = [], isLoading: loadingYears } = useAcademicYears();
   const { data: classrooms = [], isLoading: loadingClasses } = useClassRooms();
   const enrollMutation = useEnrollStudent();
-console.log(years)
+  console.log(years)
   const {
     register,
     handleSubmit,
@@ -47,7 +47,7 @@ console.log(years)
     resolver: zodResolver(enrollmentCreateSchema),
     defaultValues: {
       student: studentId,
-     
+
     },
   });
 
@@ -66,7 +66,7 @@ console.log(years)
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Inscrire l'élève</DialogTitle>
+          <DialogTitle>Enroll Student</DialogTitle>
           <DialogDescription>
             {studentName}
           </DialogDescription>
@@ -74,35 +74,35 @@ console.log(years)
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-2">
-            <Label>Année scolaire</Label>
+            <Label>Academic Year</Label>
             <Select
               disabled={loadingYears}
               onValueChange={(v) => setValue("academic_year", Number(v))}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loadingYears ? "Chargement..." : "Choisir l'année"} />
+                <SelectValue placeholder={loadingYears ? "Loading..." : "Select Year"} />
               </SelectTrigger>
               <SelectContent>
                 {years.map((y) => (
                   <SelectItem key={y.id} value={String(y.id)}>
-                    {y.start_year} - {y.end_year} {y.is_current && "(Actuelle)"}
+                    {y.start_year} - {y.end_year} {y.is_current && "(Current)"}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             {errors.academic_year && (
-              <p className="text-sm text-destructive">Année requise</p>
+              <p className="text-sm text-destructive">Year required</p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label>Classe</Label>
+            <Label>Class</Label>
             <Select
               disabled={loadingClasses || !selectedYear}
               onValueChange={(v) => setValue("class_room", Number(v))}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loadingClasses ? "Chargement..." : "Choisir la classe"} />
+                <SelectValue placeholder={loadingClasses ? "Loading..." : "Select Class"} />
               </SelectTrigger>
               <SelectContent>
                 {classrooms.map((c) => (
@@ -113,24 +113,24 @@ console.log(years)
               </SelectContent>
             </Select>
             {errors.class_room && (
-              <p className="text-sm text-destructive">Classe requise</p>
+              <p className="text-sm text-destructive">Class required</p>
             )}
           </div>
 
-          
+
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              Cancel
             </Button>
             <Button type="submit" disabled={enrollMutation.isPending}>
               {enrollMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Inscription...
+                  Enrolling...
                 </>
               ) : (
-                "Inscrire"
+                "Enroll"
               )}
             </Button>
           </div>

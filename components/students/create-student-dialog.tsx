@@ -58,15 +58,15 @@ export function CreateStudentDialog() {
       <DialogTrigger asChild>
         <Button>
           <Plus className="w-4 h-4 mr-2" />
-          Nouvel élève
+          New Student
         </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Ajouter un élève</DialogTitle>
+          <DialogTitle>Add Student</DialogTitle>
           <DialogDescription>
-            Remplissez les informations de l’élève. Les champs parent sont facultatifs.
+            Fill in student information. Parent fields are optional.
           </DialogDescription>
         </DialogHeader>
 
@@ -74,15 +74,15 @@ export function CreateStudentDialog() {
           {/* Nom & Prénom */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Prénom *</Label>
-              <Input placeholder="Marie" {...register("first_name")} />
+              <Label>First Name *</Label>
+              <Input placeholder="Jane" {...register("first_name")} />
               {errors.first_name && (
                 <p className="text-sm text-destructive">{errors.first_name.message}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label>Nom *</Label>
-              <Input placeholder="Dupont" {...register("last_name")} />
+              <Label>Last Name *</Label>
+              <Input placeholder="Doe" {...register("last_name")} />
               {errors.last_name && (
                 <p className="text-sm text-destructive">{errors.last_name.message}</p>
               )}
@@ -91,8 +91,8 @@ export function CreateStudentDialog() {
 
           {/* Niveau */}
           <div className="space-y-2">
-            <Label>Niveau / Classe *</Label>
-            <Input placeholder="6ème A" {...register("class_level")} />
+            <Label>Level / Class *</Label>
+            <Input placeholder="Year 7 A" {...register("class_level")} />
             {errors.class_level && (
               <p className="text-sm text-destructive">{errors.class_level.message}</p>
             )}
@@ -101,14 +101,14 @@ export function CreateStudentDialog() {
           {/* Genre + Date */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Genre *</Label>
+              <Label>Gender *</Label>
               <Select onValueChange={(v) => setValue("gender", v as "0" | "1")}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choisir" />
+                  <SelectValue placeholder="Choose" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Fille</SelectItem>
-                  <SelectItem value="0">Garçon</SelectItem>
+                  <SelectItem value="1">Girl</SelectItem>
+                  <SelectItem value="0">Boy</SelectItem>
                 </SelectContent>
               </Select>
               {errors.gender && (
@@ -116,20 +116,20 @@ export function CreateStudentDialog() {
               )}
             </div>
 
-            
+
           </div>
 
           {/* Parent Contact Info */}
           <div className="border-t pt-4 space-y-4">
             <h4 className="text-sm font-medium text-muted-foreground">
-              Contact du parent/tuteur (facultatif)
+              Parent/Guardian Contact (Optional)
             </h4>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  Téléphone parent
+                  Parent Phone
                 </Label>
                 <Input
                   placeholder="+243812345678"
@@ -145,11 +145,11 @@ export function CreateStudentDialog() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  Email parent
+                  Parent Email
                 </Label>
                 <Input
                   type="email"
-                  placeholder="parent@exemple.com"
+                  placeholder="parent@example.com"
                   {...register("parent_email")}
                 />
                 {errors.parent_email && (
@@ -171,23 +171,23 @@ export function CreateStudentDialog() {
                 setOpen(false);
               }}
             >
-              Annuler
+              Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Création...
+                  Creating...
                 </>
               ) : (
-                "Créer l’élève"
+                "Create Student"
               )}
             </Button>
           </div>
 
           {createMutation.isError && (
             <p className="text-center text-sm text-destructive">
-              Erreur lors de la création
+              Error occurred during creation
             </p>
           )}
         </form>

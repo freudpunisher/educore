@@ -4,7 +4,6 @@ import axiosInstance from "@/lib/axios";
 import { loginSchema, type LoginFormData } from "@/lib/schemas/auth.Schema";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 
 export function useLogin() {
   const { login } = useAuth();
@@ -13,7 +12,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: async (credentials: LoginFormData) => {
       // Exactly what your backend expects
-      const { data } = await axios.post("http://192.168.200.68:10000/login/", {
+      const { data } = await axiosInstance.post("login/", {
         username: credentials.username,
         password: credentials.password,
       });
