@@ -5,17 +5,9 @@ import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
 import "./globals.css"
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: '--font-sans',
-})
-
-const dmSerif = DM_Serif_Display({
-  weight: '400',
-  subsets: ["latin"],
-  variable: '--font-serif',
-})
+import { Providers } from "@/components/providers";
+import { Toaster } from "react-hot-toast";
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "School Management System",
@@ -29,11 +21,34 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${dmSerif.variable}`}>
-      <body className={`${dmSans.className} font-sans antialiased`}>
-        <ThemeProvider>
+    <html lang="en">
+      <body className={`${inter.className} font-sans antialiased`}>
+        <Providers>
+
+          <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
+         <Toaster
+            position="top-center"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: "hsl(var(--background))",
+                color: "hsl(var(--foreground))",
+                border: "1px solid hsl(var(--border))",
+              },
+              success: {
+                icon: "✔️",
+                style: { borderColor: "hsl(var(--success))" },
+              },
+              error: {
+                icon: "❌",
+                style: { borderColor: "hsl(var(--destructive))" },
+              },
+            }}
+          />
         </ThemeProvider>
+        </Providers>
+        
         <Analytics />
       </body>
     </html>

@@ -1,4 +1,5 @@
-import { LoginForm } from "@/components/auth/login-form"
+// app/login/page.tsx
+import { LoginForm } from "@/components/auth/login-form";
 
 export default function LoginPage() {
   return (
@@ -13,5 +14,9 @@ export default function LoginPage() {
 
       <LoginForm />
     </div>
-  )
+  );
 }
+
+export const metadata = {
+  title: "Connexion - Gestion Scolaire",
+};
