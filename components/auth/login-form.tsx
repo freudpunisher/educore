@@ -35,8 +35,8 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-lg space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="text-center space-y-2">
+    <Card className="w-full max-w-lg space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <CardHeader className="text-center space-y-2">
         <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-[2rem] shadow-2xl shadow-primary/20 mb-4 rotate-3 group transition-transform hover:rotate-0 duration-500">
           <GraduationCap className="w-10 h-10 text-primary-foreground -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
         </div>
@@ -71,18 +71,18 @@ export function LoginForm() {
           </Alert> */}
 
           <div className="space-y-2">
-  <Label htmlFor="username">Identifiant</Label>
-  <Input
-    id="username"
-    type="text"
-    placeholder="admin, teacher01, parent123..."
-    autoComplete="username"
-    {...register("username")}
-  />
-  {errors.username && (
-    <p className="text-sm text-destructive">{errors.username.message}</p>
-  )}
-</div>
+            <Label htmlFor="username">Identifiant</Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="admin, teacher01, parent123..."
+              autoComplete="username"
+              {...register("username")}
+            />
+            {errors.username && (
+              <p className="text-sm text-destructive">{errors.username.message}</p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>

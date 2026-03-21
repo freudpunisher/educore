@@ -27,7 +27,19 @@ import {
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 
-const navigation = [
+type NavItem = {
+  name: string
+  href?: string
+  icon: any
+  roles?: string[]
+  children?: {
+    name: string
+    href: string
+    roles?: string[]
+  }[]
+}
+
+const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Students", href: "/dashboard/students", icon: Users },
   { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },

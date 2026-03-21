@@ -24,6 +24,8 @@ export const invoiceSchema = z.object({
     entity_name: z.string(),
     entity_id: z.number(),
     student_name: z.string().nullable(),
+    status: z.number(),
+    status_name: z.string(),
     amount: z.string(),
     date: z.string(), // "2026-03-18 13:26"
 });
