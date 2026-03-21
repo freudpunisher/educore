@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   Clock,
   Megaphone,
+  Receipt,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -29,6 +30,7 @@ const navigation = [
   { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
   { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
   { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
+  { name: "Invoices", href: "/dashboard/finances/invoices", icon: Receipt },
   { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
   { name: "Logistique", href: "/dashboard/logistics", icon: Truck },

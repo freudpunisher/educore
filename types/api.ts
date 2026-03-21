@@ -7,7 +7,7 @@ export interface PaginatedResponse<T> {
     results: T[];
 }
 
-export function createPaginatedSchema<T>(itemSchema: z.ZodType<T>) {
+export function createPaginatedSchema<T extends z.ZodTypeAny>(itemSchema: T) {
     return z.object({
         count: z.number(),
         next: z.string().nullable(),
