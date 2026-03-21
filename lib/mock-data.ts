@@ -16,6 +16,20 @@ export interface Student {
   photo?: string
 }
 
+export interface Teacher {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  specialization: string
+  joiningDate: string
+  status: "active" | "inactive"
+  photo?: string
+  classes: string[]
+  courses: string[]
+}
+
 export interface Invoice {
   id: string
   studentId: string
@@ -195,6 +209,45 @@ export const mockStudents: Student[] = [
     address: "89 Avenue Montaigne, 75008 Paris",
     enrollmentDate: "2023-09-01",
     status: "inactive",
+  },
+]
+
+export const mockTeachers: Teacher[] = [
+  {
+    id: "1",
+    firstName: "Jean",
+    lastName: "Dubois",
+    email: "jean.dubois@educore.com",
+    phone: "06 11 22 33 44",
+    specialization: "Mathematics",
+    joiningDate: "2020-09-01",
+    status: "active",
+    classes: ["5th A", "6th B"],
+    courses: ["Advanced Mathematics", "Basic Algebra"],
+  },
+  {
+    id: "2",
+    firstName: "Marie",
+    lastName: "Martin",
+    email: "marie.martin@educore.com",
+    phone: "06 22 33 44 55",
+    specialization: "French",
+    joiningDate: "2021-09-01",
+    status: "active",
+    classes: ["5th A", "4th B"],
+    courses: ["French Literature", "Grammar"],
+  },
+  {
+    id: "3",
+    firstName: "Sophie",
+    lastName: "Bernard",
+    email: "sophie.bernard@educore.com",
+    phone: "06 33 44 55 66",
+    specialization: "History-Geography",
+    joiningDate: "2019-09-01",
+    status: "active",
+    classes: ["5th A", "6th C"],
+    courses: ["World History", "Geography"],
   },
 ]
 

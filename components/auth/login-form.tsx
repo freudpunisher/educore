@@ -35,10 +35,10 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full max-w-md shadow-xl">
-      <CardHeader className="space-y-3 text-center">
-        <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
-          <GraduationCap className="w-10 h-10 text-primary-foreground" />
+    <div className="w-full max-w-lg space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-[2rem] shadow-2xl shadow-primary/20 mb-4 rotate-3 group transition-transform hover:rotate-0 duration-500">
+          <GraduationCap className="w-10 h-10 text-primary-foreground -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
         </div>
         <CardTitle className="text-2xl font-bold">Gestion Scolaire</CardTitle>
         <CardDescription>
