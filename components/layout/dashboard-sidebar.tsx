@@ -23,6 +23,7 @@ import {
   Clock,
   Megaphone,
   Receipt,
+  ShieldAlert,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -43,6 +44,7 @@ const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Students", href: "/dashboard/students", icon: Users },
   { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },
+  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert },
   { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
   { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
