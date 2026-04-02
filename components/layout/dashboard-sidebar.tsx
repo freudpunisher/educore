@@ -24,6 +24,9 @@ import {
   Megaphone,
   Receipt,
   ShieldAlert,
+  UtensilsCrossed,
+  Package,
+  Home,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -53,6 +56,10 @@ const navigation: NavItem[] = [
   { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
   { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
+  { name: "Transport", href: "/dashboard/transport", icon: Truck },
+  { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },
+  { name: "Store", href: "/dashboard/store", icon: Package },
+  { name: "Boarding", href: "/dashboard/boarding", icon: Home },
   { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
 ]
 

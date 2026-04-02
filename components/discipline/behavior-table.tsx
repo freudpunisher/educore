@@ -12,16 +12,35 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, ShieldAlert } from "lucide-react";
-import { DisciplineRecord } from "@/types/discipline";
+import {
+    Eye,
+    ShieldAlert,
+    Pencil,
+    CheckCircle2,
+    MoreHorizontal,
+    History,
+    AlertCircle,
+    XCircle
+} from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuLabel,
+    DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import { DisciplineRecord, DisciplineRecordStatusEnum } from "@/types/discipline";
 import { cn } from "@/lib/utils";
 
 interface BehaviorTableProps {
     records: DisciplineRecord[];
     onViewDetails: (record: DisciplineRecord) => void;
+    onEdit: (record: DisciplineRecord) => void;
+    onStatusChange: (record: DisciplineRecord, status: DisciplineRecord["status"]) => void;
 }
 
-export function BehaviorTable({ records, onViewDetails }: BehaviorTableProps) {
+export function BehaviorTable({ records, onViewDetails, onEdit, onStatusChange }: BehaviorTableProps) {
     const getStatusBadge = (status: DisciplineRecord["status"]) => {
         switch (status) {
             case "recorded":
@@ -80,7 +99,7 @@ export function BehaviorTable({ records, onViewDetails }: BehaviorTableProps) {
                             >
                                 <TableCell className="py-4">
                                     <div className="flex flex-col">
-                                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">{record.student_name}</span>
+                                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">{record.student_name || "Unknown Student"}</span>
                                         <span className="text-xs text-muted-foreground font-mono">{record.student_enrollment}</span>
                                     </div>
                                 </TableCell>
@@ -90,33 +109,90 @@ export function BehaviorTable({ records, onViewDetails }: BehaviorTableProps) {
                                 <TableCell className="py-4 text-center">
                                     <span className={cn(
                                         "text-sm font-bold px-2 py-0.5 rounded",
-                                        record.points_deducted > 5 ? "text-rose-600 bg-rose-50" : "text-amber-600 bg-amber-50"
+                                        Math.abs(parseFloat(record.points_deducted)) > 5
+                                            ? "text-rose-600 bg-rose-50"
+                                            : "text-amber-600 bg-amber-50"
                                     )}>
-                                        -{record.points_deducted}
+                                        {parseFloat(record.points_deducted) > 0 ? "-" : ""}{record.points_deducted}
                                     </span>
                                 </TableCell>
                                 <TableCell className="py-4 text-sm text-muted-foreground font-medium">
                                     {format(new Date(record.date_incident), "dd MMM yyyy", { locale: fr })}
                                 </TableCell>
                                 <TableCell className="py-4 text-sm font-medium text-muted-foreground">
-                                    {record.recorded_by_name}
+                                    {record.recorded_by_name || "Administrator"}
                                 </TableCell>
                                 <TableCell className="py-4">
                                     {getStatusBadge(record.status)}
                                 </TableCell>
                                 <TableCell className="py-4 text-right pr-6">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onViewDetails(record);
-                                        }}
-                                        className="rounded-full hover:bg-primary/10 hover:text-primary"
-                                    >
-                                        <Eye className="h-4 w-4 mr-2" />
-                                        View
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onViewDetails(record);
+                                            }}
+                                            className="rounded-full hover:bg-primary/10 hover:text-primary h-9 w-9 p-0"
+                                            title="View Details"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                        </Button>
+
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEdit(record);
+                                            }}
+                                            className="rounded-full hover:bg-amber-100 hover:text-amber-700 h-9 w-9 p-0"
+                                            title="Edit Record"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="rounded-full hover:bg-blue-100 hover:text-blue-700 h-9 w-9 p-0"
+                                                    title="Change Status"
+                                                >
+                                                    <History className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-48 rounded-xl p-2 shadow-xl border-muted-foreground/10">
+                                                <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest px-2 py-1.5">
+                                                    Update Status
+                                                </DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    onClick={() => onStatusChange(record, DisciplineRecordStatusEnum.Recorded)}
+                                                    className="rounded-lg gap-2 cursor-pointer focus:bg-blue-50 focus:text-blue-700"
+                                                >
+                                                    <CheckCircle2 className="h-4 w-4" />
+                                                    Recorded
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => onStatusChange(record, DisciplineRecordStatusEnum.Appealed)}
+                                                    className="rounded-lg gap-2 cursor-pointer focus:bg-amber-50 focus:text-amber-700"
+                                                >
+                                                    <AlertCircle className="h-4 w-4" />
+                                                    Appealed
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => onStatusChange(record, DisciplineRecordStatusEnum.Cancelled)}
+                                                    className="rounded-lg gap-2 cursor-pointer focus:bg-rose-50 focus:text-rose-700"
+                                                >
+                                                    <XCircle className="h-4 w-4" />
+                                                    Cancelled
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))

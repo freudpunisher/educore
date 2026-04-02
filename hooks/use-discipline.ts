@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { 
-    paginatedDisciplineRecordSchema, 
+import {
+    paginatedDisciplineRecordSchema,
     disciplineRecordCreateSchema,
     DisciplineRecordCreate,
     DisciplineReason,
@@ -23,7 +23,9 @@ export function useBehaviorRecords(params?: BehaviorQueryParams) {
         queryKey: ["discipline-records", params],
         queryFn: async () => {
             const { data } = await axiosInstance.get("/academics/records/", { params });
-            return paginatedDisciplineRecordSchema.parse(data);
+            // Handle nested response structure: { status, message, data: { count, next, previous, results: [...] } }
+            const paginatedData = data?.data || data;
+            return paginatedDisciplineRecordSchema.parse(paginatedData);
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
@@ -47,11 +49,11 @@ export function useStudentsByClassLevel(classRoomId: number | null, enabled = tr
             } else if (Array.isArray(data)) {
                 enrollments = data;
             }
-            return paginatedEnrollmentListSchema.parse({ 
-                count: enrollments.length, 
-                next: null, 
+            return paginatedEnrollmentListSchema.parse({
+                count: enrollments.length,
+                next: null,
                 previous: null,
-                results: enrollments 
+                results: enrollments
             }).results;
         },
         enabled: !!classRoomId && enabled,
@@ -99,7 +101,7 @@ export function useDisciplineReasons() {
 // Create discipline record
 export function useCreateDisciplineRecord() {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
         mutationFn: async (record: DisciplineRecordCreate) => {
             const { data } = await axiosInstance.post("/academics/records/", record);
@@ -110,3 +112,19 @@ export function useCreateDisciplineRecord() {
         },
     });
 }
+
+// Update discipline record (can be used for both full update and status change)
+export function useUpdateDisciplineRecord() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, data }: { id: number; data: Partial<DisciplineRecordCreate> }) => {
+            const response = await axiosInstance.patch(`/academics/records/${id}/`, data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["discipline-records"] });
+        },
+    });
+}
+

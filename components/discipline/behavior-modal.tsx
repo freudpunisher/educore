@@ -48,7 +48,7 @@ export function BehaviorModal({ record, isOpen, onClose }: BehaviorModalProps) {
                     <div className="mt-4 flex flex-wrap gap-4">
                         <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm text-sm font-medium">
                             <User className="w-4 h-4" />
-                            {record.student_name}
+                            {record.student_name || "Unknown Student"}
                         </div>
                         <div className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full backdrop-blur-sm text-sm font-medium">
                             <History className="w-4 h-4" />
@@ -64,7 +64,7 @@ export function BehaviorModal({ record, isOpen, onClose }: BehaviorModalProps) {
                                 <h4 className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                                     <User className="w-4 h-4" /> Student Information
                                 </h4>
-                                <p className="text-lg font-bold">{record.student_name}</p>
+                                <p className="text-lg font-bold">{record.student_name || "Unknown Student"}</p>
                                 <p className="text-sm font-mono text-muted-foreground">ID: {record.student_enrollment}</p>
                             </div>
 
@@ -94,8 +94,8 @@ export function BehaviorModal({ record, isOpen, onClose }: BehaviorModalProps) {
                                 <h4 className="flex items-center gap-2 text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                                     <UserCog className="w-4 h-4" /> Authority
                                 </h4>
-                                <p className="text-lg font-bold">{record.recorded_by_name}</p>
-                                <p className="text-sm text-muted-foreground">Administrator</p>
+                                <p className="text-lg font-bold">{record.recorded_by_name || "Administrator"}</p>
+                                <p className="text-sm text-muted-foreground">Recorded By</p>
                             </div>
                         </div>
                     </div>

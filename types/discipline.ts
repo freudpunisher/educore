@@ -26,14 +26,14 @@ export const disciplineReasonSchema = z.object({
 
 export const disciplineRecordSchema = z.object({
     id: z.number(),
-    student_name: z.string(),
+    student_name: z.string().optional().nullable(),
     student_enrollment: z.string(),
     date_incident: z.string().transform((s) => new Date(s)),
     description: z.string().optional().nullable(),
     points_deducted: z.string(),
     reason_name: z.string(),
     reason: z.number(),
-    recorded_by_name: z.string(),
+    recorded_by_name: z.string().optional().nullable(),
     recorded_by: z.number().optional().nullable(),
     student: z.number(),
     status: z.nativeEnum(DisciplineRecordStatusEnum),
@@ -47,7 +47,7 @@ export const disciplineRecordCreateSchema = z.object({
     description: z.string().optional(),
     points_deducted: z.string().optional(),
     appeal_reason: z.string().optional(),
-    status: z.nativeEnum(DisciplineRecordStatusEnum).default("recorded"),
+    status: z.nativeEnum(DisciplineRecordStatusEnum).default(DisciplineRecordStatusEnum.Recorded),
 });
 
 export type DisciplineRecord = z.infer<typeof disciplineRecordSchema>;

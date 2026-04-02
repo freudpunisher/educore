@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useBehaviorRecords } from "@/hooks/use-discipline";
+import { useBehaviorRecords, useUpdateDisciplineRecord } from "@/hooks/use-discipline";
 import { BehaviorTable } from "@/components/discipline/behavior-table";
 import { BehaviorFilters } from "@/components/discipline/behavior-filters";
 import { BehaviorModal } from "@/components/discipline/behavior-modal";
@@ -36,6 +36,8 @@ export default function BehaviorPage() {
         status: status === "all" ? undefined : (status as any),
     });
 
+    const updateMutation = useUpdateDisciplineRecord();
+
     const handleSearchChange = (value: string) => {
         setSearch(value);
         setPage(1);
@@ -57,6 +59,24 @@ export default function BehaviorPage() {
         setIsModalOpen(true);
     };
 
+    const handleEdit = (record: DisciplineRecord) => {
+        setSelectedRecord(record);
+        setIsCreateDialogOpen(true);
+    };
+
+    const handleQuickStatusChange = async (record: DisciplineRecord, newStatus: any) => {
+        const loadingToast = toast.loading("Updating status...");
+        try {
+            await updateMutation.mutateAsync({
+                id: record.id,
+                data: { status: newStatus }
+            });
+            toast.success("Status updated successfully", { id: loadingToast });
+        } catch (error: any) {
+            toast.error(error.message || "Failed to update status", { id: loadingToast });
+        }
+    };
+
     if (isError) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -72,7 +92,7 @@ export default function BehaviorPage() {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl animate-in fade-in duration-700">
+        <div className="container mx-auto py-8 px-4 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
@@ -83,8 +103,11 @@ export default function BehaviorPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2 text-lg font-medium">Record and manage disciplinary incidents across the school.</p>
                 </div>
-                <Button 
-                    onClick={() => setIsCreateDialogOpen(true)}
+                <Button
+                    onClick={() => {
+                        setSelectedRecord(null);
+                        setIsCreateDialogOpen(true);
+                    }}
                     className="h-12 px-6 rounded-2xl shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all font-bold gap-2"
                 >
                     <Plus className="w-5 h-5" />
@@ -116,6 +139,8 @@ export default function BehaviorPage() {
                             <BehaviorTable
                                 records={data?.results || []}
                                 onViewDetails={handleViewDetails}
+                                onEdit={handleEdit}
+                                onStatusChange={handleQuickStatusChange}
                             />
 
                             <div className="flex items-center justify-between mt-8">
@@ -160,6 +185,7 @@ export default function BehaviorPage() {
             <CreateBehaviorDialog
                 isOpen={isCreateDialogOpen}
                 onClose={() => setIsCreateDialogOpen(false)}
+                record={selectedRecord}
                 onSuccess={() => {
                     refetch();
                     setPage(1);

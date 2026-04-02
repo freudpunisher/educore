@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
@@ -36,23 +36,32 @@ import {
     useStudentsByClassLevel,
     useDisciplineReasons,
     useCreateDisciplineRecord,
+    useUpdateDisciplineRecord,
 } from "@/hooks/use-discipline";
-import { disciplineRecordCreateSchema, DisciplineRecordStatusEnum } from "@/types/discipline";
+import {
+    disciplineRecordCreateSchema,
+    DisciplineRecordStatusEnum,
+    DisciplineRecord
+} from "@/types/discipline";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 
 interface CreateBehaviorDialogProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess?: () => void;
+    record?: DisciplineRecord | null; // Add this
 }
 
 export function CreateBehaviorDialog({
     isOpen,
     onClose,
     onSuccess,
+    record, // Add this
 }: CreateBehaviorDialogProps) {
-    const [step, setStep] = useState<"class" | "student" | "details">("class");
+    const isEditing = !!record;
+    const [step, setStep] = useState<"class" | "student" | "details">(isEditing ? "details" : "class");
     const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
     const [selectedClassroom, setSelectedClassroom] = useState<any>(null);
 
@@ -63,20 +72,50 @@ export function CreateBehaviorDialog({
     );
     const { data: reasons, isLoading: reasonsLoading } = useDisciplineReasons();
     const createMutation = useCreateDisciplineRecord();
+    const updateMutation = useUpdateDisciplineRecord();
 
     // Form
     const form = useForm({
         resolver: zodResolver(disciplineRecordCreateSchema),
         defaultValues: {
-            student: undefined,
-            date_incident: format(new Date(), "yyyy-MM-dd"),
-            reason: undefined,
-            description: "",
-            appeal_reason: "",
-            status: "recorded",
-            points_deducted: "",
+            student: record?.student || undefined,
+            date_incident: record ? format(new Date(record.date_incident), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"),
+            reason: record?.reason || undefined,
+            description: record?.description || "",
+            appeal_reason: record?.appeal_reason || "",
+            status: record?.status || "recorded",
+            points_deducted: record?.points_deducted || "",
         },
     });
+
+    // Reset form when record changes
+    useEffect(() => {
+        if (isOpen) {
+            if (record) {
+                form.reset({
+                    student: record.student,
+                    date_incident: format(new Date(record.date_incident), "yyyy-MM-dd"),
+                    reason: record.reason,
+                    description: record.description || "",
+                    appeal_reason: record.appeal_reason || "",
+                    status: record.status,
+                    points_deducted: record.points_deducted,
+                });
+                setStep("details");
+            } else {
+                form.reset({
+                    student: undefined,
+                    date_incident: format(new Date(), "yyyy-MM-dd"),
+                    reason: undefined,
+                    description: "",
+                    appeal_reason: "",
+                    status: DisciplineRecordStatusEnum.Recorded,
+                    points_deducted: "",
+                });
+                setStep("class");
+            }
+        }
+    }, [record, isOpen, form]);
 
     // Watch student field for reactive updates
     const selectedStudent = form.watch("student");
@@ -84,13 +123,13 @@ export function CreateBehaviorDialog({
 
     // Auto-populate points_deducted when reason is selected
     useMemo(() => {
-        if (selectedReason && reasons) {
+        if (selectedReason && reasons && !isEditing) {
             const reason = reasons.find((r: any) => r.id === selectedReason);
             if (reason) {
                 form.setValue("points_deducted", reason.penalty_points);
             }
         }
-    }, [selectedReason, reasons, form]);
+    }, [selectedReason, reasons, form, isEditing]);
 
     const [studentSearch, setStudentSearch] = useState("");
     const [reasonSearch, setReasonSearch] = useState("");
@@ -125,8 +164,13 @@ export function CreateBehaviorDialog({
 
     const onSubmit = async (data: any) => {
         try {
-            await createMutation.mutateAsync(data);
-            toast.success("Discipline record created successfully!");
+            if (isEditing) {
+                await updateMutation.mutateAsync({ id: record!.id, data });
+                toast.success("Discipline record updated successfully!");
+            } else {
+                await createMutation.mutateAsync(data);
+                toast.success("Discipline record created successfully!");
+            }
             form.reset();
             setSelectedClassId(null);
             setSelectedClassroom(null);
@@ -134,7 +178,7 @@ export function CreateBehaviorDialog({
             onClose();
             onSuccess?.();
         } catch (error: any) {
-            toast.error(error.message || "Failed to create discipline record");
+            toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} discipline record`);
         }
     };
 
@@ -148,15 +192,19 @@ export function CreateBehaviorDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" style={{maxWidth:"100vh"}}>
-                <DialogHeader className="bg-gradient-to-r from-rose-500 to-rose-600 -m-6 mb-6 p-6 text-white rounded-t-lg">
-                    <DialogTitle className="text-2xl font-bold">
-                        Add Discipline Record
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-slate-950" style={{ maxWidth: "100vh" }}>
+                <DialogHeader className="bg-gradient-to-r from-rose-500 to-rose-600 dark:from-rose-700 dark:to-rose-800 -m-6 mb-6 p-6 text-white rounded-t-lg">
+                    <DialogTitle className="text-2xl font-bold text-white">
+                        {isEditing ? "Edit Discipline Record" : "Add Discipline Record"}
                     </DialogTitle>
-                    <DialogDescription className="text-rose-100 mt-2">
-                        {step === "class" && "Step 1: Select a classroom"}
-                        {step === "student" && "Step 2: Select a student"}
-                        {step === "details" && "Step 3: Enter incident details"}
+                    <DialogDescription className="text-rose-100 dark:text-rose-200 mt-2">
+                        {isEditing ? "Update the incident details" : (
+                            <>
+                                {step === "class" && "Step 1: Select a classroom"}
+                                {step === "student" && "Step 2: Select a student"}
+                                {step === "details" && "Step 3: Enter incident details"}
+                            </>
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -165,17 +213,17 @@ export function CreateBehaviorDialog({
                         {/* STEP 1: CLASS SELECTION */}
                         {step === "class" && (
                             <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
-                                    <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                    <p className="text-sm text-blue-700">
+                                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4 flex gap-3">
+                                    <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <p className="text-sm text-blue-700 dark:text-blue-300">
                                         Select a class to view and manage students in that class.
                                     </p>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg bg-muted/30">
+                                <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-muted/30 dark:bg-slate-900/50">
                                     {classroomsLoading ? (
                                         <div className="col-span-2 flex justify-center items-center h-32">
-                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                                            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground dark:text-slate-400" />
                                         </div>
                                     ) : classrooms && classrooms.length > 0 ? (
                                         classrooms.map((classroom: any) => (
@@ -183,14 +231,14 @@ export function CreateBehaviorDialog({
                                                 key={classroom.id}
                                                 type="button"
                                                 onClick={() => handleClassSelect(classroom.id, classroom)}
-                                                className="p-3 rounded-lg border-2 border-transparent hover:border-rose-300 hover:bg-rose-50 transition-all text-left"
+                                                className="p-3 rounded-lg border-2 border-transparent hover:border-rose-300 hover:bg-rose-50 dark:hover:border-rose-700 dark:hover:bg-rose-950/30 transition-all text-left"
                                             >
-                                                <p className="font-semibold text-sm">{classroom.name}</p>
-                                                <p className="text-xs text-muted-foreground">{classroom.code}</p>
+                                                <p className="font-semibold text-sm dark:text-slate-100">{classroom.name}</p>
+                                                <p className="text-xs text-muted-foreground dark:text-slate-400">{classroom.code}</p>
                                             </button>
                                         ))
                                     ) : (
-                                        <p className="col-span-2 text-center text-muted-foreground py-8">
+                                        <p className="col-span-2 text-center text-muted-foreground dark:text-slate-400 py-8">
                                             No classrooms available
                                         </p>
                                     )}
@@ -207,11 +255,11 @@ export function CreateBehaviorDialog({
                         {/* STEP 2: STUDENT SELECTION */}
                         {step === "student" && (
                             <div className="space-y-4">
-                                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-3">
-                                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex gap-3">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-sm font-semibold text-amber-900">Class Selected</p>
-                                        <p className="text-sm text-amber-700">{selectedClassroom?.name}</p>
+                                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Class Selected</p>
+                                        <p className="text-sm text-amber-700 dark:text-amber-300">{selectedClassroom?.name}</p>
                                     </div>
                                 </div>
 
@@ -232,18 +280,18 @@ export function CreateBehaviorDialog({
                                                         <SelectValue placeholder="Select a student" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        <div className="p-2 border-b sticky top-0 bg-white z-50">
+                                                        <div className="p-2 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-50">
                                                             <Input
                                                                 placeholder="Search students..."
                                                                 value={studentSearch}
                                                                 onChange={(e) => setStudentSearch(e.target.value)}
-                                                                className="h-8"
+                                                                className="h-8 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             />
                                                         </div>
                                                         {studentsLoading ? (
                                                             <div className="flex justify-center p-4">
-                                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                                <Loader2 className="w-4 h-4 animate-spin dark:text-slate-400" />
                                                             </div>
                                                         ) : filteredStudents && filteredStudents.length > 0 ? (
                                                             filteredStudents.map((student: any) => (
@@ -255,7 +303,7 @@ export function CreateBehaviorDialog({
                                                                 </SelectItem>
                                                             ))
                                                         ) : (
-                                                            <div className="p-2 text-sm text-muted-foreground text-center">
+                                                            <div className="p-2 text-sm text-muted-foreground dark:text-slate-400 text-center">
                                                                 {studentSearch ? "No students match search" : "No students found"}
                                                             </div>
                                                         )}
@@ -293,11 +341,11 @@ export function CreateBehaviorDialog({
                         {/* STEP 3: INCIDENT DETAILS */}
                         {step === "details" && (
                             <div className="space-y-6">
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3">
-                                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 flex gap-3">
+                                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
                                     <div>
-                                        <p className="text-sm font-semibold text-green-900">Ready to record</p>
-                                        <p className="text-sm text-green-700">
+                                        <p className="text-sm font-semibold text-green-900 dark:text-green-200">Ready to record</p>
+                                        <p className="text-sm text-green-700 dark:text-green-300">
                                             Enter the incident details below
                                         </p>
                                     </div>
@@ -335,18 +383,18 @@ export function CreateBehaviorDialog({
                                                             <SelectValue placeholder="Select reason" />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            <div className="p-2 border-b sticky top-0 bg-white z-50">
+                                                            <div className="p-2 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-900 z-50">
                                                                 <Input
                                                                     placeholder="Search reasons..."
                                                                     value={reasonSearch}
                                                                     onChange={(e) => setReasonSearch(e.target.value)}
-                                                                    className="h-8"
+                                                                    className="h-8 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
                                                                     onClick={(e) => e.stopPropagation()}
                                                                 />
                                                             </div>
                                                             {reasonsLoading ? (
                                                                 <div className="flex justify-center p-4">
-                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    <Loader2 className="w-4 h-4 animate-spin dark:text-slate-400" />
                                                                 </div>
                                                             ) : filteredReasons && filteredReasons.length > 0 ? (
                                                                 filteredReasons.map((reason: any) => (
@@ -359,7 +407,7 @@ export function CreateBehaviorDialog({
                                                                     </SelectItem>
                                                                 ))
                                                             ) : (
-                                                                <div className="p-2 text-sm text-muted-foreground text-center">
+                                                                <div className="p-2 text-sm text-muted-foreground dark:text-slate-400 text-center">
                                                                     {reasonSearch ? "No reasons match search" : "No reasons available"}
                                                                 </div>
                                                             )}
@@ -429,11 +477,11 @@ export function CreateBehaviorDialog({
                                         name="appeal_reason"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Appeal Reason</FormLabel>
+                                                <FormLabel className="dark:text-slate-100">Appeal Reason</FormLabel>
                                                 <FormControl>
                                                     <Textarea
                                                         placeholder="Explain why this record is being appealed..."
-                                                        className="resize-none"
+                                                        className="resize-none dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700"
                                                         rows={3}
                                                         {...field}
                                                     />
@@ -444,26 +492,28 @@ export function CreateBehaviorDialog({
                                     />
                                 )}
 
-                                <div className="flex justify-between gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setStep("student")}
-                                    >
-                                        Back
-                                    </Button>
+                                <div className={cn("flex justify-between gap-2", isEditing && "justify-end")}>
+                                    {!isEditing && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setStep("student")}
+                                        >
+                                            Back
+                                        </Button>
+                                    )}
                                     <Button
                                         type="submit"
-                                        disabled={createMutation.isPending}
+                                        disabled={createMutation.isPending || updateMutation.isPending}
                                         className="min-w-32"
                                     >
-                                        {createMutation.isPending ? (
+                                        {createMutation.isPending || updateMutation.isPending ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                                Creating...
+                                                {isEditing ? "Updating..." : "Creating..."}
                                             </>
                                         ) : (
-                                            "Create Record"
+                                            isEditing ? "Update Record" : "Create Record"
                                         )}
                                     </Button>
                                 </div>
