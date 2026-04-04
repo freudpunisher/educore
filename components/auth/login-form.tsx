@@ -1,4 +1,3 @@
-// src/components/auth/login-form.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -35,92 +34,95 @@ export function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-lg space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="text-center space-y-2">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-[2rem] shadow-2xl shadow-primary/20 mb-4 rotate-3 group transition-transform hover:rotate-0 duration-500">
-          <GraduationCap className="w-10 h-10 text-primary-foreground -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
-        </div>
-        <CardTitle className="text-2xl font-bold">Gestion Scolaire</CardTitle>
-        <CardDescription>
-          Connectez-vous avec votre identifiant</CardDescription>
-      </CardHeader>
-
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {loginMutation.isError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {(loginMutation.error as Error)?.message}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* <Alert>
-            <AlertDescription className="text-xs">
-              <strong>Comptes de démo :</strong>
-              <br />
-              Admin → admin@school.fr / admin123
-              <br />
-              Prof → teacher@school.fr / teacher123
-              <br />
-              Chauffeur → driver@school.fr / driver123
-              <br />
-              Parent → parent@school.fr / parent123
-            </AlertDescription>
-          </Alert> */}
-
-          <div className="space-y-2">
-  <Label htmlFor="username">Identifiant</Label>
-  <Input
-    id="username"
-    type="text"
-    placeholder="admin, teacher01, parent123..."
-    autoComplete="username"
-    {...register("username")}
-  />
-  {errors.username && (
-    <p className="text-sm text-destructive">{errors.username.message}</p>
-  )}
-</div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              autoComplete="current-password"
-              {...register("password")}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+    <div className="w-full max-w-lg mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <Card>
+        {/* HEADER */}
+        <CardHeader className="text-center space-y-2">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-[2rem] shadow-2xl shadow-primary/20 mb-4 rotate-3 group transition-transform hover:rotate-0 duration-500">
+            <GraduationCap className="w-10 h-10 text-primary-foreground -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            disabled={loginMutation.isPending}
-          >
-            {loginMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connexion...
-              </>
-            ) : (
-              "Se connecter"
-            )}
-          </Button>
+          <CardTitle className="text-2xl font-bold">
+            Gestion Scolaire
+          </CardTitle>
 
-          <div className="text-center">
-            <Button variant="link" className="text-sm text-muted-foreground" type="button">
-              Forgot password?
+          <CardDescription>
+            Connectez-vous avec votre identifiant
+          </CardDescription>
+        </CardHeader>
+
+        {/* CONTENT */}
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {loginMutation.isError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {(loginMutation.error as Error)?.message}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="username">Identifiant</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="admin, teacher01, parent123..."
+                autoComplete="username"
+                {...register("username")}
+              />
+              {errors.username && (
+                <p className="text-sm text-destructive">
+                  {errors.username.message}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                {...register("password")}
+              />
+              {errors.password && (
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              size="lg"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connexion...
+                </>
+              ) : (
+                "Se connecter"
+              )}
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+
+            <div className="text-center">
+              <Button
+                variant="link"
+                className="text-sm text-muted-foreground"
+                type="button"
+              >
+                Mot de passe oublié ?
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
 import "./globals.css"
+import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Toaster } from "react-hot-toast";
 const inter = Inter({ subsets: ["latin"] })
