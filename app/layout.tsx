@@ -1,13 +1,12 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { DM_Sans, DM_Serif_Display, Inter } from "next/font/google"
+import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
-import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
 import "./globals.css"
-import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Toaster } from "react-hot-toast";
+
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -25,9 +24,8 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} font-sans antialiased`}>
         <Providers>
-
           <ThemeProvider>
-            <AuthProvider>{children}</AuthProvider>
+            {children}
             <Toaster
               position="top-center"
               toastOptions={{
