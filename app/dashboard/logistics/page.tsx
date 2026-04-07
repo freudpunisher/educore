@@ -18,11 +18,16 @@ import {
   Plus
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { CreateProductDialog } from "@/components/logistics/create-product-dialog";
+import { CreateStockEntryDialog } from "@/components/logistics/create-stock-entry-dialog";
+import { CreateStockExitDialog } from "@/components/logistics/create-stock-exit-dialog";
+import { CreateDistributionDialog } from "@/components/logistics/create-distribution-dialog";
 
 type Category = { id: number; name: string; type: string };
 type Unit = { id: number; name: string; symbol: string };
 type Product = { id: number; name: string; category_name: string; unit: number; minimum_stock: number; is_active: boolean };
 type InventoryData = { id: number; product_name: string; quantity: number };
+type StoreProduct = { id: number; store_name: string; product_name: string; quantity: number; unit_price: string };
 type StockEntry = { id: number; store_name: string; product: number; quantity: number; unit_price: string; supplier: string; batch_number: string; expiration_date: string; date: string };
 type StockExit = { id: number; store_name: string; product: number; quantity: number; reason: string; reference: string; date: string };
 type Distribution = { id: number; product_name: string; category_type: string; quantity: number; recipient_type: string; recipient_name: string; distribution_date: string; status: string };
@@ -35,6 +40,7 @@ export default function LogisticsPage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [inventory, setInventory] = useState<InventoryData[]>([]);
+  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [entries, setEntries] = useState<StockEntry[]>([]);
   const [exits, setExits] = useState<StockExit[]>([]);
   const [distributions, setDistributions] = useState<Distribution[]>([]);
@@ -42,24 +48,27 @@ export default function LogisticsPage() {
   // Search terms
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [inventorySearchTerm, setInventorySearchTerm] = useState("");
+  const [storeSearchTerm, setStoreSearchTerm] = useState("");
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [catRes, unitRes, prodRes, invRes, entRes, exitRes, distRes] = await Promise.all([
-        api.get<any>("store/categories/"),
-        api.get<any>("store/units/"),
-        api.get<any>("store/products/"),
-        api.get<any>("store/inventory/"),
-        api.get<any>("store/entries/"),
-        api.get<any>("store/exits/"),
-        api.get<any>("store/non-vivres/"),
+      const [catRes, unitRes, prodRes, invRes, storeProdRes, entRes, exitRes, distRes] = await Promise.all([
+        api.get<any>("store/stock/categories/"),
+        api.get<any>("store/stock/units/"),
+        api.get<any>("store/stock/products/"),
+        api.get<any>("store/stock/inventory/"),
+        api.get<any>("store/stock/store-products/"),
+        api.get<any>("store/stock/entries/"),
+        api.get<any>("store/stock/exits/"),
+        api.get<any>("store/stock/non-vivres/"),
       ]);
 
       setCategories(Array.isArray(catRes) ? catRes : catRes.results || []);
       setUnits(Array.isArray(unitRes) ? unitRes : unitRes.results || []);
       setProducts(Array.isArray(prodRes) ? prodRes : prodRes.results || []);
       setInventory(Array.isArray(invRes) ? invRes : invRes.results || []);
+      setStoreProducts(Array.isArray(storeProdRes) ? storeProdRes : storeProdRes.results || []);
       setEntries(Array.isArray(entRes) ? entRes : entRes.results || []);
       setExits(Array.isArray(exitRes) ? exitRes : exitRes.results || []);
       setDistributions(Array.isArray(distRes) ? distRes : distRes.results || []);
@@ -83,6 +92,7 @@ export default function LogisticsPage() {
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase()));
   const filteredInventory = inventory.filter(i => i.product_name.toLowerCase().includes(inventorySearchTerm.toLowerCase()));
+  const filteredStoreProducts = storeProducts.filter(s => s.store_name.toLowerCase().includes(storeSearchTerm.toLowerCase()) || s.product_name?.toLowerCase().includes(storeSearchTerm.toLowerCase()));
 
   const productColumns = [
     { key: "name" as const, label: "Name", sortable: true, render: (v: string) => <span className="font-medium text-slate-900 dark:text-white">{v}</span> },
@@ -93,8 +103,15 @@ export default function LogisticsPage() {
 
   const inventoryColumns = [
     { key: "product_name" as const, label: "Product", sortable: true, render: (v: string) => <span className="font-medium text-slate-900 dark:text-white">{v}</span> },
-    { key: "quantity" as const, label: "Current Quantity", sortable: true, render: (v: number) => <span className="text-slate-600 dark:text-slate-300">{v}</span> },
+    { key: "quantity" as const, label: "Total Quantity", sortable: true, render: (v: number) => <span className="text-slate-600 dark:text-slate-300">{v}</span> },
     { key: "status" as const, label: "Status", sortable: true, render: (v: string) => <StatusBadge status={v as any} /> }
+  ];
+
+  const storeProductColumns = [
+    { key: "store_name" as const, label: "Store Name", sortable: true, render: (v: string) => <span className="font-medium text-indigo-600 dark:text-indigo-400">{v}</span> },
+    { key: "product_name" as const, label: "Product", sortable: true, render: (v: string) => <span className="font-medium text-slate-900 dark:text-white">{v}</span> },
+    { key: "quantity" as const, label: "Quantity", sortable: true, render: (v: number) => <span className="text-slate-600 dark:text-slate-300">{v}</span> },
+    { key: "unit_price" as const, label: "Value / Unit", sortable: true, render: (v: string) => <span className="text-slate-600 dark:text-slate-300">${v}</span> },
   ];
 
   const entryColumns = [
@@ -151,12 +168,15 @@ export default function LogisticsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
+          <TabsList className="grid w-full grid-cols-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
             <TabsTrigger value="articles" className="data-[state=active]:bg-indigo-100 dark:data-[state=active]:bg-indigo-950">
               Articles
             </TabsTrigger>
             <TabsTrigger value="inventory" className="data-[state=active]:bg-indigo-100 dark:data-[state=active]:bg-indigo-950">
               État Stock
+            </TabsTrigger>
+            <TabsTrigger value="liste-stock" className="data-[state=active]:bg-indigo-100 dark:data-[state=active]:bg-indigo-950">
+              Liste de Stock
             </TabsTrigger>
             <TabsTrigger value="movements" className="data-[state=active]:bg-indigo-100 dark:data-[state=active]:bg-indigo-950">
               Mouvements
@@ -172,9 +192,7 @@ export default function LogisticsPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Articles Directory</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Manage catalog: Categories, Units, and Products</p>
               </div>
-              <Button variant="default" className="gap-2">
-                <Plus className="w-4 h-4" /> Add Article
-              </Button>
+              <CreateProductDialog categories={categories} units={units} onSuccess={fetchData} />
             </div>
             <div className="flex gap-4">
               <Input placeholder="Search article..." value={productSearchTerm} onChange={e => setProductSearchTerm(e.target.value)} className="max-w-sm" />
@@ -210,6 +228,25 @@ export default function LogisticsPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="liste-stock" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Liste de Stock (Par Magasin)</h2>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">Detailed inventory broken down by store / supply room</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              <Input placeholder="Search store or product..." value={storeSearchTerm} onChange={e => setStoreSearchTerm(e.target.value)} className="max-w-sm" />
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+              <DataTable
+                data={filteredStoreProducts}
+                columns={storeProductColumns}
+                itemsPerPage={10}
+              />
+            </div>
+          </TabsContent>
+
           <TabsContent value="movements" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -217,8 +254,8 @@ export default function LogisticsPage() {
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Stock entries and exits history</p>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" className="gap-2 text-green-600"><ArrowDownToLine className="w-4 h-4" /> Add Entry</Button>
-                <Button variant="outline" className="gap-2 text-red-600"><ArrowUpFromLine className="w-4 h-4" /> Add Exit</Button>
+                <CreateStockEntryDialog products={products} onSuccess={fetchData} />
+                <CreateStockExitDialog products={products} onSuccess={fetchData} />
               </div>
             </div>
             <div className="grid md:grid-cols-2 gap-6">
@@ -257,9 +294,7 @@ export default function LogisticsPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Non-Vivre Distribution</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Equipment distributed to staff and students</p>
               </div>
-              <Button variant="default" className="gap-2">
-                <Plus className="w-4 h-4" /> New Distribution
-              </Button>
+              <CreateDistributionDialog products={products} onSuccess={fetchData} />
             </div>
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
               <DataTable data={distributions} columns={distributionColumns} itemsPerPage={10} />
