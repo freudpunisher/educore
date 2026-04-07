@@ -24,9 +24,11 @@ export function useLogin() {
       router.refresh();
     },
     onError: (error: any) => {
-      throw new Error(
-        error?.response?.data?.message || "Identifiant ou mot de passe incorrect"
-      );
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        "Incorrect username or password";
+      throw new Error(message);
     },
   });
 }

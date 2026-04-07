@@ -23,32 +23,43 @@ import {
   Clock,
   Megaphone,
   Receipt,
-  Bus,
-  Map,
+  ShieldAlert,
+  UtensilsCrossed,
   Package,
-  ArrowRightLeft,
-  BarChart3,
-  Utensils,
-  Baby,
   Home,
-  Users2,
-  FileBarChart,
-  ClipboardList,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
 
-const navigation = [
+type NavItem = {
+  name: string
+  href?: string
+  icon: any
+  roles?: string[]
+  children?: {
+    name: string
+    href: string
+    roles?: string[]
+  }[]
+}
+
+const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Students", href: "/dashboard/students", icon: Users },
   { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },
+  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert },
   { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
   { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
   { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
+  { name: "Invoices", href: "/dashboard/finances/invoices", icon: Receipt },
   { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
   { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
+  { name: "Transport", href: "/dashboard/transport", icon: Truck },
+  { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },
+  { name: "Store", href: "/dashboard/store", icon: Package },
+  { name: "Boarding", href: "/dashboard/boarding", icon: Home },
   { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
 ]
 

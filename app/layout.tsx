@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { DM_Sans, DM_Serif_Display } from "next/font/google"
+import { DM_Sans, DM_Serif_Display, Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
@@ -26,29 +26,29 @@ export default function RootLayout({
         <Providers>
 
           <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-         <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: "hsl(var(--background))",
-                color: "hsl(var(--foreground))",
-                border: "1px solid hsl(var(--border))",
-              },
-              success: {
-                icon: "✔️",
-                style: { borderColor: "hsl(var(--success))" },
-              },
-              error: {
-                icon: "❌",
-                style: { borderColor: "hsl(var(--destructive))" },
-              },
-            }}
-          />
-        </ThemeProvider>
+            <AuthProvider>{children}</AuthProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: "hsl(var(--background))",
+                  color: "hsl(var(--foreground))",
+                  border: "1px solid hsl(var(--border))",
+                },
+                success: {
+                  icon: "✔️",
+                  style: { borderColor: "hsl(var(--success))" },
+                },
+                error: {
+                  icon: "❌",
+                  style: { borderColor: "hsl(var(--destructive))" },
+                },
+              }}
+            />
+          </ThemeProvider>
         </Providers>
-        
+
         <Analytics />
       </body>
     </html>

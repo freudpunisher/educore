@@ -42,15 +42,11 @@ export default function FinancesPage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            New Invoice
-          </Button>
         </div>
       </div>
 
       {/* Financial Summary Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 pb-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Collected Revenue</CardTitle>
@@ -59,7 +55,7 @@ export default function FinancesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{totalRevenue.toLocaleString()} FBU</div>
             <div className="flex items-center gap-1 mt-1">
               <TrendingUp className="w-4 h-4 text-green-600" />
               <span className="text-xs font-medium text-green-600">+12%</span>
@@ -76,7 +72,7 @@ export default function FinancesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${pendingRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{pendingRevenue.toLocaleString()} FBU</div>
             <p className="text-xs text-muted-foreground mt-1">
               {mockInvoices.filter((i) => i.status === "pending").length} invoices
             </p>
@@ -91,7 +87,7 @@ export default function FinancesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${overdueRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{overdueRevenue.toLocaleString()} FBU</div>
             <p className="text-xs text-muted-foreground mt-1">
               {mockInvoices.filter((i) => i.status === "overdue").length} invoices
             </p>
@@ -106,7 +102,7 @@ export default function FinancesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalExpenses.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{totalExpenses.toLocaleString()} FBU</div>
             <div className="flex items-center gap-1 mt-1">
               <TrendingUp className="w-4 h-4 text-red-600" />
               <span className="text-xs font-medium text-red-600">+5%</span>
@@ -195,7 +191,7 @@ export default function FinancesPage() {
                         <TableCell className="font-medium">{invoice.id}</TableCell>
                         <TableCell>{invoice.studentName}</TableCell>
                         <TableCell className="capitalize">{invoice.type}</TableCell>
-                        <TableCell>${invoice.amount}</TableCell>
+                        <TableCell>{invoice.amount.toLocaleString()} FBU</TableCell>
                         <TableCell>{new Date(invoice.dueDate).toLocaleDateString("en-US")}</TableCell>
                         <TableCell>
                           <Badge
@@ -248,7 +244,7 @@ export default function FinancesPage() {
                         <TableCell>{new Date(expense.date).toLocaleDateString("en-US")}</TableCell>
                         <TableCell>{expense.category}</TableCell>
                         <TableCell>{expense.description}</TableCell>
-                        <TableCell>${expense.amount.toLocaleString()}</TableCell>
+                        <TableCell>{expense.amount.toLocaleString()} FBU</TableCell>
                         <TableCell>
                           <Badge
                             variant={
