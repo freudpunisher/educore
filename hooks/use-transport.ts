@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedTransportVehicleSchema, VehicleCreate } from "@/types/transport";
+import {
+    paginatedTransportVehicleSchema,
+    VehicleCreate,
+    paginatedTransportDriverSchema,
+    paginatedTransportItinerarySchema,
+    paginatedTransportSubscriptionSchema
+} from "@/types/transport";
 
 export function useVehicles(params?: { page?: number; status?: string; search?: string }) {
     return useQuery({
@@ -38,5 +44,44 @@ export function useUpdateVehicle() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["transport-vehicles"] });
         },
+    });
+}
+
+export function useDrivers(params?: { page?: number; search?: string }) {
+    return useQuery({
+        queryKey: ["transport-drivers", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/transport/driver/", { params });
+            const rawData = data?.data || data;
+            return paginatedTransportDriverSchema.parse(rawData);
+        },
+        staleTime: 1000 * 60 * 5,
+    });
+}
+
+export function useItineraries(params?: { page?: number; search?: string }) {
+    return useQuery({
+        queryKey: ["transport-itineraries", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/transport/itinerary/", { params });
+            const rawData = data?.data || data;
+            return paginatedTransportItinerarySchema.parse(rawData);
+        },
+        staleTime: 1000 * 60 * 5,
+    });
+}
+export function useTransportSubscriptions(params?: {
+    page?: number;
+    search?: string;
+    status?: string
+}) {
+    return useQuery({
+        queryKey: ["transport-subscriptions", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/transport/subscriptions/", { params });
+            const rawData = data?.data || data;
+            return paginatedTransportSubscriptionSchema.parse(rawData);
+        },
+        staleTime: 1000 * 60 * 5,
     });
 }

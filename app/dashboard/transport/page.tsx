@@ -35,7 +35,7 @@ import {
   mockItineraries,
   mockVerificationChecks
 } from "@/lib/mock/transport";
-import { useVehicles } from "@/hooks/use-transport";
+import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions } from "@/hooks/use-transport";
 import { VehicleSimpleStatusEnum } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -58,18 +58,22 @@ export default function TransportDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchSubscription, setSearchSubscription] = useState("");
   const [filterSubscriptionStatus, setFilterSubscriptionStatus] = useState("all");
+  const [subscriptionPage, setSubscriptionPage] = useState(1);
   const [searchDriver, setSearchDriver] = useState("");
   const [filterDriverStatus, setFilterDriverStatus] = useState("all");
+  const [driverPage, setDriverPage] = useState(1);
   const [searchVehicle, setSearchVehicle] = useState("");
   const [filterVehicleStatus, setFilterVehicleStatus] = useState("all");
   const [vehiclePage, setVehiclePage] = useState(1);
   const [searchItinerary, setSearchItinerary] = useState("");
+  const [itineraryPage, setItineraryPage] = useState(1);
   const [expandedVerification, setExpandedVerification] = useState<string | null>(null);
 
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
 
   const debouncedVehicleSearch = useDebounce(searchVehicle, 500);
+  const debouncedDriverSearch = useDebounce(searchDriver, 500);
 
   const {
     data: vehicleData,
@@ -79,6 +83,34 @@ export default function TransportDashboard() {
     page: vehiclePage,
     search: debouncedVehicleSearch,
     status: filterVehicleStatus === "all" ? undefined : filterVehicleStatus
+  });
+
+  const {
+    data: driverData,
+    isLoading: isDriversLoading,
+    isError: isDriversError
+  } = useDrivers({
+    page: driverPage,
+    search: debouncedDriverSearch,
+  });
+
+  const {
+    data: itineraryData,
+    isLoading: isItinerariesLoading,
+    isError: isItinerariesError
+  } = useItineraries({
+    page: itineraryPage,
+    search: searchItinerary, // Assuming basic search for now
+  });
+
+  const {
+    data: subscriptionData,
+    isLoading: isSubscriptionsLoading,
+    isError: isSubscriptionsError
+  } = useTransportSubscriptions({
+    page: subscriptionPage,
+    search: useDebounce(searchSubscription, 500),
+    status: filterSubscriptionStatus === "all" ? undefined : filterSubscriptionStatus
   });
 
   const updateVehicleMutation = useUpdateVehicle();
@@ -121,18 +153,13 @@ export default function TransportDashboard() {
     return matchesSearch && matchesStatus;
   });
 
-  const filteredDrivers = mockDrivers.filter(driver => {
-    const matchesSearch = driver.name.toLowerCase().includes(searchDriver.toLowerCase()) ||
-      driver.licenseNumber.toLowerCase().includes(searchDriver.toLowerCase());
-    const matchesStatus = filterDriverStatus === "all" || driver.status === filterDriverStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredDrivers = driverData?.results || [];
+
+  const filteredItineraries = itineraryData?.results || [];
 
   const filteredVehicles = vehicleData?.results || [];
 
-  const filteredItineraries = mockItineraries.filter(route =>
-    route.routeName.toLowerCase().includes(searchItinerary.toLowerCase())
-  );
+  const filteredSubscriptions = subscriptionData?.results || [];
 
   if (isLoading) {
     return (
@@ -363,23 +390,29 @@ export default function TransportDashboard() {
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-6">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Student Subscriptions
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {filteredSubscriptions.length} subscriptions
-              </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Transport Subscriptions
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Manage student transport enrollment and status
+                </p>
+              </div>
+              <Button className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Enrollment
+              </Button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
-                  placeholder="Search by student or route..."
+                  placeholder="Search students..."
                   value={searchSubscription}
                   onChange={(e) => setSearchSubscription(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
               <select
@@ -390,35 +423,98 @@ export default function TransportDashboard() {
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="pending">Pending</option>
+                <option value="suspended">Suspended</option>
               </select>
             </div>
 
-            <DataTable
-              columns={[
-                { key: "studentName", label: "Student", sortable: true },
-                { key: "class", label: "Class", sortable: true },
-                { key: "route", label: "Route", sortable: true },
-                { key: "status", label: "Status", render: (status) => <StatusBadge status={status as any} /> },
-                { key: "startDate", label: "Start Date", sortable: true },
-                { key: "monthlyFee", label: "Monthly Fee", render: (fee) => `$${fee}` },
-              ]}
-              data={filteredSubscriptions}
-              itemsPerPage={10}
-            />
+            {isSubscriptionsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Loading subscriptions...</p>
+              </div>
+            ) : isSubscriptionsError ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-600">
+                <ShieldAlert className="w-10 h-10" />
+                <p className="font-medium">Failed to load subscriptions</p>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    { key: "student_name" as any, label: "Student", sortable: true },
+                    { key: "student_enrollment" as any, label: "Enrollment #", sortable: true },
+                    {
+                      key: "itinerary_detail" as any,
+                      label: "Route",
+                      render: (it) => it?.registration_number || "N/A"
+                    },
+                    {
+                      key: "status" as any,
+                      label: "Status",
+                      render: (status) => <StatusBadge status={status as any} />
+                    },
+                    {
+                      key: "enrollment_date" as any,
+                      label: "Date",
+                      render: (date) => new Date(date).toLocaleDateString()
+                    },
+                    {
+                      key: "period" as any,
+                      label: "Period",
+                      render: (p) => `${p} months`
+                    },
+                  ]}
+                  data={filteredSubscriptions}
+                  itemsPerPage={10}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-bold text-slate-900 dark:text-white">{filteredSubscriptions.length}</span> of <span className="font-bold text-slate-900 dark:text-white">{subscriptionData?.count || 0}</span> subscriptions
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSubscriptionPage(p => Math.max(1, p - 1))}
+                      disabled={subscriptionPage === 1}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                      {subscriptionPage}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSubscriptionPage(p => p + 1)}
+                      disabled={!subscriptionData?.next}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Subscriptions</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{mockDashboardKPI.subscriptionsTotal}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{subscriptionData?.count || 0}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{mockDashboardKPI.subscriptionsActive}</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {subscriptionData?.results.filter((s: any) => s.status === "active").length || 0}
+                </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">${mockDashboardKPI.subscriptionsActive * 50}/mo</p>
+                <p className="text-sm text-muted-foreground">Monthly Forecast</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  ${subscriptionData?.results.reduce((sum: number, s: any) => sum + (s.itinerary_detail?.fees || 0), 0) || 0}
+                </p>
               </div>
             </div>
           </div>
@@ -432,7 +528,7 @@ export default function TransportDashboard() {
                 Transport Routes
               </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {filteredItineraries.length} routes configured
+                {itineraryData?.count || 0} routes configured
               </p>
             </div>
 
@@ -446,42 +542,100 @@ export default function TransportDashboard() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredItineraries.map((route) => (
-                <div key={route.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <h4 className="font-semibold text-slate-900 dark:text-white">{route.routeName}</h4>
-                    <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
-                      {route.stops.length} stops
-                    </span>
+            {isItinerariesLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Loading routes...</p>
+              </div>
+            ) : isItinerariesError ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-600">
+                <ShieldAlert className="w-10 h-10" />
+                <p className="font-medium">Failed to load routes</p>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    { key: "registration_number", label: "Route ID", sortable: true },
+                    {
+                      key: "vehicle_detail" as any,
+                      label: "Vehicle",
+                      render: (v) => v?.model || "N/A"
+                    },
+                    { key: "fees_label", label: "Fees Period", sortable: true },
+                    {
+                      key: "fees",
+                      label: "Cost",
+                      render: (f) => `${f}$`
+                    },
+                    {
+                      key: "state" as any,
+                      label: "Status",
+                      render: (s) => (
+                        <StatusBadge
+                          status={s ? "active" : "inactive"}
+                        />
+                      )
+                    },
+                  ]}
+                  data={filteredItineraries}
+                  itemsPerPage={10}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-bold text-slate-900 dark:text-white">{filteredItineraries.length}</span> of <span className="font-bold text-slate-900 dark:text-white">{itineraryData?.count || 0}</span> routes
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setItineraryPage(p => Math.max(1, p - 1))}
+                      disabled={itineraryPage === 1}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                      {itineraryPage}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setItineraryPage(p => p + 1)}
+                      disabled={!itineraryData?.next}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Next
+                    </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">Driver: {route.assignedDriver}</p>
-                  <p className="text-sm text-muted-foreground">Vehicle: {route.assignedVehicle}</p>
-                  <p className="text-sm text-muted-foreground">Departs: {route.departureTime}</p>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
-                <p className="text-sm text-muted-foreground">Total Routes</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{mockDashboardKPI.itinerariesTotal}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Students</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {mockSubscriptions.length}
+                <p className="text-sm text-muted-foreground">Active Routes</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {itineraryData?.results.filter((r: any) => r.state).length || 0}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Avg Stops/Route</p>
+                <p className="text-sm text-muted-foreground">Total Revenue Est.</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {(mockItineraries.reduce((sum, r) => sum + r.stops.length, 0) / mockItineraries.length).toFixed(1)}
+                  {itineraryData?.results.reduce((sum: number, r: any) => sum + r.fees, 0) || 0}$
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Fleet Coverage</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {itineraryData?.count ? Math.round((itineraryData.results.filter((r: any) => r.state).length / itineraryData.count) * 100) : 0}%
                 </p>
               </div>
             </div>
           </div>
         </TabsContent>
+
 
         {/* Drivers Tab */}
         <TabsContent value="drivers" className="space-y-6">
@@ -516,35 +670,82 @@ export default function TransportDashboard() {
               </select>
             </div>
 
-            <DataTable
-              columns={[
-                { key: "name", label: "Name", sortable: true },
-                { key: "licenseNumber", label: "License", sortable: true },
-                { key: "assignedVehicle", label: "Assigned Vehicle", sortable: true },
-                { key: "status", label: "Status", render: (status) => <StatusBadge status={status as any} /> },
-                { key: "phone", label: "Contact", sortable: true },
-              ]}
-              data={filteredDrivers}
-              itemsPerPage={10}
-            />
+            {isDriversLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Loading drivers...</p>
+              </div>
+            ) : isDriversError ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-600">
+                <ShieldAlert className="w-10 h-10" />
+                <p className="font-medium">Failed to load drivers</p>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    { key: "user_name", label: "Name", sortable: true },
+                    { key: "licenseNumber" as any, label: "License", sortable: true },
+                    { key: "vehicle_name" as any, label: "Assigned Vehicle", sortable: true },
+                    { key: "status" as any, label: "Status", render: (status) => <StatusBadge status={status as any} /> },
+                    { key: "phone" as any, label: "Contact", sortable: true },
+                  ]}
+                  data={filteredDrivers}
+                  itemsPerPage={10}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-bold text-slate-900 dark:text-white">{filteredDrivers.length}</span> of <span className="font-bold text-slate-900 dark:text-white">{driverData?.count || 0}</span> drivers
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDriverPage(p => Math.max(1, p - 1))}
+                      disabled={driverPage === 1}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                      {driverPage}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDriverPage(p => p + 1)}
+                      disabled={!driverData?.next}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Drivers</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{mockDashboardKPI.driversTotal}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{driverData?.count || 0}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{mockDashboardKPI.driversActive}</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {driverData?.results.filter(d => d.status === "active").length || 0}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Inactive</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{mockDashboardKPI.driversTotal - mockDashboardKPI.driversActive}</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {driverData?.results.filter(d => d.status === "inactive").length || 0}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Utilization</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {Math.round((mockDashboardKPI.driversActive / mockDashboardKPI.driversTotal) * 100)}%
+                  {driverData?.count ? Math.round((driverData.results.filter(d => d.status === "active").length / driverData.results.length) * 100) : 0}%
                 </p>
               </div>
             </div>
