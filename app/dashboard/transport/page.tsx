@@ -14,6 +14,10 @@ import {
   ChevronDown,
   Eye,
   Check,
+  ShieldAlert,
+  Plus,
+  Pencil,
+  History,
 } from "lucide-react";
 import {
   PieChart,
@@ -21,9 +25,33 @@ import {
   Cell,
   ResponsiveContainer,
   Legend,
-  Tooltip,
+  Tooltip
 } from "recharts";
-import { mockDashboardKPI, mockSubscriptions, mockVehicles, mockDrivers, mockItineraries, mockVerificationChecks } from "@/lib/mock/transport";
+import {
+  mockDashboardKPI,
+  mockSubscriptions,
+  mockVehicles,
+  mockDrivers,
+  mockItineraries,
+  mockVerificationChecks
+} from "@/lib/mock/transport";
+import { useVehicles } from "@/hooks/use-transport";
+import { VehicleSimpleStatusEnum } from "@/types/transport";
+import { Loader2 } from "lucide-react";
+import { useDebounce } from "@/hooks/use-debounce";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { VehicleDialog } from "@/components/transport/vehicle-dialog";
+import { VehicleSimple } from "@/types/transport";
+import { useUpdateVehicle } from "@/hooks/use-transport";
+import toast from "react-hot-toast";
 
 export default function TransportDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -34,8 +62,44 @@ export default function TransportDashboard() {
   const [filterDriverStatus, setFilterDriverStatus] = useState("all");
   const [searchVehicle, setSearchVehicle] = useState("");
   const [filterVehicleStatus, setFilterVehicleStatus] = useState("all");
+  const [vehiclePage, setVehiclePage] = useState(1);
   const [searchItinerary, setSearchItinerary] = useState("");
   const [expandedVerification, setExpandedVerification] = useState<string | null>(null);
+
+  const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
+
+  const debouncedVehicleSearch = useDebounce(searchVehicle, 500);
+
+  const {
+    data: vehicleData,
+    isLoading: isVehiclesLoading,
+    isError: isVehiclesError
+  } = useVehicles({
+    page: vehiclePage,
+    search: debouncedVehicleSearch,
+    status: filterVehicleStatus === "all" ? undefined : filterVehicleStatus
+  });
+
+  const updateVehicleMutation = useUpdateVehicle();
+
+  const handleEditVehicle = (vehicle: VehicleSimple) => {
+    setSelectedVehicle(vehicle);
+    setIsVehicleDialogOpen(true);
+  };
+
+  const handleQuickVehicleStatusChange = async (vehicle: VehicleSimple, newStatus: any) => {
+    const loadingToast = toast.loading("Updating status...");
+    try {
+      await updateVehicleMutation.mutateAsync({
+        id: vehicle.id,
+        data: { status: newStatus }
+      });
+      toast.success("Status updated!", { id: loadingToast });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update status", { id: loadingToast });
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
@@ -52,24 +116,19 @@ export default function TransportDashboard() {
   // Filter functions
   const filteredSubscriptions = mockSubscriptions.filter(sub => {
     const matchesSearch = sub.studentName.toLowerCase().includes(searchSubscription.toLowerCase()) ||
-                         sub.route.toLowerCase().includes(searchSubscription.toLowerCase());
+      sub.route.toLowerCase().includes(searchSubscription.toLowerCase());
     const matchesStatus = filterSubscriptionStatus === "all" || sub.status === filterSubscriptionStatus;
     return matchesSearch && matchesStatus;
   });
 
   const filteredDrivers = mockDrivers.filter(driver => {
     const matchesSearch = driver.name.toLowerCase().includes(searchDriver.toLowerCase()) ||
-                         driver.licenseNumber.toLowerCase().includes(searchDriver.toLowerCase());
+      driver.licenseNumber.toLowerCase().includes(searchDriver.toLowerCase());
     const matchesStatus = filterDriverStatus === "all" || driver.status === filterDriverStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const filteredVehicles = mockVehicles.filter(vehicle => {
-    const matchesSearch = vehicle.plateNumber.toLowerCase().includes(searchVehicle.toLowerCase()) ||
-                         vehicle.type.toLowerCase().includes(searchVehicle.toLowerCase());
-    const matchesStatus = filterVehicleStatus === "all" || vehicle.status === filterVehicleStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredVehicles = vehicleData?.results || [];
 
   const filteredItineraries = mockItineraries.filter(route =>
     route.routeName.toLowerCase().includes(searchItinerary.toLowerCase())
@@ -495,13 +554,25 @@ export default function TransportDashboard() {
         {/* Vehicles Tab */}
         <TabsContent value="vehicles" className="space-y-6">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Fleet Vehicles
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {filteredVehicles.length} vehicles
-              </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Fleet Vehicles
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {vehicleData?.count || 0} vehicles in total
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setSelectedVehicle(null);
+                  setIsVehicleDialogOpen(true);
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold gap-2 shadow-lg shadow-blue-500/20 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Vehicle
+              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -520,42 +591,153 @@ export default function TransportDashboard() {
                 className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="maintenance">Maintenance</option>
+                <option value={VehicleSimpleStatusEnum.Active}>Active</option>
+                <option value={VehicleSimpleStatusEnum.Inactive}>Inactive</option>
+                <option value={VehicleSimpleStatusEnum.Maintenance}>Maintenance</option>
               </select>
             </div>
 
-            <DataTable
-              columns={[
-                { key: "plateNumber", label: "License Plate", sortable: true },
-                { key: "type", label: "Type", sortable: true },
-                { key: "capacity", label: "Capacity", sortable: true },
-                { key: "status", label: "Status", render: (status) => <StatusBadge status={status as any} /> },
-                { key: "lastServiceDate", label: "Last Service", sortable: true },
-              ]}
-              data={filteredVehicles}
-              itemsPerPage={10}
-            />
+            {isVehiclesLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Loading vehicles...</p>
+              </div>
+            ) : isVehiclesError ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-600">
+                <ShieldAlert className="w-10 h-10" />
+                <p className="font-medium">Failed to load vehicles</p>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    { key: "registration", label: "License Plate", sortable: true },
+                    { key: "model", label: "Model", sortable: true },
+                    { key: "capacity", label: "Capacity", sortable: true },
+                    {
+                      key: "status",
+                      label: "Status",
+                      render: (status) => <StatusBadge status={status as any} />
+                    },
+                    {
+                      key: "id" as any,
+                      label: "Actions",
+                      render: (_, vehicle: VehicleSimple) => (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditVehicle(vehicle);
+                            }}
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-8 w-8 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+                              >
+                                <History className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-xl border-slate-200 shadow-xl">
+                              <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleQuickVehicleStatusChange(vehicle, VehicleSimpleStatusEnum.Active)}
+                                className="gap-2 focus:bg-green-50 dark:focus:bg-green-900/20"
+                              >
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                Active
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleQuickVehicleStatusChange(vehicle, VehicleSimpleStatusEnum.Maintenance)}
+                                className="gap-2 focus:bg-amber-50 dark:focus:bg-amber-900/20"
+                              >
+                                <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                Maintenance
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleQuickVehicleStatusChange(vehicle, VehicleSimpleStatusEnum.Inactive)}
+                                className="gap-2 focus:bg-red-50 dark:focus:bg-red-900/20"
+                              >
+                                <div className="w-2 h-2 rounded-full bg-red-500" />
+                                Inactive
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )
+                    }
+                  ]}
+                  data={filteredVehicles}
+                  itemsPerPage={10}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-bold text-slate-900 dark:text-white">{filteredVehicles.length}</span> of <span className="font-bold text-slate-900 dark:text-white">{vehicleData?.count || 0}</span> vehicles
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVehiclePage(p => Math.max(1, p - 1))}
+                      disabled={vehiclePage === 1}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                      {vehiclePage}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVehiclePage(p => p + 1)}
+                      disabled={!vehicleData?.next}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Vehicles</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{mockDashboardKPI.vehiclesTotal}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{vehicleData?.count || 0}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{mockDashboardKPI.vehiclesActive}</p>
+                <p className="text-sm text-muted-foreground">Operational</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {vehicleData?.results.filter(v => v.status === VehicleSimpleStatusEnum.Active).length || 0}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Avg Capacity</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {Math.round(mockVehicles.reduce((sum, v) => sum + v.capacity, 0) / mockVehicles.length)} seats
+                  {vehicleData?.results.length ? Math.round(vehicleData.results.reduce((sum, v) => sum + v.capacity, 0) / vehicleData.results.length) : 0} seats
                 </p>
               </div>
             </div>
           </div>
         </TabsContent>
+
+        <VehicleDialog
+          isOpen={isVehicleDialogOpen}
+          onClose={() => setIsVehicleDialogOpen(false)}
+          record={selectedVehicle}
+        />
       </Tabs>
     </div>
   );
