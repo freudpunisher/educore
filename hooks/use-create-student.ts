@@ -18,8 +18,8 @@ export function useCreateStudent() {
     },
     onError: (error: any) => {
       const message =
-        error?.response?.data?.detail ||
         error?.response?.data?.message ||
+        error?.response?.data?.detail ||
         "Error creating student";
       toast.error(message);
     },

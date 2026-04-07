@@ -39,34 +39,51 @@ import {
   Search,
   User,
   Filter,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
 import { Student } from "@/types/student";
 import { EnrollStudentDialog } from "./enroll-student-dialog";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const genderLabel = (g: number) => (g === 1 ? "Girl" : "Boy");
 
-export default function StudentsTable({ students }: { students: Student[] }) {
+interface StudentsTableProps {
+  students: Student[];
+  isLoading: boolean;
+  error: boolean;
+  totalCount: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  search: string;
+  onSearchChange: (search: string) => void;
+  academicYear?: number;
+  onAcademicYearChange: (id?: number) => void;
+  classroom?: number;
+  onClassroomChange: (id?: number) => void;
+  years: any[];
+  classes: any[];
+}
+
+export default function StudentsTable({
+  students,
+  isLoading,
+  error,
+  totalCount,
+  currentPage,
+  onPageChange,
+  search,
+  onSearchChange,
+  academicYear,
+  onAcademicYearChange,
+  classroom,
+  onClassroomChange,
+  years,
+  classes,
+}: StudentsTableProps) {
+  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
-
-  // Extract unique values for filters
-  const academicYears = Array.from(
-    new Set(
-      students
-        .filter((s) => s.enrollment_info?.academic_year)
-        .map((s) => s.enrollment_info!.academic_year)
-    )
-  ).sort();
-
-  const classrooms = Array.from(
-    new Set(
-      students
-        .filter((s) => s.enrollment_info?.classroom)
-        .map((s) => s.enrollment_info!.classroom)
-    )
-  ).sort();
 
   const columns: ColumnDef<Student>[] = [
     {
@@ -141,17 +158,27 @@ export default function StudentsTable({ students }: { students: Student[] }) {
     {
       id: "actions",
       cell: ({ row }) => {
-        const [open, setOpen] = useState(false);
+        const [openEnroll, setOpenEnroll] = useState(false);
         const student = row.original;
         const alreadyEnrolled = !!student.enrollment_info;
 
         return (
-          <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/dashboard/students/${student.id}`)}
+              className="h-8 gap-2"
+            >
+              <Eye className="h-4 w-4" />
+              View
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
               disabled={alreadyEnrolled}
-              onClick={() => setOpen(true)}
+              onClick={() => setOpenEnroll(true)}
               className="h-8"
             >
               {alreadyEnrolled ? "Already Enrolled" : "Enroll"}
@@ -160,10 +187,10 @@ export default function StudentsTable({ students }: { students: Student[] }) {
             <EnrollStudentDialog
               studentId={student.id}
               studentName={student.full_name}
-              open={open && !alreadyEnrolled}
-              onOpenChange={setOpen}
+              open={openEnroll && !alreadyEnrolled}
+              onOpenChange={setOpenEnroll}
             />
-          </>
+          </div>
         );
       },
     },
@@ -173,17 +200,11 @@ export default function StudentsTable({ students }: { students: Student[] }) {
     data: students,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     state: {
       sorting,
-      columnFilters,
-      globalFilter,
     },
-    onGlobalFilterChange: setGlobalFilter,
   });
 
   return (
@@ -195,27 +216,25 @@ export default function StudentsTable({ students }: { students: Student[] }) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search student..."
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10"
           />
         </div>
 
         {/* Academic Year Filter */}
         <Select
-          value={(table.getColumn("enrollment_status")?.getFilterValue() as string) ?? ""}
-          onValueChange={(value) =>
-            table.getColumn("enrollment_status")?.setFilterValue(value === "all" ? undefined : value)
-          }
+          value={academicYear ? String(academicYear) : "all"}
+          onValueChange={(val) => onAcademicYearChange(val === "all" ? undefined : Number(val))}
         >
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="All Years" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Years</SelectItem>
-            {academicYears.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
+            {years.map((y) => (
+              <SelectItem key={y.id} value={String(y.id)}>
+                {y.start_year} - {y.end_year}
               </SelectItem>
             ))}
           </SelectContent>
@@ -223,19 +242,17 @@ export default function StudentsTable({ students }: { students: Student[] }) {
 
         {/* Classroom Filter */}
         <Select
-          value={(table.getColumn("enrollment_status")?.getFilterValue() as string) ?? ""}
-          onValueChange={(value) =>
-            table.getColumn("enrollment_status")?.setFilterValue(value === "all" ? undefined : value)
-          }
+          value={classroom ? String(classroom) : "all"}
+          onValueChange={(val) => onClassroomChange(val === "all" ? undefined : Number(val))}
         >
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Classes</SelectItem>
-            {classrooms.map((room) => (
-              <SelectItem key={room} value={room}>
-                {room}
+            {classes.map((c) => (
+              <SelectItem key={c.id} value={String(c.id)}>
+                {c.name} ({c.code})
               </SelectItem>
             ))}
           </SelectContent>
@@ -243,7 +260,12 @@ export default function StudentsTable({ students }: { students: Student[] }) {
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -259,7 +281,13 @@ export default function StudentsTable({ students }: { students: Student[] }) {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {error ? (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center text-destructive">
+                  Could not load students.
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
@@ -272,7 +300,7 @@ export default function StudentsTable({ students }: { students: Student[] }) {
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
-                  No students found with these filters.
+                  No students found.
                 </TableCell>
               </TableRow>
             )}
@@ -283,22 +311,23 @@ export default function StudentsTable({ students }: { students: Student[] }) {
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
-          {table.getFilteredRowModel().rows.length} student{table.getFilteredRowModel().rows.length > 1 ? "s" : ""} displayed{table.getFilteredRowModel().rows.length < students.length ? ` of ${students.length}` : ""}
+          Showing {students.length > 0 ? (currentPage - 1) * 10 + 1 : 0} to{" "}
+          {Math.min(currentPage * 10, totalCount)} of {totalCount} students
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
+            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+            disabled={currentPage <= 1 || isLoading}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage * 10 >= totalCount || isLoading}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

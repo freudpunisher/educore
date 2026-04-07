@@ -43,7 +43,16 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor – global error handling + auto refresh example
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If the response follows the standard format, we return 'data' directly
+    if (response.data && response.data.status === "success") {
+      return {
+        ...response,
+        data: response.data.data,
+      };
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
@@ -63,8 +72,12 @@ axiosInstance.interceptors.response.use(
     }
 
     // Optional: toast notifications
-    if (typeof window !== "undefined" && error.response?.data?.message) {
-      // toast.error(error.response.data.message);
+    if (typeof window !== "undefined") {
+      const standardError = error.response?.data;
+      if (standardError && standardError.status === "error") {
+        // We can optionally log or handle it globally here
+        // console.error("Standard Backend Error:", standardError.message);
+      }
     }
 
     return Promise.reject(error);

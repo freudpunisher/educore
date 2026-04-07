@@ -116,7 +116,13 @@ export function CreateStudentDialog() {
               )}
             </div>
 
-
+            <div className="space-y-2">
+              <Label>Date of Birth</Label>
+              <Input type="date" {...register("date_of_birth")} />
+              {errors.date_of_birth && (
+                <p className="text-sm text-destructive">{errors.date_of_birth.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Parent Contact Info */}

@@ -2,14 +2,29 @@
 import StudentsTable from "@/components/students/students-table";
 import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Loader2 } from "lucide-react";
+import { Users } from "lucide-react";
 import { useStudents } from "@/hooks/use-students";
-
-
+import { useState } from "react";
+import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
 
 export default function StudentsPage() {
-  const { data: studentsResponse, isLoading, error } = useStudents();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [academicYear, setAcademicYear] = useState<number | undefined>();
+  const [classroom, setClassroom] = useState<number | undefined>();
+
+  const { data: studentsResponse, isLoading, error } = useStudents({
+    page,
+    search: search || undefined,
+    academic_year: academicYear,
+    class_room: classroom,
+  });
+
+  const { data: years = [] } = useAcademicYears();
+  const { data: classes = [] } = useClassRooms();
+
   const students = studentsResponse?.results || [];
+  const totalCount = studentsResponse?.count || 0;
 
   return (
     <div className=" mx-auto py-10 px-4 ">
@@ -23,17 +38,22 @@ export default function StudentsPage() {
         </CardHeader>
 
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            </div>
-          ) : error ? (
-            <p className="text-center text-destructive py-10">
-              Could not load students.
-            </p>
-          ) : (
-            <StudentsTable students={students} />
-          )}
+          <StudentsTable
+            students={students}
+            isLoading={isLoading}
+            error={!!error}
+            totalCount={totalCount}
+            currentPage={page}
+            onPageChange={setPage}
+            search={search}
+            onSearchChange={setSearch}
+            academicYear={academicYear}
+            onAcademicYearChange={setAcademicYear}
+            classroom={classroom}
+            onClassroomChange={setClassroom}
+            years={years}
+            classes={classes}
+          />
         </CardContent>
       </Card>
     </div>

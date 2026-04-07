@@ -8,7 +8,8 @@ export const createStudentSchema = z.object({
   gender: z.enum(["0", "1"], {
     required_error: "Le genre est requis",
   }),
- 
+  date_of_birth: z.string().optional().or(z.literal("")),
+
   parent_contact: z
     .string()
     .regex(
