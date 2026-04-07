@@ -27,29 +27,29 @@ export default function RootLayout({
         <Providers>
 
           <ThemeProvider>
-          <AuthProvider>{children}</AuthProvider>
-         <Toaster
-            position="top-center"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: "hsl(var(--background))",
-                color: "hsl(var(--foreground))",
-                border: "1px solid hsl(var(--border))",
-              },
-              success: {
-                icon: "✔️",
-                style: { borderColor: "hsl(var(--success))" },
-              },
-              error: {
-                icon: "❌",
-                style: { borderColor: "hsl(var(--destructive))" },
-              },
-            }}
-          />
-        </ThemeProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: "hsl(var(--background))",
+                  color: "hsl(var(--foreground))",
+                  border: "1px solid hsl(var(--border))",
+                },
+                success: {
+                  icon: "✔️",
+                  style: { borderColor: "hsl(var(--success))" },
+                },
+                error: {
+                  icon: "❌",
+                  style: { borderColor: "hsl(var(--destructive))" },
+                },
+              }}
+            />
+          </ThemeProvider>
         </Providers>
-        
+
         <Analytics />
       </body>
     </html>

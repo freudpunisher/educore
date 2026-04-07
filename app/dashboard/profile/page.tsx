@@ -36,16 +36,16 @@ export default function ProfilePage() {
                         <div className="flex justify-center">
                             <Avatar className="w-24 h-24">
                                 <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                                    {user.name
+                                    {user.fullName
                                         .split(" ")
-                                        .map((n) => n[0])
+                                        .map((n: string) => n[0])
                                         .join("")
                                         .toUpperCase()}
                                 </AvatarFallback>
                             </Avatar>
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold">{user.name}</h2>
+                            <h2 className="text-xl font-bold">{user.fullName}</h2>
                             <p className="text-muted-foreground">{user.email}</p>
                         </div>
                         <Badge variant="secondary" className="px-3 py-1">
@@ -76,7 +76,7 @@ export default function ProfilePage() {
                                 <User className="w-5 h-5 text-primary mt-0.5" />
                                 <div>
                                     <p className="text-sm font-medium">Full Name</p>
-                                    <p className="text-sm text-muted-foreground">{user.name}</p>
+                                    <p className="text-sm text-muted-foreground">{user.fullName}</p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-3">
