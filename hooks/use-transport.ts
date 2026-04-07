@@ -5,7 +5,8 @@ import {
     VehicleCreate,
     paginatedTransportDriverSchema,
     paginatedTransportItinerarySchema,
-    paginatedTransportSubscriptionSchema
+    paginatedTransportSubscriptionSchema,
+    TransportSubscriptionCreate
 } from "@/types/transport";
 
 export function useVehicles(params?: { page?: number; status?: string; search?: string }) {
@@ -83,5 +84,18 @@ export function useTransportSubscriptions(params?: {
             return paginatedTransportSubscriptionSchema.parse(rawData);
         },
         staleTime: 1000 * 60 * 5,
+    });
+}
+
+export function useCreateTransportSubscription() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (data: TransportSubscriptionCreate) => {
+            const response = await axiosInstance.post("/transport/subscriptions/", data);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["transport-subscriptions"] });
+        },
     });
 }

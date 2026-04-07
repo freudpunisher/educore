@@ -86,3 +86,14 @@ export type TransportSubscription = z.infer<typeof transportSubscriptionSchema>;
 export const paginatedTransportSubscriptionSchema = createPaginatedSchema(transportSubscriptionSchema);
 
 export type TransportSubscriptionsListResponse = z.infer<typeof paginatedTransportSubscriptionSchema>;
+
+export const transportSubscriptionCreateSchema = z.object({
+    student: z.number().min(1, "Student is required"),
+    itinerary: z.number().min(1, "Route is required"),
+    period: z.number().min(1, "Period is required"),
+    enrollment_date: z.string().min(1, "Enrollment date is required"),
+    reference: z.string().optional(),
+    status: z.nativeEnum(TransportStatusEnum).default(TransportStatusEnum.Active),
+});
+
+export type TransportSubscriptionCreate = z.infer<typeof transportSubscriptionCreateSchema>;

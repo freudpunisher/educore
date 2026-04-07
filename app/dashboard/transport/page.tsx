@@ -35,8 +35,9 @@ import {
   mockItineraries,
   mockVerificationChecks
 } from "@/lib/mock/transport";
-import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions } from "@/hooks/use-transport";
-import { VehicleSimpleStatusEnum } from "@/types/transport";
+import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription } from "@/hooks/use-transport";
+import { useStudents } from "@/hooks/use-students";
+import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,8 @@ import { VehicleDialog } from "@/components/transport/vehicle-dialog";
 import { VehicleSimple } from "@/types/transport";
 import { useUpdateVehicle } from "@/hooks/use-transport";
 import toast from "react-hot-toast";
+import { DialogHeader } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@radix-ui/react-dialog";
 
 export default function TransportDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -68,12 +71,14 @@ export default function TransportDashboard() {
   const [searchItinerary, setSearchItinerary] = useState("");
   const [itineraryPage, setItineraryPage] = useState(1);
   const [expandedVerification, setExpandedVerification] = useState<string | null>(null);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
 
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
 
   const debouncedVehicleSearch = useDebounce(searchVehicle, 500);
   const debouncedDriverSearch = useDebounce(searchDriver, 500);
+  const debouncedSubscriptionSearch = useDebounce(searchSubscription, 500);
 
   const {
     data: vehicleData,
@@ -109,10 +114,11 @@ export default function TransportDashboard() {
     isError: isSubscriptionsError
   } = useTransportSubscriptions({
     page: subscriptionPage,
-    search: useDebounce(searchSubscription, 500),
+    search: debouncedSubscriptionSearch,
     status: filterSubscriptionStatus === "all" ? undefined : filterSubscriptionStatus
   });
 
+  const createSubscriptionMutation = useCreateTransportSubscription();
   const updateVehicleMutation = useUpdateVehicle();
 
   const handleEditVehicle = (vehicle: VehicleSimple) => {
@@ -133,6 +139,17 @@ export default function TransportDashboard() {
     }
   };
 
+  const handleCreateSubscription = async (data: TransportSubscriptionCreate) => {
+    const loadingToast = toast.loading("Adding enrollment...");
+    try {
+      await createSubscriptionMutation.mutateAsync(data);
+      toast.success("Student enrolled successfully!", { id: loadingToast });
+      setIsSubscriptionDialogOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add enrollment", { id: loadingToast });
+    }
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
@@ -146,13 +163,6 @@ export default function TransportDashboard() {
   ];
 
   // Filter functions
-  const filteredSubscriptions = mockSubscriptions.filter(sub => {
-    const matchesSearch = sub.studentName.toLowerCase().includes(searchSubscription.toLowerCase()) ||
-      sub.route.toLowerCase().includes(searchSubscription.toLowerCase());
-    const matchesStatus = filterSubscriptionStatus === "all" || sub.status === filterSubscriptionStatus;
-    return matchesSearch && matchesStatus;
-  });
-
   const filteredDrivers = driverData?.results || [];
 
   const filteredItineraries = itineraryData?.results || [];
@@ -399,7 +409,10 @@ export default function TransportDashboard() {
                   Manage student transport enrollment and status
                 </p>
               </div>
-              <Button className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold">
+              <Button
+                onClick={() => setIsSubscriptionDialogOpen(true)}
+                className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Enrollment
               </Button>
@@ -940,6 +953,163 @@ export default function TransportDashboard() {
           record={selectedVehicle}
         />
       </Tabs>
+      <SubscriptionDialog
+        isOpen={isSubscriptionDialogOpen}
+        onClose={() => setIsSubscriptionDialogOpen(false)}
+        onSubmit={handleCreateSubscription}
+      />
     </div>
+  );
+}
+
+function SubscriptionDialog({
+  isOpen,
+  onClose,
+  onSubmit,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: TransportSubscriptionCreate) => void;
+}) {
+  const { data: studentsData } = useStudents();
+  const { data: itineraryData } = useItineraries();
+
+  const [studentId, setStudentId] = useState<string>("");
+  const [itineraryId, setItineraryId] = useState<string>("");
+  const [period, setPeriod] = useState<string>("1");
+  const [enrollmentDate, setEnrollmentDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Active);
+
+  const students = studentsData?.results || [];
+  const itineraries = itineraryData?.results || [];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      student: parseInt(studentId),
+      itinerary: parseInt(itineraryId),
+      period: parseInt(period),
+      enrollment_date: enrollmentDate,
+      status,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px] rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
+            Add Transport Enrollment
+          </DialogTitle>
+          <DialogDescription>
+            Register a student for a transport route.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Student
+              </label>
+              <select
+                required
+                value={studentId}
+                onChange={(e) => setStudentId(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Student</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.full_name} ({student.enrollment_number})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Route
+              </label>
+              <select
+                required
+                value={itineraryId}
+                onChange={(e) => setItineraryId(e.target.value)}
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Route</option>
+                {itineraries.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.registration_number} - {it.vehicle_detail.model}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Period (Months)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Enrollment Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={enrollmentDate}
+                  onChange={(e) => setEnrollmentDate(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as TransportStatusEnum)}
+                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={TransportStatusEnum.Active}>Active</option>
+                <option value={TransportStatusEnum.Inactive}>Inactive</option>
+                <option value={TransportStatusEnum.Suspended}>Suspended</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="rounded-xl px-6 h-11"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"
+            >
+              Add Enrollment
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
