@@ -18,24 +18,17 @@ import {
   Plus,
   Pencil,
   History,
+  ChevronsUpDown,
 } from "lucide-react";
+
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip
-} from "recharts";
-import {
-  mockDashboardKPI,
   mockSubscriptions,
   mockVehicles,
   mockDrivers,
   mockItineraries,
   mockVerificationChecks
 } from "@/lib/mock/transport";
-import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription } from "@/hooks/use-transport";
+import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
 import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum } from "@/types/transport";
 import { Loader2 } from "lucide-react";
@@ -49,19 +42,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 import { VehicleDialog } from "@/components/transport/vehicle-dialog";
 import { VehicleSimple } from "@/types/transport";
 import { useUpdateVehicle } from "@/hooks/use-transport";
 import toast from "react-hot-toast";
-import { DialogHeader } from "@/components/ui/dialog";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@radix-ui/react-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function TransportDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("subscriptions");
   const [isLoading, setIsLoading] = useState(true);
   const [searchSubscription, setSearchSubscription] = useState("");
   const [filterSubscriptionStatus, setFilterSubscriptionStatus] = useState("all");
+  const [filterSubscriptionStudent, setFilterSubscriptionStudent] = useState("all");
+  const [openStudentSelect, setOpenStudentSelect] = useState(false);
   const [subscriptionPage, setSubscriptionPage] = useState(1);
+  const [searchCheckIn, setSearchCheckIn] = useState("");
+  const [checkInPage, setCheckInPage] = useState(1);
   const [searchDriver, setSearchDriver] = useState("");
   const [filterDriverStatus, setFilterDriverStatus] = useState("all");
   const [driverPage, setDriverPage] = useState(1);
@@ -72,6 +77,7 @@ export default function TransportDashboard() {
   const [itineraryPage, setItineraryPage] = useState(1);
   const [expandedVerification, setExpandedVerification] = useState<string | null>(null);
   const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
+  const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
 
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
@@ -79,6 +85,7 @@ export default function TransportDashboard() {
   const debouncedVehicleSearch = useDebounce(searchVehicle, 500);
   const debouncedDriverSearch = useDebounce(searchDriver, 500);
   const debouncedSubscriptionSearch = useDebounce(searchSubscription, 500);
+  const debouncedCheckInSearch = useDebounce(searchCheckIn, 500);
 
   const {
     data: vehicleData,
@@ -115,11 +122,42 @@ export default function TransportDashboard() {
   } = useTransportSubscriptions({
     page: subscriptionPage,
     search: debouncedSubscriptionSearch,
-    status: filterSubscriptionStatus === "all" ? undefined : filterSubscriptionStatus
+    status: filterSubscriptionStatus === "all" ? undefined : filterSubscriptionStatus,
+    student: filterSubscriptionStudent === "all" ? undefined : filterSubscriptionStudent,
   });
 
+  const {
+    data: checkInData,
+    isLoading: isCheckInsLoading,
+    isError: isCheckInsError
+  } = useTransportCheckIns({
+    page: checkInPage,
+    search: debouncedCheckInSearch,
+  });
+
+  const {
+    data: dashboardData,
+    isLoading: isDashboardLoading,
+    isError: isDashboardError
+  } = useTransportDashboard();
+
   const createSubscriptionMutation = useCreateTransportSubscription();
+  const updateSubscriptionMutation = useUpdateTransportSubscription();
   const updateVehicleMutation = useUpdateVehicle();
+
+  // Unified loading state
+  const isGlobalLoading = isLoading || isDashboardLoading;
+
+  const stats = dashboardData || {
+    subscriptions: { active: 0, inactive: 0 },
+    vehicles: { active: 0, maintenance: 0, inactive: 0 },
+    drivers: { total: 0 },
+    itineraries: 0,
+    today_checkins: 0,
+  };
+
+  const { data: studentsData } = useStudents();
+  const students = studentsData?.results || [];
 
   const handleEditVehicle = (vehicle: VehicleSimple) => {
     setSelectedVehicle(vehicle);
@@ -150,17 +188,28 @@ export default function TransportDashboard() {
     }
   };
 
+  const handleUpdateSubscription = async (id: number, data: Partial<TransportSubscriptionCreate>) => {
+    const loadingToast = toast.loading("Updating enrollment...");
+    try {
+      await updateSubscriptionMutation.mutateAsync({ id, data });
+      toast.success("Enrollment updated successfully!", { id: loadingToast });
+      setIsSubscriptionDialogOpen(false);
+      setSelectedSubscription(null);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update enrollment", { id: loadingToast });
+    }
+  };
+
+  const openEditSubscription = (subscription: any) => {
+    setSelectedSubscription(subscription);
+    setIsSubscriptionDialogOpen(true);
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
 
-  // Vehicle status data for donut chart
-  const vehicleChartData = [
-    { name: "Active", value: mockDashboardKPI.vehiclesActive, color: "#10b981" },
-    { name: "Inactive", value: mockDashboardKPI.vehiclesInactive, color: "#ef4444" },
-    { name: "Maintenance", value: mockDashboardKPI.vehiclesMaintenance, color: "#f97316" },
-  ];
 
   // Filter functions
   const filteredDrivers = driverData?.results || [];
@@ -171,7 +220,9 @@ export default function TransportDashboard() {
 
   const filteredSubscriptions = subscriptionData?.results || [];
 
-  if (isLoading) {
+  const filteredCheckIns = checkInData?.results || [];
+
+  if (isGlobalLoading) {
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -206,27 +257,27 @@ export default function TransportDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiCard
           title="Subscriptions"
-          value={mockDashboardKPI.subscriptionsTotal}
-          trend={mockDashboardKPI.subscriptionsTrend}
-          subtitle={`${mockDashboardKPI.subscriptionsActive} active`}
+          value={stats.subscriptions.active + stats.subscriptions.inactive}
+          subtitle={`${stats.subscriptions.active} active`}
           icon={<Users className="w-6 h-6" />}
+          trend="+12%"
         />
         <KpiCard
           title="Vehicles"
-          value={mockDashboardKPI.vehiclesTotal}
-          subtitle={`${mockDashboardKPI.vehiclesActive} operational`}
+          value={stats.vehicles.active + stats.vehicles.maintenance + stats.vehicles.inactive}
+          subtitle={`${stats.vehicles.active} operational`}
           icon={<Truck className="w-6 h-6" />}
         />
         <KpiCard
           title="Drivers"
-          value={mockDashboardKPI.driversTotal}
-          subtitle={`${mockDashboardKPI.driversActive} active`}
+          value={stats.drivers.total}
+          subtitle="Registered drivers"
           icon={<Users className="w-6 h-6" />}
         />
         <KpiCard
           title="Routes"
-          value={mockDashboardKPI.itinerariesTotal}
-          subtitle="Active routes"
+          value={stats.itineraries}
+          subtitle="Active itineraries"
           icon={<Route className="w-6 h-6" />}
         />
       </div>
@@ -234,168 +285,14 @@ export default function TransportDashboard() {
       {/* Tabs Section */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
+          <TabsTrigger value="checkins">Check-ins</TabsTrigger>
           <TabsTrigger value="itineraries">Routes</TabsTrigger>
           <TabsTrigger value="drivers">Drivers</TabsTrigger>
           <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab - Dashboard */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Vehicle Status Donut Chart */}
-            <div className="lg:col-span-1 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Vehicle Status
-                </h3>
-                <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
-                  Fleet composition
-                </p>
-              </div>
 
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={vehicleChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {vehicleChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--background))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="space-y-3">
-                {vehicleChartData.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: item.color }}
-                      />
-                      <span className="text-sm text-slate-600 dark:text-slate-300">
-                        {item.name}
-                      </span>
-                    </div>
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Subscription & Driver Status */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Subscriptions Status */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    Subscription Status
-                  </h3>
-                  <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
-                    Student enrollment overview
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground dark:text-slate-400">
-                      Total
-                    </p>
-                    <p className="text-3xl font-bold text-slate-900 dark:text-white">
-                      {mockDashboardKPI.subscriptionsTotal}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground dark:text-slate-400">
-                      Active
-                    </p>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                      {mockDashboardKPI.subscriptionsActive}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground dark:text-slate-400">
-                      Inactive
-                    </p>
-                    <p className="text-3xl font-bold text-red-600 dark:text-red-400">
-                      {mockDashboardKPI.subscriptionsInactive}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
-                  <p className="text-sm text-muted-foreground dark:text-slate-400 mb-2">
-                    Monthly Fee
-                  </p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    ${mockDashboardKPI.subscriptionsActive * 50}
-                    <span className="text-sm text-muted-foreground ml-2">
-                      total monthly revenue
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Driver Status */}
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    Driver Status
-                  </h3>
-                  <p className="text-sm text-muted-foreground dark:text-slate-400 mt-1">
-                    Fleet personnel overview
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">
-                      Total Drivers
-                    </span>
-                    <span className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {mockDashboardKPI.driversTotal}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">
-                      Active
-                    </span>
-                    <StatusBadge status="active" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 dark:text-slate-300">
-                      Inactive
-                    </span>
-                    <StatusBadge status="inactive" />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2 text-sm text-muted-foreground dark:text-slate-400">
-                  <Activity className="w-4 h-4" />
-                  All drivers are licensed and verified
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
 
         {/* Subscriptions Tab */}
         <TabsContent value="subscriptions" className="space-y-6">
@@ -410,7 +307,10 @@ export default function TransportDashboard() {
                 </p>
               </div>
               <Button
-                onClick={() => setIsSubscriptionDialogOpen(true)}
+                onClick={() => {
+                  setSelectedSubscription(null);
+                  setIsSubscriptionDialogOpen(true);
+                }}
                 className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -428,6 +328,64 @@ export default function TransportDashboard() {
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                 />
               </div>
+              <Popover open={openStudentSelect} onOpenChange={setOpenStudentSelect}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openStudentSelect}
+                    className="w-full sm:w-[250px] justify-between h-10 px-4 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  >
+                    {filterSubscriptionStudent === "all"
+                      ? "All Students"
+                      : students.find(s => s.id.toString() === filterSubscriptionStudent)?.full_name || "All Students"}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[250px] p-0 rounded-xl">
+                  <Command>
+                    <CommandInput placeholder="Search student..." className="h-9" />
+                    <CommandList>
+                      <CommandEmpty>No student found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setFilterSubscriptionStudent("all");
+                            setOpenStudentSelect(false);
+                          }}
+                        >
+                          All Students
+                          <Check
+                            className={cn(
+                              "ml-auto h-4 w-4",
+                              filterSubscriptionStudent === "all" ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                        </CommandItem>
+                        {students.map((student) => (
+                          <CommandItem
+                            key={`filter-student-${student.id}`}
+                            value={student.full_name}
+                            onSelect={() => {
+                              setFilterSubscriptionStudent(student.id.toString());
+                              setOpenStudentSelect(false);
+                            }}
+                          >
+                            {student.full_name}
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                filterSubscriptionStudent === student.id.toString() ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <select
                 value={filterSubscriptionStatus}
                 onChange={(e) => setFilterSubscriptionStatus(e.target.value)}
@@ -476,6 +434,25 @@ export default function TransportDashboard() {
                       label: "Period",
                       render: (p) => `${p} months`
                     },
+                    {
+                      key: "id" as any,
+                      label: "Actions",
+                      render: (_, subscription: any) => (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditSubscription(subscription);
+                            }}
+                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
+                    },
                   ]}
                   data={filteredSubscriptions}
                   itemsPerPage={10}
@@ -512,7 +489,7 @@ export default function TransportDashboard() {
               </>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Subscriptions</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{subscriptionData?.count || 0}</p>
@@ -521,12 +498,6 @@ export default function TransportDashboard() {
                 <p className="text-sm text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                   {subscriptionData?.results.filter((s: any) => s.status === "active").length || 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Forecast</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  ${subscriptionData?.results.reduce((sum: number, s: any) => sum + (s.itinerary_detail?.fees || 0), 0) || 0}
                 </p>
               </div>
             </div>
@@ -626,17 +597,11 @@ export default function TransportDashboard() {
               </>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Active Routes</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">
                   {itineraryData?.results.filter((r: any) => r.state).length || 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Revenue Est.</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {itineraryData?.results.reduce((sum: number, r: any) => sum + r.fees, 0) || 0}$
                 </p>
               </div>
               <div>
@@ -649,6 +614,114 @@ export default function TransportDashboard() {
           </div>
         </TabsContent>
 
+        {/* Check-ins Tab */}
+        <TabsContent value="checkins" className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Transport Check-ins
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Monitor daily student check-ins and vehicle boarding
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                <input
+                  placeholder="Search student or vehicle..."
+                  value={searchCheckIn}
+                  onChange={(e) => setSearchCheckIn(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
+            </div>
+
+            {isCheckInsLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Loading check-ins...</p>
+              </div>
+            ) : isCheckInsError ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-600">
+                <ShieldAlert className="w-10 h-10" />
+                <p className="font-medium">Failed to load check-ins</p>
+              </div>
+            ) : (
+              <>
+                <DataTable
+                  columns={[
+                    { key: "student_name", label: "Student", sortable: true },
+                    {
+                      key: "itinerary" as any,
+                      label: "Route",
+                      render: (_, item: any) => `Route ${item.itinerary || 'N/A'}`
+                    },
+                    {
+                      key: "checked_at" as any,
+                      label: "Check-in Time",
+                      render: (val) => new Date(val).toLocaleString()
+                    },
+                    {
+                      key: "status" as any,
+                      label: "Status",
+                      render: (status) => (
+                        <StatusBadge status={status ? "active" : "inactive"} />
+                      )
+                    },
+                  ]}
+                  data={filteredCheckIns}
+                  itemsPerPage={10}
+                />
+
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-bold text-slate-900 dark:text-white">{filteredCheckIns.length}</span> of <span className="font-bold text-slate-900 dark:text-white">{checkInData?.count || 0}</span> check-ins
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCheckInPage(p => Math.max(1, p - 1))}
+                      disabled={checkInPage === 1}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Previous
+                    </Button>
+                    <div className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                      {checkInPage}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCheckInPage(p => p + 1)}
+                      disabled={!checkInData?.next}
+                      className="rounded-lg h-9 hover:bg-slate-50"
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div>
+                <p className="text-sm text-muted-foreground">Total Check-ins</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{checkInData?.count || 0}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Today</p>
+                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {stats.today_checkins}
+                </p>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
 
         {/* Drivers Tab */}
         <TabsContent value="drivers" className="space-y-6">
@@ -777,16 +850,6 @@ export default function TransportDashboard() {
                   {vehicleData?.count || 0} vehicles in total
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedVehicle(null);
-                  setIsVehicleDialogOpen(true);
-                }}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 font-bold gap-2 shadow-lg shadow-blue-500/20 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                Add New Vehicle
-              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -955,8 +1018,18 @@ export default function TransportDashboard() {
       </Tabs>
       <SubscriptionDialog
         isOpen={isSubscriptionDialogOpen}
-        onClose={() => setIsSubscriptionDialogOpen(false)}
-        onSubmit={handleCreateSubscription}
+        onClose={() => {
+          setIsSubscriptionDialogOpen(false);
+          setSelectedSubscription(null);
+        }}
+        onSubmit={(data) => {
+          if (selectedSubscription) {
+            handleUpdateSubscription(selectedSubscription.id, data);
+          } else {
+            handleCreateSubscription(data);
+          }
+        }}
+        record={selectedSubscription}
       />
     </div>
   );
@@ -966,10 +1039,12 @@ function SubscriptionDialog({
   isOpen,
   onClose,
   onSubmit,
+  record,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: TransportSubscriptionCreate) => void;
+  onSubmit: (data: TransportSubscriptionCreate | Partial<TransportSubscriptionCreate>) => void;
+  record?: any | null;
 }) {
   const { data: studentsData } = useStudents();
   const { data: itineraryData } = useItineraries();
@@ -981,6 +1056,22 @@ function SubscriptionDialog({
     new Date().toISOString().split("T")[0]
   );
   const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Active);
+
+  useEffect(() => {
+    if (record && isOpen) {
+      setStudentId(record.student?.toString() || "");
+      setItineraryId(record.itinerary?.toString() || "");
+      setPeriod(record.period?.toString() || "1");
+      setEnrollmentDate(record.enrollment_date || new Date().toISOString().split("T")[0]);
+      setStatus(record.status || TransportStatusEnum.Active);
+    } else if (isOpen) {
+      setStudentId("");
+      setItineraryId("");
+      setPeriod("1");
+      setEnrollmentDate(new Date().toISOString().split("T")[0]);
+      setStatus(TransportStatusEnum.Active);
+    }
+  }, [record, isOpen]);
 
   const students = studentsData?.results || [];
   const itineraries = itineraryData?.results || [];
@@ -1001,10 +1092,10 @@ function SubscriptionDialog({
       <DialogContent className="sm:max-w-[500px] rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-            Add Transport Enrollment
+            {record ? "Edit Transport Enrollment" : "Add Transport Enrollment"}
           </DialogTitle>
           <DialogDescription>
-            Register a student for a transport route.
+            {record ? "Update student transport details." : "Register a student for a transport route."}
           </DialogDescription>
         </DialogHeader>
 
@@ -1105,7 +1196,7 @@ function SubscriptionDialog({
               type="submit"
               className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"
             >
-              Add Enrollment
+              {record ? "Save Changes" : "Add Enrollment"}
             </Button>
           </div>
         </form>

@@ -16,10 +16,18 @@ import {
     Printer,
     Calendar as CalendarIcon,
     ChevronRight,
-    ArrowUpRight
+    ArrowUpRight,
+    Loader2,
+    ShieldAlert,
+    Check,
+    ChevronsUpDown
 } from "lucide-react"
-import { mockInvoices } from "@/lib/mock-data"
 import { useToast } from "@/hooks/use-toast"
+import { usePayments, useInvoices } from "@/hooks/use-finance"
+import { useDebounce } from "@/hooks/use-debounce"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 import {
     Select,
     SelectContent,
@@ -30,29 +38,32 @@ import {
 
 export default function PaymentsPage() {
     const [searchTerm, setSearchTerm] = useState("")
-    const [methodFilter, setMethodFilter] = useState("all")
+    const [invoiceFilter, setInvoiceFilter] = useState("all")
+    const [invoiceComboSearch, setInvoiceComboSearch] = useState("")
+    const [openInvoiceCombo, setOpenInvoiceCombo] = useState(false)
+    const [paymentPage, setPaymentPage] = useState(1)
     const { toast } = useToast()
 
-    // Derive payments from paid invoices
-    const payments = mockInvoices
-        .filter(invoice => invoice.status === "paid")
-        .map((invoice, index) => ({
-            id: `PAY-${1000 + index}`,
-            invoiceId: invoice.id,
-            studentName: invoice.studentName,
-            amount: invoice.amount,
-            date: invoice.paidDate || invoice.dueDate,
-            method: index % 3 === 0 ? "Bank Transfer" : index % 3 === 1 ? "Cash Office" : "Credit Card",
-            status: "completed"
-        }))
+    const debouncedSearch = useDebounce(searchTerm, 500);
+    const debouncedInvoiceComboSearch = useDebounce(invoiceComboSearch, 500);
 
-    const filteredPayments = payments.filter(payment => {
-        const matchesSearch = payment.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payment.invoiceId.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesMethod = methodFilter === "all" || payment.method === methodFilter
-        return matchesSearch && matchesMethod
-    })
+    const { data: invoicesData, isLoading: isInvoicesLoading } = useInvoices({
+        search: debouncedInvoiceComboSearch,
+        page_size: 10000
+    });
+    const invoices = invoicesData?.results || [];
+
+    const {
+        data: paymentsData,
+        isLoading,
+        isError,
+    } = usePayments({
+        page: paymentPage,
+        search: debouncedSearch,
+        invoice: invoiceFilter && invoiceFilter !== "all" ? Number(invoiceFilter) : undefined,
+    });
+
+    const filteredPayments = paymentsData?.results || [];
 
     const handleDownloadReceipt = (payment: any) => {
         toast({
@@ -91,14 +102,14 @@ export default function PaymentsPage() {
                 <Card className="border-none shadow-xl shadow-primary/5 bg-background/60 backdrop-blur-xl rounded-[1.5rem] p-6">
                     <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Today's Total</p>
                     <div className="flex items-end gap-2">
-                        <h3 className="text-2xl font-bold">$2,450</h3>
+                        <h3 className="text-2xl font-bold">2,450 Fbu</h3>
                         <span className="text-[10px] text-green-500 font-bold mb-1">+5%</span>
                     </div>
                 </Card>
                 <Card className="border-none shadow-xl shadow-primary/5 bg-background/60 backdrop-blur-xl rounded-[1.5rem] p-6">
                     <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">Weekly Volume</p>
                     <div className="flex items-end gap-2">
-                        <h3 className="text-2xl font-bold">$18,200</h3>
+                        <h3 className="text-2xl font-bold">18,200 Fbu</h3>
                         <span className="text-[10px] text-green-500 font-bold mb-1">+12%</span>
                     </div>
                 </Card>
@@ -126,17 +137,73 @@ export default function PaymentsPage() {
                             />
                         </div>
                         <div className="flex items-center gap-3">
-                            <Select value={methodFilter} onValueChange={setMethodFilter}>
-                                <SelectTrigger className="w-[180px] h-12 bg-muted/50 border-transparent rounded-xl">
-                                    <SelectValue placeholder="Method" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Methods</SelectItem>
-                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                    <SelectItem value="Cash Office">Cash Office</SelectItem>
-                                    <SelectItem value="Credit Card">Credit Card</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Popover open={openInvoiceCombo} onOpenChange={setOpenInvoiceCombo}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={openInvoiceCombo}
+                                        className="w-[200px] h-12 justify-between bg-muted/50 border-transparent rounded-xl hover:bg-muted font-normal text-muted-foreground"
+                                    >
+                                        <span className="truncate">
+                                            {invoiceFilter && invoiceFilter !== "all"
+                                                ? invoices.find(i => i.id.toString() === invoiceFilter)?.reference || `Invoice #${invoiceFilter}`
+                                                : "All Invoices"}
+                                        </span>
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[250px] p-0 rounded-xl" align="end">
+                                    <Command shouldFilter={false}>
+                                        <CommandInput
+                                            placeholder="Search invoices..."
+                                            value={invoiceComboSearch}
+                                            onValueChange={setInvoiceComboSearch}
+                                            className="h-10 border-none focus:ring-0"
+                                        />
+                                        <CommandList>
+                                            <CommandEmpty>
+                                                {isInvoicesLoading ? "Loading..." : "No invoice found."}
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                <CommandItem
+                                                    value="all"
+                                                    onSelect={() => {
+                                                        setInvoiceFilter("all");
+                                                        setOpenInvoiceCombo(false);
+                                                    }}
+                                                >
+                                                    All Invoices
+                                                    <Check
+                                                        className={cn(
+                                                            "ml-auto h-4 w-4",
+                                                            invoiceFilter === "all" ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                </CommandItem>
+                                                {invoices.map((inv) => (
+                                                    <CommandItem
+                                                        key={`invoice-${inv.id}`}
+                                                        value={inv.id.toString()}
+                                                        onSelect={() => {
+                                                            setInvoiceFilter(inv.id.toString());
+                                                            setOpenInvoiceCombo(false);
+                                                        }}
+                                                    >
+                                                        <span className="truncate">{inv.reference} {inv.student_name ? `(${inv.student_name})` : ""}</span>
+                                                        <Check
+                                                            className={cn(
+                                                                "ml-auto h-4 w-4 flex-shrink-0",
+                                                                invoiceFilter === inv.id.toString() ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                             <Button variant="ghost" size="icon" className="h-12 w-12 rounded-xl bg-muted/50">
                                 <CalendarIcon className="w-4 h-4" />
                             </Button>
@@ -145,69 +212,96 @@ export default function PaymentsPage() {
                 </CardHeader>
 
                 <CardContent className="p-8 pt-6">
-                    <div className="rounded-2xl border border-border/50 overflow-hidden">
-                        <Table>
-                            <TableHeader className="bg-muted/30">
-                                <TableRow className="border-border/50 hover:bg-transparent">
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Transaction ID</TableHead>
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Invoice</TableHead>
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Student</TableHead>
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Date</TableHead>
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Method</TableHead>
-                                    <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Amount</TableHead>
-                                    <TableHead className="py-5 text-right font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Receipt</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredPayments.map((payment) => (
-                                    <TableRow key={payment.id} className="border-border/50 hover:bg-muted/30 transition-colors group">
-                                        <TableCell className="py-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                                                    <ArrowUpRight className="w-4 h-4 text-green-600" />
-                                                </div>
-                                                <span className="font-bold text-sm">{payment.id}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-6 font-medium text-muted-foreground">{payment.invoiceId}</TableCell>
-                                        <TableCell className="py-6 font-bold">{payment.studentName}</TableCell>
-                                        <TableCell className="py-6 text-muted-foreground font-medium text-sm">
-                                            {new Date(payment.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                                        </TableCell>
-                                        <TableCell className="py-6">
-                                            <div className="flex items-center gap-2">
-                                                <CreditCard className="w-3 h-3 text-primary" />
-                                                <span className="text-xs font-bold">{payment.method}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-6">
-                                            <span className="text-lg font-bold text-foreground">${payment.amount.toLocaleString()}</span>
-                                        </TableCell>
-                                        <TableCell className="py-6 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground font-bold"
-                                                    onClick={() => handleDownloadReceipt(payment)}
-                                                >
-                                                    <Receipt className="w-4 h-4 mr-2" /> Receipt
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-muted text-muted-foreground hover:bg-muted/80 font-bold"
-                                                    onClick={() => handlePrintReceipt(payment)}
-                                                >
-                                                    <Printer className="w-4 h-4 mr-2" /> Print
-                                                </Button>
-                                            </div>
-                                        </TableCell>
+                    {isLoading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                            <p className="text-muted-foreground font-medium">Loading payments...</p>
+                        </div>
+                    ) : isError ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4 text-rose-500">
+                            <ShieldAlert className="w-10 h-10" />
+                            <p className="font-medium">Failed to load payments</p>
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-border/50 overflow-hidden">
+                            <Table>
+                                <TableHeader className="bg-muted/30">
+                                    <TableRow className="border-border/50 hover:bg-transparent">
+                                        <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Transaction ID</TableHead>
+                                        <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Invoice Ref</TableHead>
+                                        <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Method</TableHead>
+                                        <TableHead className="py-5 font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Amount</TableHead>
+                                        <TableHead className="py-5 text-right font-bold uppercase tracking-wider text-[11px] text-muted-foreground">Receipt</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredPayments.map((payment) => (
+                                        <TableRow key={payment.id} className="border-border/50 hover:bg-muted/30 transition-colors group">
+                                            <TableCell className="py-6">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                                                        <ArrowUpRight className="w-4 h-4 text-green-600" />
+                                                    </div>
+                                                    <span className="font-bold text-sm">PAY-{payment.id}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-6 font-medium text-muted-foreground">{payment.invoice_reference}</TableCell>
+                                            <TableCell className="py-6">
+                                                <div className="flex items-center gap-2">
+                                                    <CreditCard className="w-3 h-3 text-primary" />
+                                                    <span className="text-xs font-bold">{payment.payment_mode_name}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-6">
+                                                <span className="text-lg font-bold text-foreground">{payment.amount.toLocaleString()} Fbu</span>
+                                            </TableCell>
+                                            <TableCell className="py-6 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-primary/5 text-primary hover:bg-primary hover:text-primary-foreground font-bold"
+                                                        onClick={() => handleDownloadReceipt(payment)}
+                                                    >
+                                                        <Receipt className="w-4 h-4 mr-2" /> Receipt
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+
+                            <div className="flex items-center justify-between p-4 border-t border-border/50">
+                                <p className="text-sm text-muted-foreground font-medium">
+                                    Showing <span className="text-foreground">{filteredPayments.length}</span> of <span className="text-foreground">{paymentsData?.count || 0}</span> payments
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPaymentPage(p => Math.max(1, p - 1))}
+                                        disabled={paymentPage === 1}
+                                        className="rounded-lg h-9 hover:bg-muted"
+                                    >
+                                        Previous
+                                    </Button>
+                                    <div className="px-3 py-1 bg-muted/50 rounded-lg text-sm font-bold w-9 h-9 flex items-center justify-center">
+                                        {paymentPage}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPaymentPage(p => p + 1)}
+                                        disabled={!paymentsData?.next}
+                                        className="rounded-lg h-9 hover:bg-muted"
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>

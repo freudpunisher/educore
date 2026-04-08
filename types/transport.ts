@@ -9,11 +9,11 @@ export enum VehicleSimpleStatusEnum {
 
 export const vehicleSimpleSchema = z.object({
     id: z.number(),
-    registration: z.string(),
-    model: z.string(),
-    capacity: z.number(),
-    status: z.nativeEnum(VehicleSimpleStatusEnum),
-});
+    registration: z.string().optional(),
+    model: z.string().optional(),
+    capacity: z.number().optional(),
+    status: z.string().optional(),
+}).passthrough();
 
 export type VehicleSimple = z.infer<typeof vehicleSimpleSchema>;
 
@@ -48,13 +48,13 @@ export type TransportDriverListResponse = z.infer<typeof paginatedTransportDrive
 
 export const itinerarySchema = z.object({
     id: z.number(),
-    vehicule: z.number(),
-    vehicle_detail: vehicleSimpleSchema,
-    registration_number: z.string(),
-    fees: z.number(),
-    fees_label: z.string(),
+    vehicule: z.number().optional(),
+    vehicle_detail: vehicleSimpleSchema.optional().nullable(),
+    registration_number: z.string().optional(),
+    fees: z.number().optional(),
+    fees_label: z.string().optional(),
     state: z.boolean().optional(),
-});
+}).passthrough();
 
 export type Itinerary = z.infer<typeof itinerarySchema>;
 
@@ -70,16 +70,16 @@ export enum TransportStatusEnum {
 
 export const transportSubscriptionSchema = z.object({
     id: z.number(),
-    reference: z.string(),
-    student: z.number(),
-    student_name: z.string(),
-    student_enrollment: z.string(),
-    itinerary: z.number(),
-    itinerary_detail: itinerarySchema,
-    period: z.number(),
-    enrollment_date: z.string().transform((str) => new Date(str)),
-    status: z.nativeEnum(TransportStatusEnum).optional(),
-});
+    reference: z.string().optional().nullable(),
+    student: z.number().optional(),
+    student_name: z.string().optional().nullable(),
+    student_enrollment: z.string().optional().nullable(),
+    itinerary: z.number().optional(),
+    itinerary_detail: itinerarySchema.optional().nullable(),
+    period: z.number().optional(),
+    enrollment_date: z.union([z.string(), z.date()]).optional().transform((val) => val ? new Date(val) : new Date()),
+    status: z.string().optional().nullable(),
+}).passthrough();
 
 export type TransportSubscription = z.infer<typeof transportSubscriptionSchema>;
 
@@ -97,3 +97,44 @@ export const transportSubscriptionCreateSchema = z.object({
 });
 
 export type TransportSubscriptionCreate = z.infer<typeof transportSubscriptionCreateSchema>;
+export const transportDashboardStatsSchema = z.object({
+    subscriptions: z.object({
+        active: z.number().default(0),
+        inactive: z.number().default(0),
+    }),
+    vehicles: z.object({
+        active: z.number().default(0),
+        maintenance: z.number().default(0),
+        inactive: z.number().default(0),
+    }),
+    drivers: z.object({
+        total: z.number().default(0),
+    }),
+    itineraries: z.number().default(0),
+    today_checkins: z.number().default(0),
+}).passthrough();
+
+export type TransportDashboardStats = z.infer<typeof transportDashboardStatsSchema>;
+
+export const transportCheckInSchema = z.object({
+    id: z.number(),
+    checked_at: z.string().or(z.date()),
+    checked_by: z.number().nullable().optional(),
+    itinerary: z.number(),
+    status: z.boolean().optional(),
+    student: z.number(),
+    student_name: z.string(),
+    transport: z.number(),
+    vehicle: z.number().nullable().optional(),
+}).passthrough();
+
+export type TransportCheckIn = z.infer<typeof transportCheckInSchema>;
+
+export const transportCheckInListSchema = z.object({
+    count: z.number(),
+    next: z.string().nullable().optional(),
+    previous: z.string().nullable().optional(),
+    results: z.array(transportCheckInSchema),
+}).passthrough();
+
+export type TransportCheckInList = z.infer<typeof transportCheckInListSchema>;

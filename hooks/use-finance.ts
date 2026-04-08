@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedInvoiceSchema, Invoice } from "@/types/finance";
+import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema } from "@/types/finance";
 
 export interface InvoiceQueryParams {
     page?: number;
@@ -47,5 +47,22 @@ export function usePayInvoice() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
         }
+    });
+}
+
+export interface PaymentQueryParams {
+    page?: number;
+    search?: string;
+    invoice?: number;
+}
+
+export function usePayments(params: PaymentQueryParams = { page: 1 }) {
+    return useQuery({
+        queryKey: ["finances", "payments", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get(`/finance/payments/`, { params });
+            const rawData = data?.data || data;
+            return paginatedPaymentSchema.parse(rawData);
+        },
     });
 }
