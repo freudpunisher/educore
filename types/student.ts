@@ -102,11 +102,11 @@ export enum RelationshipEnum {
 }
 
 export const studentParentSchema = z.object({
-  id: z.number(),
-  student: z.number(),
-  account: z.number(),
-  account_detail: accountDetailSchema,
-  relationship: z.nativeEnum(RelationshipEnum).optional(),
+  first_name: z.string(),
+  last_name: z.string(),
+  email: z.string().email().nullable().or(z.literal("")),
+  phone_number: z.string().nullable().or(z.literal("")),
+  relationship: z.union([z.nativeEnum(RelationshipEnum), z.string()]),
   is_primary_contact: z.boolean().optional(),
 });
 
@@ -133,8 +133,8 @@ export const studentDetailSchema = z.object({
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   parent_contact: z.string().nullable(),
   parent_email: z.string().nullable(),
-  documents: z.array(studentDocumentSchema),
-  parents: z.array(studentParentSchema),
+  documents: z.array(studentDocumentSchema).default([]),
+  parents_info: z.array(studentParentSchema).nullish().transform(val => val ?? []),
 }).passthrough();
 
 export type StudentDetail = z.infer<typeof studentDetailSchema>;

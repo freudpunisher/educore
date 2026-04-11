@@ -126,14 +126,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <Users className="h-5 w-5 text-muted-foreground" />
                         Parent / Guardian Contacts
                     </h3>
-                    {student.parents.length === 0 ? (
+                    {student.parents_info?.length === 0 ? (
                         <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
                             <p className="text-muted-foreground">No family information recorded.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {student.parents.map((p) => (
-                                <Card key={p.id} className="relative overflow-hidden group hover:shadow-md transition-shadow">
+                            {student.parents_info?.map((p, index) => (
+                                <Card key={index} className="relative overflow-hidden group hover:shadow-md transition-shadow">
                                     {p.is_primary_contact && (
                                         <div className="absolute top-0 right-0">
                                             <Badge className="rounded-tr-none rounded-bl-lg text-[10px] uppercase font-bold" variant="default">Primary</Badge>
@@ -141,7 +141,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                     )}
                                     <CardHeader className="pb-2">
                                         <p className="font-bold text-lg">
-                                            {p.account_detail.user.first_name} {p.account_detail.user.last_name}
+                                            {p.first_name} {p.last_name}
                                         </p>
                                         <Badge variant="outline" className="w-fit capitalize text-xs bg-muted/50">
                                             {p.relationship}
@@ -150,15 +150,11 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                     <CardContent className="space-y-3 text-sm">
                                         <div className="flex items-center gap-3 text-muted-foreground">
                                             <div className="p-1.5 bg-primary/5 rounded-full"><Phone className="h-4 w-4 text-primary" /></div>
-                                            <span>{p.account_detail.phone_number || "No phone recorded"}</span>
+                                            <span>{p.phone_number || "No phone recorded"}</span>
                                         </div>
                                         <div className="flex items-center gap-3 text-muted-foreground">
                                             <div className="p-1.5 bg-primary/5 rounded-full"><Mail className="h-4 w-4 text-primary" /></div>
-                                            <span className="truncate">{p.account_detail.user.email || "No email recorded"}</span>
-                                        </div>
-                                        <div className="flex items-start gap-3 text-muted-foreground">
-                                            <div className="p-1.5 bg-primary/5 rounded-full mt-0.5"><MapPin className="h-4 w-4 text-primary" /></div>
-                                            <span className="text-xs leading-relaxed">{p.account_detail.address}</span>
+                                            <span className="truncate">{p.email || "No email recorded"}</span>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -172,13 +168,13 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <FileText className="h-5 w-5 text-muted-foreground" />
                         Academic Documents
                     </h3>
-                    {student.documents.length === 0 ? (
+                    {student.documents?.length === 0 ? (
                         <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
                             <p className="text-muted-foreground">No documents uploaded yet.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-3">
-                            {student.documents.map((doc) => (
+                            {student.documents?.map((doc) => (
                                 <div
                                     key={doc.id}
                                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group border-l-4 border-l-primary"
