@@ -6,9 +6,24 @@ export function useStudents(params?: AcademicsEnrollmentsListRequest) {
   return useQuery({
     queryKey: ["students", params],
     queryFn: async () => {
-      const { data } = await axiosInstance.get("users/students/", { params });
-      // Safe parsing — will throw clear error if API changes
-      return paginatedStudentListSchema.parse(data);
+      try {
+        const { data: rawResponse } = await axiosInstance.get("users/students/", { params });
+
+        // Extract the 'data' part if the response is wrapped (Standard API pattern)
+        const data = (rawResponse && typeof rawResponse === 'object' && 'status' in rawResponse && rawResponse.status === 'success')
+          ? rawResponse.data
+          : rawResponse;
+
+        console.log("Students API Data:", data);
+        return paginatedStudentListSchema.parse(data);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Issues (useStudents):", JSON.stringify(err.issues, null, 2));
+        } else {
+          console.error("Unknown Error in useStudents:", err);
+        }
+        throw err;
+      }
     },
     staleTime: 1000 * 60 * 5,
   });

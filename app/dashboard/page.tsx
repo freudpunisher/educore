@@ -5,47 +5,9 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Users, DollarSign, BookOpen, TrendingUp, TrendingDown, AlertCircle, Truck } from "lucide-react"
+import { Users, DollarSign, BookOpen, TrendingUp, TrendingDown, AlertCircle, Truck, Loader2, Wallet, Receipt } from "lucide-react"
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
-
-const statsData = [
-  {
-    title: "Total Students",
-    value: "1,234",
-    change: "+12%",
-    trend: "up",
-    icon: Users,
-    color: "text-blue-600",
-    bgColor: "bg-blue-100",
-  },
-  {
-    title: "Monthly Revenue",
-    value: "€45,231",
-    change: "+8%",
-    trend: "up",
-    icon: DollarSign,
-    color: "text-green-600",
-    bgColor: "bg-green-100",
-  },
-  {
-    title: "Active Courses",
-    value: "89",
-    change: "+3%",
-    trend: "up",
-    icon: BookOpen,
-    color: "text-purple-600",
-    bgColor: "bg-purple-100",
-  },
-  {
-    title: "Attendance Rate",
-    value: "94.2%",
-    change: "-2%",
-    trend: "down",
-    icon: AlertCircle,
-    color: "text-orange-600",
-    bgColor: "bg-orange-100",
-  },
-]
+import { useDashboard } from "@/hooks/use-dashboard"
 
 const enrollmentData = [
   { month: "Jan", students: 1100 },
@@ -56,18 +18,14 @@ const enrollmentData = [
   { month: "Jun", students: 1234 },
 ]
 
-const revenueData = [
-  { month: "Jan", revenue: 38000 },
-  { month: "Feb", revenue: 40000 },
-  { month: "Mar", revenue: 42000 },
-  { month: "Apr", revenue: 43000 },
-  { month: "May", revenue: 44000 },
-  { month: "Jun", revenue: 45231 },
-]
+function formatFbu(amount: number) {
+  return new Intl.NumberFormat("fr-BI").format(amount) + " Fbu";
+}
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard()
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -85,6 +43,44 @@ export default function DashboardPage() {
       </div>
     )
   }
+
+  const studentStats = dashboardData?.students
+  const financeStats = dashboardData?.finance
+
+  const statsCards = [
+    {
+      title: "Total Students",
+      value: isDashboardLoading ? null : String(studentStats?.total ?? "—"),
+      sub: isDashboardLoading ? null : `${studentStats?.enrolled ?? 0} enrolled · ${studentStats?.inactive ?? 0} inactive`,
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-500/10",
+    },
+    {
+      title: "Total Invoiced",
+      value: isDashboardLoading ? null : formatFbu(financeStats?.total_invoiced ?? 0),
+      sub: "All pending & paid",
+      icon: Receipt,
+      color: "text-purple-600",
+      bgColor: "bg-purple-500/10",
+    },
+    {
+      title: "Total Collected",
+      value: isDashboardLoading ? null : formatFbu(financeStats?.total_paid ?? 0),
+      sub: "Confirmed payments",
+      icon: DollarSign,
+      color: "text-green-600",
+      bgColor: "bg-green-500/10",
+    },
+    {
+      title: "Outstanding Balance",
+      value: isDashboardLoading ? null : formatFbu(financeStats?.balance ?? 0),
+      sub: "Remaining unpaid",
+      icon: Wallet,
+      color: "text-rose-600",
+      bgColor: "bg-rose-500/10",
+    },
+  ]
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -109,27 +105,25 @@ export default function DashboardPage() {
 
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {statsData.map((stat) => (
+        {statsCards.map((stat) => (
           <Card key={stat.title} className="group hover:scale-[1.02] transition-all duration-300 border-none bg-gradient-to-br from-background to-muted/30">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</CardTitle>
-              <div className={`p-3 rounded-2xl ${stat.bgColor.replace('100', '20')} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
+              <div className={`p-3 rounded-2xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-heading font-bold text-foreground/90">{stat.value}</div>
-              <div className="flex items-center gap-2 mt-4 bg-muted/50 w-fit px-2 py-1 rounded-lg">
-                {stat.trend === "up" ? (
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-rose-600" />
-                )}
-                <span className={`text-xs font-bold ${stat.trend === "up" ? "text-emerald-600" : "text-rose-600"}`}>
-                  {stat.change}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">vs last month</span>
-              </div>
+              {stat.value === null ? (
+                <div className="flex items-center gap-2 h-9">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="text-2xl font-heading font-bold text-foreground/90 leading-tight">{stat.value}</div>
+              )}
+              {stat.sub && (
+                <p className="text-[11px] text-muted-foreground font-medium mt-2">{stat.sub}</p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -167,22 +161,33 @@ export default function DashboardPage() {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle>Monthly Revenue</CardTitle>
-            <CardDescription>Financial collection performance in EUR</CardDescription>
+            <CardTitle>Finance Overview</CardTitle>
+            <CardDescription>Invoiced vs Collected vs Balance (Fbu)</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={320}>
-              <BarChart data={revenueData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
-                <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ fontWeight: 'bold' }}
-                />
-                <Bar dataKey="revenue" fill="oklch(var(--accent))" radius={[8, 8, 4, 4]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+            {isDashboardLoading ? (
+              <div className="flex items-center justify-center h-[320px]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={[
+                  { name: "Invoiced", amount: financeStats?.total_invoiced ?? 0 },
+                  { name: "Collected", amount: financeStats?.total_paid ?? 0 },
+                  { name: "Balance", amount: financeStats?.balance ?? 0 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
+                  <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => new Intl.NumberFormat("fr-BI", { notation: "compact" }).format(v)} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                    formatter={(v: number) => [formatFbu(v), "Amount"]}
+                  />
+                  <Bar dataKey="amount" fill="oklch(var(--primary))" radius={[8, 8, 4, 4]} barSize={60} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -226,3 +231,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+
