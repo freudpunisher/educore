@@ -17,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"
 import {
-  Building2, Users, Bell, Shield, Save, Package, Tag, Ruler, Plus, Pencil, Trash2
+  Building2, Users, Bell, Shield, Save, Package, Tag, Ruler, Plus, Pencil, Trash2, Store
 } from "lucide-react"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
@@ -47,6 +47,12 @@ type Unit = {
   symbol: string
 }
 
+type StoreLocation = {
+  id: number
+  name: string
+  is_active: boolean
+}
+
 const staticUsers = [
   { id: "1", name: "Marie Dubois", email: "marie.dubois@school.fr", role: "Admin", status: "active" },
   { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Teacher", status: "active" },
@@ -58,6 +64,7 @@ export default function SettingsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [units, setUnits] = useState<Unit[]>([])
+  const [locations, setLocations] = useState<StoreLocation[]>([])
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -65,17 +72,21 @@ export default function SettingsPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false)
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
+  const [editingLocation, setEditingLocation] = useState<StoreLocation | null>(null)
 
   const fetchData = async () => {
     try {
-      const [pRes, cRes, uRes] = await Promise.all([
+      const [pRes, cRes, uRes, lRes] = await Promise.all([
         api.get<any>("store/stock/products/"),
         api.get<any>("store/stock/categories/"),
         api.get<any>("store/stock/units/"),
+        api.get<any>("store/stock/locations/"),
       ])
       setProducts(Array.isArray(pRes) ? pRes : pRes.results || [])
       setCategories(Array.isArray(cRes) ? cRes : cRes.results || [])
       setUnits(Array.isArray(uRes) ? uRes : uRes.results || [])
+      setLocations(Array.isArray(lRes) ? lRes : lRes.results || [])
     } catch {
       toast.error("Failed to load store data")
     }
@@ -149,6 +160,26 @@ export default function SettingsPage() {
     catch { toast.error("Failed") }
   }
 
+  const handleLocationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = { name: fd.get("name"), is_active: fd.get("is_active") === "true" }
+    try {
+      editingLocation
+        ? await api.put(`store/stock/locations/${editingLocation.id}/`, data)
+        : await api.post("store/stock/locations/", data)
+      toast.success(editingLocation ? "Location updated" : "Location created")
+      setIsLocationModalOpen(false)
+      fetchData()
+    } catch { toast.error("Operation failed") }
+  }
+
+  const handleDeleteLocation = async (id: number) => {
+    if (!confirm("Delete this location?")) return
+    try { await api.delete(`store/stock/locations/${id}/`); toast.success("Deleted"); fetchData() }
+    catch { toast.error("Failed") }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -162,6 +193,7 @@ export default function SettingsPage() {
           <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
           <TabsTrigger value="security"><Shield className="w-4 h-4 mr-2" />Security</TabsTrigger>
+          <TabsTrigger value="locations"><Store className="w-4 h-4 mr-2" />Magasins</TabsTrigger>
           <TabsTrigger value="articles"><Package className="w-4 h-4 mr-2" />Articles</TabsTrigger>
           <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Categories</TabsTrigger>
           <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>
@@ -269,6 +301,46 @@ export default function SettingsPage() {
               </div>
               <div className="flex justify-end pt-2">
                 <Button><Save className="w-4 h-4 mr-2" />Save Settings</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Locations (Magasins) ── */}
+        <TabsContent value="locations">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div><CardTitle>Magasins / Locations</CardTitle><CardDescription>Manage the active store locations (Cantine, Boutique, etc.)</CardDescription></div>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingLocation(null); setIsLocationModalOpen(true) }}>
+                  <Plus className="w-4 h-4 mr-2" />New Location
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead><TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {locations.length === 0
+                      ? <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No locations found</TableCell></TableRow>
+                      : locations.map(l => (
+                        <TableRow key={l.id}>
+                          <TableCell className="font-medium">{l.name}</TableCell>
+                          <TableCell><Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingLocation(l); setIsLocationModalOpen(true) }}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteLocation(l.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
@@ -409,6 +481,27 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Location Modal ── */}
+      <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingLocation ? "Edit Location" : "New Location"}</DialogTitle></DialogHeader>
+          <form onSubmit={handleLocationSubmit} className="space-y-4">
+            <div className="space-y-2"><Label>Location Name</Label><Input name="name" defaultValue={editingLocation?.name} placeholder="e.g. Cantine" required /></div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select name="is_active" defaultValue={String(editingLocation?.is_active ?? true)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter><Button type="submit">{editingLocation ? "Update" : "Create"}</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Article Modal ── */}
       <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>

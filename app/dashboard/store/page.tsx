@@ -40,6 +40,7 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
+  Printer,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -140,8 +141,25 @@ type Distribution = {
   assigned_by_name: string | null;
 };
 
+type StoreProduct = {
+  id: number;
+  store_name: string;
+  product: number;
+  product_name: string;
+  quantity: number;
+  unit_price: string;
+};
+
+type StoreLocation = {
+  id: number;
+  name: string;
+  is_active: boolean;
+};
+
 type ProductSale = {
   id: number;
+  reference: string;
+  is_paid: boolean;
   product: number;
   product_name: string;
   unit_symbol: string;
@@ -167,14 +185,17 @@ export default function StorePage() {
   const [exits, setExits] = useState<StockExit[]>([]);
   const [distributions, setDistributions] = useState<Distribution[]>([]);
   const [sales, setSales] = useState<ProductSale[]>([]);
+  const [storeProducts, setStoreProducts] = useState<StoreProduct[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
+  const [locations, setLocations] = useState<StoreLocation[]>([]);
 
   // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
+  const [isStoreProductModalOpen, setIsStoreProductModalOpen] = useState(false);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
 
@@ -197,16 +218,18 @@ export default function StorePage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [dashRes, invRes, entriesRes, exitsRes, distRes, salesRes, prodRes, catRes, unitRes] = await Promise.all([
+      const [dashRes, invRes, entriesRes, exitsRes, distRes, salesRes, storeProdRes, prodRes, catRes, unitRes, locRes] = await Promise.all([
         api.get<StoreDashboard>("store/stock/dashboard/"),
         api.get<any>("store/stock/inventory/"),
         api.get<any>("store/stock/entries/"),
         api.get<any>("store/stock/exits/"),
         api.get<any>("store/stock/non-vivres/"),
         api.get<any>("store/stock/sales/"),
+        api.get<any>("store/stock/store-products/"),
         api.get<any>("store/stock/products/"),
         api.get<any>("store/stock/categories/"),
         api.get<any>("store/stock/units/"),
+        api.get<any>("store/stock/locations/"),
       ]);
 
       setDashboard(dashRes);
@@ -215,9 +238,11 @@ export default function StorePage() {
       setExits(Array.isArray(exitsRes) ? exitsRes : exitsRes.results || []);
       setDistributions(Array.isArray(distRes) ? distRes : distRes.results || []);
       setSales(Array.isArray(salesRes) ? salesRes : salesRes.results || []);
+      setStoreProducts(Array.isArray(storeProdRes) ? storeProdRes : storeProdRes.results || []);
       setProducts(Array.isArray(prodRes) ? prodRes : prodRes.results || []);
       setCategories(Array.isArray(catRes) ? catRes : catRes.results || []);
       setUnits(Array.isArray(unitRes) ? unitRes : unitRes.results || []);
+      setLocations(Array.isArray(locRes) ? locRes : locRes.results || []);
     } catch (error) {
       console.error("Error loading store data:", error);
       toast.error("Failed to load store data");
@@ -349,6 +374,25 @@ export default function StorePage() {
     }
   };
 
+  const handleStoreProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const data = {
+      store_name: fd.get("store_name"),
+      product: parseInt(fd.get("product") as string),
+      quantity: parseFloat(fd.get("quantity") as string),
+      unit_price: parseFloat(fd.get("unit_price") as string),
+    };
+    try {
+      await api.post("store/stock/store-products/", data);
+      toast.success("Store stock added successfully");
+      setIsStoreProductModalOpen(false);
+      fetchData();
+    } catch {
+      toast.error("Operation failed");
+    }
+  };
+
   const handleSaleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -358,6 +402,7 @@ export default function StorePage() {
       unit_price: parseFloat(fd.get("unit_price") as string),
       buyer_name: fd.get("buyer_name"),
       buyer_type: fd.get("buyer_type"),
+      is_paid: fd.get("is_paid") === "true",
       notes: fd.get("notes") || null,
     };
     try {
@@ -368,6 +413,84 @@ export default function StorePage() {
     } catch {
       toast.error("Operation failed");
     }
+  };
+
+  const handlePrintDocument = (sale: ProductSale, type: "invoice" | "receipt") => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>${type === 'receipt' ? 'Receipt' : 'Invoice'} - ${sale.reference}</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; padding: 40px; margin: 0; color: #1e293b; max-width: 800px; margin: auto; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+            .header h1 { margin: 0 0 10px 0; font-size: 24px; color: ${type === 'receipt' ? '#16a34a' : '#0f172a'}; text-transform: uppercase; }
+            .row { display: flex; justify-content: space-between; margin-bottom: 12px; }
+            .label { color: #64748b; font-weight: 500; font-size: 14px; }
+            .value { font-weight: 600; font-size: 15px; text-transform: capitalize; }
+            .divider { border-top: 1px solid #e2e8f0; margin: 20px 0; }
+            .total { font-size: 18px; color: #0f172a; font-weight: 700; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+            th { color: #64748b; font-size: 13px; text-transform: uppercase; }
+            .footer { margin-top: 60px; text-align: center; color: #64748b; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${type === 'receipt' ? 'PAYMENT RECEIPT' : 'INVOICE'}</h1>
+            <div style="color: #64748b; font-size: 14px;">Reference: ${sale.reference || '#' + sale.id}</div>
+            <div style="color: #64748b; font-size: 14px;">Date: ${new Date(sale.date).toLocaleString('en-GB')}</div>
+          </div>
+          
+          <div class="row">
+            <span class="label">Billed To:</span>
+            <span class="value">${sale.buyer_name} (${sale.buyer_type})</span>
+          </div>
+          <div class="row">
+            <span class="label">Status:</span>
+            <span class="value" style="color: ${sale.is_paid ? '#16a34a' : '#ef4444'};">${sale.is_paid ? 'PAID' : 'UNPAID'}</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th style="text-align: right;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${sale.product_name}</td>
+                <td>${sale.quantity} ${sale.unit_symbol}</td>
+                <td>${parseFloat(sale.unit_price).toLocaleString()} FCFA</td>
+                <td style="text-align: right; font-weight: 600;">${parseFloat(sale.total_price).toLocaleString()} FCFA</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="divider"></div>
+          
+          <div class="row total">
+            <span>Amount ${type === 'receipt' ? 'Paid' : 'Due'}:</span>
+            <span>${parseFloat(sale.total_price).toLocaleString()} FCFA</span>
+          </div>
+
+          <div class="footer">
+            <p>EduCore Store & Logistics Management System</p>
+          </div>
+          <script>
+            window.onload = function() { window.print(); window.close(); }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   // ─── Filters ──────────────────────────────────────────────────────────────
@@ -661,7 +784,40 @@ export default function StorePage() {
     },
   ];
 
+  const storeProductColumns = [
+    {
+      key: "store_name" as const,
+      label: "Magasin",
+      sortable: true,
+      render: (v: string) => <span className="font-semibold text-slate-800 dark:text-slate-200">{v}</span>,
+    },
+    {
+      key: "product_name" as const,
+      label: "Product",
+      sortable: true,
+      render: (v: string) => <span className="font-medium text-slate-900 dark:text-white">{v}</span>,
+    },
+    {
+      key: "quantity" as const,
+      label: "Quantity",
+      sortable: true,
+      render: (v: number) => <span className="font-medium">{v}</span>,
+    },
+    {
+      key: "unit_price" as const,
+      label: "Unit Price",
+      sortable: true,
+      render: (v: string) => <span className="text-green-600 dark:text-green-400 font-medium">{parseFloat(v).toLocaleString()} FCFA</span>,
+    },
+  ];
+
   const saleColumns = [
+    {
+      key: "reference" as const,
+      label: "Reference",
+      sortable: true,
+      render: (v: string) => <span className="font-semibold text-slate-700 dark:text-slate-300">{v || "—"}</span>,
+    },
     {
       key: "product_name" as const,
       label: "Product",
@@ -692,6 +848,16 @@ export default function StorePage() {
       render: (v: string) => <span className="font-bold text-green-600 dark:text-green-400">{parseFloat(v).toLocaleString()} FCFA</span>,
     },
     {
+      key: "is_paid" as const,
+      label: "Status",
+      sortable: true,
+      render: (v: boolean) => (
+        <span className={`px-2 py-1 rounded text-xs font-semibold ${v ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'}`}>
+          {v ? 'PAID' : 'UNPAID'}
+        </span>
+      ),
+    },
+    {
       key: "date" as const,
       label: "Date",
       sortable: true,
@@ -706,6 +872,14 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handlePrintDocument(item, "invoice")}>
+              <Printer className="w-4 h-4 mr-2" /> Print Invoice
+            </DropdownMenuItem>
+            {item.is_paid && (
+              <DropdownMenuItem onClick={() => handlePrintDocument(item, "receipt")}>
+                <Printer className="w-4 h-4 mr-2 text-green-600" /> Print Receipt
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={() => handleDeleteSale(item.id)} className="text-red-600">
               <Trash2 className="w-4 h-4 mr-2" /> Delete Transaction
             </DropdownMenuItem>
@@ -796,6 +970,9 @@ export default function StorePage() {
             </TabsTrigger>
             <TabsTrigger value="distributions" className="flex-1 data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-950 text-xs sm:text-sm min-w-[120px]">
               Distributions
+            </TabsTrigger>
+            <TabsTrigger value="store-products" className="flex-1 data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-950 text-xs sm:text-sm min-w-[120px]">
+              Liste des Stocks
             </TabsTrigger>
             <TabsTrigger value="sales" className="flex-1 data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-950 text-xs sm:text-sm min-w-[120px]">
               Ventes
@@ -897,6 +1074,22 @@ export default function StorePage() {
 
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
               <DataTable data={filteredInventory} columns={inventoryColumns} itemsPerPage={10} />
+            </div>
+          </TabsContent>
+
+          {/* ── Liste des Stocks Tab ── */}
+          <TabsContent value="store-products" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Liste des Stocks (Par Magasin)</h2>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">Gérer les stocks locaux par points de vente ou dépôts</p>
+              </div>
+              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsStoreProductModalOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" /> Add Location Stock
+              </Button>
+            </div>
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
+              <DataTable data={storeProducts} columns={storeProductColumns} itemsPerPage={10} />
             </div>
           </TabsContent>
 
@@ -1375,12 +1568,69 @@ export default function StorePage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Input name="notes" placeholder="Optional" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Input name="notes" placeholder="Optional" />
+              </div>
+              <div className="space-y-2">
+                <Label>Payment Status</Label>
+                <div className="pt-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_paid" value="true" defaultChecked className="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-600" />
+                    <span className="text-sm font-medium">Mark as Paid</span>
+                  </label>
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white w-full">Record Sale & Print Receipt</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Store Product Modal */}
+      <Dialog open={isStoreProductModalOpen} onOpenChange={setIsStoreProductModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add Local Stock</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleStoreProductSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Store/Depot Name</Label>
+              <Select name="store_name" required>
+                <SelectTrigger><SelectValue placeholder="Select a location" /></SelectTrigger>
+                <SelectContent>
+                  {locations.filter(l => l.is_active).map(l => (
+                    <SelectItem key={l.id} value={l.name}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Product</Label>
+              <Select name="product" required>
+                <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                <SelectContent>
+                  {products.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Quantity</Label>
+                <Input name="quantity" type="number" step="0.01" defaultValue={1} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit Price (FCFA)</Label>
+                <Input name="unit_price" type="number" step="0.01" placeholder="Selling price" required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white w-full">Save Local Stock</Button>
             </DialogFooter>
           </form>
         </DialogContent>
