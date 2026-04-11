@@ -26,3 +26,14 @@ export const createStudentSchema = z.object({
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;
+
+export const uploadDocumentSchema = z.object({
+  document_type: z.enum(["bulletin", "certificate", "enrollment", "exam_copy", "medical", "other"], {
+    required_error: "Document type is required",
+  }),
+  description: z.string().optional().or(z.literal("")),
+  file: z.any().refine((file) => file instanceof File || (typeof window !== 'undefined' && file instanceof FileList), "File is required"),
+  is_public: z.boolean().default(true),
+});
+
+export type UploadDocumentData = z.infer<typeof uploadDocumentSchema>;
