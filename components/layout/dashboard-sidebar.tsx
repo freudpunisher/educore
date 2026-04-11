@@ -27,6 +27,7 @@ import {
   UtensilsCrossed,
   Package,
   Home,
+  Baby,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -46,11 +47,16 @@ type NavItem = {
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Students", href: "/dashboard/students", icon: Users },
+  { name: "Employees", href: "/dashboard/employees", icon: Users },
   { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },
   { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert },
   { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
   { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
+  { name: "Finances", href: "/dashboard/finances", icon: DollarSign },
+  { name: "Invoices", href: "/dashboard/finances/invoices", icon: Receipt },
+  { name: "Assessments", href: "/dashboard/assessments", icon: BookOpen },
+  { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
   {
     name: "Finances",
     icon: DollarSign,
@@ -67,7 +73,8 @@ const navigation: NavItem[] = [
   { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },
   { name: "Store", href: "/dashboard/store", icon: Package },
   { name: "Boarding", href: "/dashboard/boarding", icon: Home },
-  { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+  { name: "Daycare", href: "/dashboard/daycare", icon: Baby },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
 function SidebarItem({
@@ -142,6 +149,11 @@ function SidebarItem({
       </div>
     )
   }
+
+  const isActive =
+    item.href === "/dashboard"
+      ? pathname === "/dashboard"
+      : pathname === item.href || (item.href ? pathname?.startsWith(item.href + "/") : false)
 
   const isActive = isRouteActive(item.href)
   return (

@@ -1,21 +1,134 @@
 "use client"
 
-import React, { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Clock, Download, Plus } from "lucide-react"
-import { mockTimetable } from "@/lib/mock-data"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Clock, Download, Plus, Loader2 } from "lucide-react"
+import { api } from "@/lib/api"
+import { toast } from "sonner"
+
+type ClassRoom = {
+  id: number;
+  code: string;
+  name: string;
+};
+
+type TimetableSlot = {
+  id: number;
+  course: number;
+  course_name: string;
+  teacher_name: string;
+  classroom_id: number;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  room: string | null;
+};
+
+type Course = {
+  id: number;
+  name: string;
+  teacher_name: string;
+};
 
 export default function TimetablePage() {
-  const [selectedClass, setSelectedClass] = useState("5th A")
+  const [selectedClassId, setSelectedClassId] = useState<string>("")
+  const [classRooms, setClassRooms] = useState<ClassRoom[]>([])
+  const [slots, setSlots] = useState<TimetableSlot[]>([])
+  const [courses, setCourses] = useState<Course[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAdding, setIsAdding] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  // Form state
+  const [newSlot, setNewSlot] = useState({
+    course: "",
+    day_of_week: "0",
+    start_time: "08:00",
+    end_time: "09:00",
+    room: "",
+  })
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
   const timeSlots = ["08:00-09:00", "09:00-10:00", "10:15-11:15", "11:15-12:15", "14:00-15:00", "15:00-16:00"]
 
-  const getSlotForDayAndTime = (day: string, timeSlot: string) => {
+  useEffect(() => {
+    fetchClassRooms()
+  }, [])
+
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchTimetable(selectedClassId)
+      fetchCourses(selectedClassId)
+    }
+  }, [selectedClassId])
+
+  const fetchClassRooms = async () => {
+    try {
+      const resp = await api.get<any>("config/classrooms/")
+      const data = resp.results || resp
+      setClassRooms(data)
+      if (data.length > 0) {
+        setSelectedClassId(data[0].id.toString())
+      }
+    } catch {
+      toast.error("Failed to load classrooms")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchTimetable = async (classId: string) => {
+    setIsLoading(true)
+    try {
+      const resp = await api.get<any>(`config/timetable/?course__classroom=${classId}`)
+      setSlots(resp.results || resp)
+    } catch {
+      toast.error("Failed to load timetable")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const fetchCourses = async (classId: string) => {
+    try {
+      const resp = await api.get<any>(`config/courses/?classroom=${classId}`)
+      setCourses(resp.results || resp)
+    } catch {
+      toast.error("Failed to load courses")
+    }
+  }
+
+  const createSlot = async () => {
+    if (!newSlot.course) {
+      toast.error("Please select a course")
+      return
+    }
+    setIsAdding(true)
+    try {
+      await api.post("config/timetable/", {
+        ...newSlot,
+        course: parseInt(newSlot.course),
+        day_of_week: parseInt(newSlot.day_of_week),
+      })
+      toast.success("Timetable slot created")
+      setIsDialogOpen(false)
+      fetchTimetable(selectedClassId)
+    } catch {
+      toast.error("Failed to create slot")
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  const getSlotForDayAndTime = (dayIndex: number, timeSlot: string) => {
     const [start] = timeSlot.split("-")
-    return mockTimetable.find((slot) => slot.day === day && slot.startTime === start && slot.class === selectedClass)
+    // Match by day index and start time (HH:MM)
+    return slots.find((s) => s.day_of_week === dayIndex && s.start_time.startsWith(start))
   }
 
   const subjectColors: Record<string, string> = {
@@ -38,10 +151,92 @@ export default function TimetablePage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Course
-          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Course
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Timetable Slot</DialogTitle>
+                <DialogDescription>Schedule a new course for this class.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="course">Course</Label>
+                  <Select value={newSlot.course} onValueChange={(v) => setNewSlot({ ...newSlot, course: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.name} ({c.teacher_name})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="day">Day</Label>
+                    <Select value={newSlot.day_of_week} onValueChange={(v) => setNewSlot({ ...newSlot, day_of_week: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {days.map((day, i) => (
+                          <SelectItem key={day} value={i.toString()}>
+                            {day}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="room">Room</Label>
+                    <Input
+                      id="room"
+                      placeholder="Ex: Room 101"
+                      value={newSlot.room}
+                      onChange={(e) => setNewSlot({ ...newSlot, room: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="start">Start Time</Label>
+                    <Input
+                      id="start"
+                      type="time"
+                      value={newSlot.start_time}
+                      onChange={(e) => setNewSlot({ ...newSlot, start_time: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="end">End Time</Label>
+                    <Input
+                      id="end"
+                      type="time"
+                      value={newSlot.end_time}
+                      onChange={(e) => setNewSlot({ ...newSlot, end_time: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={createSlot} disabled={isAdding}>
+                  {isAdding && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Create Slot
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -55,17 +250,16 @@ export default function TimetablePage() {
               </CardTitle>
               <CardDescription>Detailed timetable by class</CardDescription>
             </div>
-            <Select value={selectedClass} onValueChange={setSelectedClass}>
+            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select a class" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="6th A">6th A</SelectItem>
-                <SelectItem value="6th B">6th B</SelectItem>
-                <SelectItem value="5th A">5th A</SelectItem>
-                <SelectItem value="5th B">5th B</SelectItem>
-                <SelectItem value="4th A">4th A</SelectItem>
-                <SelectItem value="4th B">4th B</SelectItem>
+                {classRooms.map((cls) => (
+                  <SelectItem key={cls.id} value={cls.id.toString()}>
+                    {cls.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -82,20 +276,20 @@ export default function TimetablePage() {
                 ))}
 
                 {timeSlots.map((timeSlot) => (
-                  <React.Fragment key={`time-slot-${timeSlot}`}>
+                  <div key={`time-slot-${timeSlot}`} className="contents">
                     <div className="text-sm text-muted-foreground p-2 flex items-center">
                       {timeSlot}
                     </div>
-                    {days.map((day) => {
-                      const slot = getSlotForDayAndTime(day, timeSlot)
+                    {days.map((day, dayIndex) => {
+                      const slot = getSlotForDayAndTime(dayIndex, timeSlot)
                       return (
                         <div key={`${day}-${timeSlot}`} className="p-1">
                           {slot ? (
                             <div
-                              className={`p-3 rounded-lg border-2 ${subjectColors[slot.subject] || "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700"}`}
+                              className={`p-3 rounded-lg border-2 ${subjectColors[slot.course_name] || "bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700"}`}
                             >
-                              <div className="font-medium text-sm text-foreground">{slot.subject}</div>
-                              <div className="text-xs text-muted-foreground mt-1">{slot.teacher}</div>
+                              <div className="font-medium text-sm text-foreground">{slot.course_name}</div>
+                              <div className="text-xs text-muted-foreground mt-1">{slot.teacher_name}</div>
                               <div className="text-xs text-muted-foreground">{slot.room}</div>
                             </div>
                           ) : (
@@ -104,7 +298,7 @@ export default function TimetablePage() {
                         </div>
                       )
                     })}
-                  </React.Fragment>
+                  </div>
                 ))}
               </div>
             </div>
