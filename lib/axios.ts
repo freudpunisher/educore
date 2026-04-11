@@ -5,7 +5,7 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "/api/"; // Client-side → goes through Next.js proxy
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.197:8000/api/"; // Client-side → goes through Next.js proxy
 
 const axiosInstance = axios.create({
   baseURL,
@@ -28,7 +28,9 @@ axiosInstance.interceptors.request.use(
 
     // Example: if you store token in localStorage (Clerk, custom JWT, etc.)
     const token = localStorage.getItem("access_token");
-    if (token) {
+    // Don't send token for login requests to avoid 'token_not_valid' errors
+    // from old/expired tokens in localStorage.
+    if (token && !config.url?.includes("login/")) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -55,6 +57,22 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+
+    // Handle token_not_valid specifically
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.code === "token_not_valid"
+    ) {
+      console.warn("Auth: Invalid token detected, clearing storage and redirecting.");
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_data");
+      
+      if (!isServer) {
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
 
     // Handle 401 globally (optional token refresh logic)
     if (error.response?.status === 401 && !originalRequest._retry) {

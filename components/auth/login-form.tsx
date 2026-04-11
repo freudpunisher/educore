@@ -31,6 +31,7 @@ export function LoginForm() {
 
   const onSubmit = (data: LoginFormData) => {
     loginMutation.mutate(data);
+    console.log("data", data);
   };
 
   return (
@@ -40,9 +41,9 @@ export function LoginForm() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-[2rem] shadow-2xl shadow-primary/20 mb-4 rotate-3 group transition-transform hover:rotate-0 duration-500 mx-auto">
             <GraduationCap className="w-10 h-10 text-primary-foreground -rotate-3 group-hover:rotate-0 transition-transform duration-500" />
           </div>
-          <CardTitle className="text-3xl font-bold font-heading">Gestion Scolaire</CardTitle>
+          <CardTitle className="text-3xl font-bold font-heading">School Management</CardTitle>
           <CardDescription className="text-muted-foreground font-medium">
-            Connectez-vous avec votre identifiant
+            Log in with your username
           </CardDescription>
         </CardHeader>
 
@@ -52,13 +53,13 @@ export function LoginForm() {
               <Alert variant="destructive" className="rounded-2xl border-none bg-destructive/10 text-destructive animate-in shake duration-500">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="font-bold">
-                  {(loginMutation.error as any)?.response?.data?.detail || "Identifiant ou mot de passe incorrect"}
+                  {(loginMutation.error as any)?.response?.data?.detail || "Incorrect username or password"}
                 </AlertDescription>
               </Alert>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-bold ml-1">Identifiant</Label>
+              <Label htmlFor="username" className="text-sm font-bold ml-1">Username</Label>
               <Input
                 id="username"
                 type="text"
@@ -72,7 +73,7 @@ export function LoginForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-bold ml-1">Mot de passe</Label>
+              <Label htmlFor="password" className="text-sm font-bold ml-1">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -93,10 +94,10 @@ export function LoginForm() {
               {loginMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Connexion...
+                  Authenticating...
                 </>
               ) : (
-                "Se connecter"
+                "Authenticate"
               )}
             </Button>
 
@@ -106,7 +107,7 @@ export function LoginForm() {
                 className="text-sm text-muted-foreground font-medium hover:text-primary transition-colors"
                 type="button"
               >
-                Mot de passe oublié ?
+                Forgot password ?
               </Button>
             </div>
           </form>

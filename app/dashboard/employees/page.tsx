@@ -1,6 +1,7 @@
 "use client";
 
 import EmployeesTable from "@/components/employees/employees-table";
+import AddEmployeeDialog from "@/components/employees/add-employee-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Briefcase } from "lucide-react";
 import { useEmployees } from "@/hooks/use-employees";
@@ -28,8 +29,9 @@ export default function EmployeesPage() {
             <Briefcase className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl">Employee List</CardTitle>
           </div>
-          {/* Add CreateEmployeeDialog here in the future */}
+          <AddEmployeeDialog />
         </CardHeader>
+
 
         <CardContent>
           <EmployeesTable

@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedEmployeeListSchema, EmployeeListRequest } from "@/types/employee";
+import { paginatedEmployeeListSchema, EmployeeListRequest, EmployeeCreateInput } from "@/types/employee";
+import { toast } from "sonner";
 
 export function useEmployees(params?: EmployeeListRequest) {
   return useQuery({
@@ -19,3 +20,23 @@ export function useEmployees(params?: EmployeeListRequest) {
     staleTime: 1000 * 60 * 5,
   });
 }
+
+export function useCreateEmployee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: EmployeeCreateInput) => {
+      const { data } = await axiosInstance.post("users/accounts/", input);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast.success("Employee created successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || "Failed to create employee";
+      toast.error(errorMessage);
+    },
+  });
+}
+
