@@ -32,6 +32,20 @@ export const invoiceSchema = z.object({
 
 export const paginatedInvoiceSchema = createPaginatedSchema(invoiceSchema);
 
+export const paymentSchema = z.object({
+    id: z.number(),
+    amount: z.string(),
+    document: z.string().nullable().optional(),
+    invoice: z.number().nullable().optional(),
+    invoice_reference: z.string(),
+    payment_mode: z.number().optional(),
+    payment_mode_name: z.string(),
+}).passthrough();
+
+export const paginatedPaymentSchema = createPaginatedSchema(paymentSchema);
+
 export type Invoice = z.infer<typeof invoiceSchema>;
 export type PaginatedInvoice = z.infer<typeof paginatedInvoiceSchema>;
 export type FeesDetail = z.infer<typeof feesDetailSchema>;
+export type Payment = z.infer<typeof paymentSchema>;
+export type PaginatedPayment = z.infer<typeof paginatedPaymentSchema>;

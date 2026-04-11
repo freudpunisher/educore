@@ -57,6 +57,18 @@ const navigation: NavItem[] = [
   { name: "Invoices", href: "/dashboard/finances/invoices", icon: Receipt },
   { name: "Assessments", href: "/dashboard/assessments", icon: BookOpen },
   { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
+  {
+    name: "Finances",
+    icon: DollarSign,
+    children: [
+      { name: "Overview", href: "/dashboard/finances" },
+      { name: "Invoices", href: "/dashboard/finances/invoices" },
+      { name: "Payments", href: "/dashboard/finances/payments" },
+    ]
+  },
+  { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
+  { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
+  { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
   { name: "Transport", href: "/dashboard/transport", icon: Truck },
   { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },
   { name: "Store", href: "/dashboard/store", icon: Package },
@@ -65,19 +77,39 @@ const navigation: NavItem[] = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
-function SidebarItem({ item, pathname, collapsed }: { item: any, pathname: string, collapsed: boolean }) {
-  const hasActiveChild = item.children?.some((child: any) => pathname === child.href) || false
-  const [isExpanded, setIsExpanded] = useState(hasActiveChild)
+function SidebarItem({
+  item,
+  pathname,
+  collapsed,
+  expandedMenu,
+  setExpandedMenu
+}: {
+  item: any,
+  pathname: string,
+  collapsed: boolean,
+  expandedMenu: string | null,
+  setExpandedMenu: (s: string | null) => void
+}) {
+  const isRouteActive = (href: string) => {
+    if (pathname === href) return true;
+    if (href === "/dashboard" || href === "/dashboard/finances") return false; // Prevent index routes from matching deep routes
+    return pathname.startsWith(href + "/");
+  }
+
+  const hasActiveChild = item.children?.some((child: any) => isRouteActive(child.href)) || false
+  const isExpanded = expandedMenu === item.name
 
   useEffect(() => {
-    if (hasActiveChild) setIsExpanded(true)
-  }, [hasActiveChild])
+    if (hasActiveChild && expandedMenu === null) {
+      setExpandedMenu(item.name)
+    }
+  }, [hasActiveChild, expandedMenu, setExpandedMenu, item.name])
 
   if (item.children) {
     return (
       <div className="space-y-1">
         <button
-          onClick={() => !collapsed && setIsExpanded(!isExpanded)}
+          onClick={() => !collapsed && setExpandedMenu(isExpanded ? null : item.name)}
           className={cn(
             "w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group relative",
             hasActiveChild && !isExpanded
@@ -96,7 +128,7 @@ function SidebarItem({ item, pathname, collapsed }: { item: any, pathname: strin
         {isExpanded && !collapsed && (
           <div className="ml-9 border-l border-border/50 pl-4 space-y-1 py-1">
             {item.children.map((child: any) => {
-              const isChildActive = pathname === child.href
+              const isChildActive = isRouteActive(child.href)
               return (
                 <Link
                   key={child.name}
@@ -123,6 +155,7 @@ function SidebarItem({ item, pathname, collapsed }: { item: any, pathname: strin
       ? pathname === "/dashboard"
       : pathname === item.href || (item.href ? pathname?.startsWith(item.href + "/") : false)
 
+  const isActive = isRouteActive(item.href)
   return (
     <Link
       href={item.href}
@@ -146,6 +179,7 @@ export function DashboardSidebar() {
   const pathname = usePathname()
   const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
 
   const filteredNavigation = navigation
     .filter((item) => !item.roles || (user?.role && item.roles.includes(user.role)))
@@ -193,7 +227,14 @@ export function DashboardSidebar() {
 
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {filteredNavigation.map((item) => (
-          <SidebarItem key={item.name} item={item} pathname={pathname || ""} collapsed={collapsed} />
+          <SidebarItem
+            key={item.name}
+            item={item}
+            pathname={pathname || ""}
+            collapsed={collapsed}
+            expandedMenu={expandedMenu}
+            setExpandedMenu={setExpandedMenu}
+          />
         ))}
       </nav>
     </aside>
