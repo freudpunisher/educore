@@ -11,6 +11,11 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: async (credentials: LoginFormData) => {
+      // Clear any stale tokens before trying to login
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_data");
+
       // Exactly what your backend expects
       const { data } = await axiosInstance.post("login/", {
         username: credentials.username,

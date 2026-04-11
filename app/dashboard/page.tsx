@@ -88,7 +88,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-4xl font-heading font-bold text-foreground tracking-tight">Main Dashboard</h1>
           <p className="text-muted-foreground mt-2 font-medium">
-            Welcome back, <span className="text-primary font-bold">{user.name}</span>. Here is your institutional overview.
+            Welcome back, <span className="text-primary font-bold">{user.fullName}</span>. Here is your institutional overview.
           </p>
         </div>
         <div className="flex gap-3">

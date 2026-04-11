@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -9,9 +10,50 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Building2, Users, Bell, Shield, Save } from "lucide-react"
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle
+} from "@/components/ui/dialog"
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select"
+import {
+  Building2, Users, Bell, Shield, Save, Package, Tag, Ruler, Plus, Pencil, Trash2, Store
+} from "lucide-react"
+import { api } from "@/lib/api"
+import { toast } from "sonner"
 
-const users = [
+type Product = {
+  id: number
+  name: string
+  category: number
+  category_name: string
+  category_type: string
+  unit: number
+  unit_name: string
+  unit_symbol: string
+  minimum_stock: number
+  is_active: boolean
+}
+
+type Category = {
+  id: number
+  name: string
+  type: "vivre" | "non_vivre"
+}
+
+type Unit = {
+  id: number
+  name: string
+  symbol: string
+}
+
+type StoreLocation = {
+  id: number
+  name: string
+  is_active: boolean
+}
+
+const staticUsers = [
   { id: "1", name: "Marie Dubois", email: "marie.dubois@school.fr", role: "Admin", status: "active" },
   { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Teacher", status: "active" },
   { id: "3", name: "Pierre Leroy", email: "pierre.leroy@school.fr", role: "Driver", status: "active" },
@@ -19,33 +61,145 @@ const users = [
 ]
 
 export default function SettingsPage() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [units, setUnits] = useState<Unit[]>([])
+  const [locations, setLocations] = useState<StoreLocation[]>([])
+
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [isUnitModalOpen, setIsUnitModalOpen] = useState(false)
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
+  const [editingLocation, setEditingLocation] = useState<StoreLocation | null>(null)
+
+  const fetchData = async () => {
+    try {
+      const [pRes, cRes, uRes, lRes] = await Promise.all([
+        api.get<any>("store/stock/products/"),
+        api.get<any>("store/stock/categories/"),
+        api.get<any>("store/stock/units/"),
+        api.get<any>("store/stock/locations/"),
+      ])
+      setProducts(Array.isArray(pRes) ? pRes : pRes.results || [])
+      setCategories(Array.isArray(cRes) ? cRes : cRes.results || [])
+      setUnits(Array.isArray(uRes) ? uRes : uRes.results || [])
+      setLocations(Array.isArray(lRes) ? lRes : lRes.results || [])
+    } catch {
+      toast.error("Failed to load store data")
+    }
+  }
+
+  useEffect(() => { fetchData() }, [])
+
+  const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = {
+      name: fd.get("name"),
+      category: parseInt(fd.get("category") as string),
+      unit: parseInt(fd.get("unit") as string),
+      minimum_stock: parseFloat(fd.get("minimum_stock") as string) || 0,
+      is_active: fd.get("is_active") === "true",
+    }
+    try {
+      editingProduct
+        ? await api.put(`store/stock/products/${editingProduct.id}/`, data)
+        : await api.post("store/stock/products/", data)
+      toast.success(editingProduct ? "Article updated" : "Article created")
+      setIsProductModalOpen(false)
+      fetchData()
+    } catch { toast.error("Operation failed") }
+  }
+
+  const handleDeleteProduct = async (id: number) => {
+    if (!confirm("Delete this article?")) return
+    try { await api.delete(`store/stock/products/${id}/`); toast.success("Deleted"); fetchData() }
+    catch { toast.error("Failed") }
+  }
+
+  const handleCategorySubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = { name: fd.get("name"), type: fd.get("type") }
+    try {
+      editingCategory
+        ? await api.put(`store/stock/categories/${editingCategory.id}/`, data)
+        : await api.post("store/stock/categories/", data)
+      toast.success(editingCategory ? "Category updated" : "Category created")
+      setIsCategoryModalOpen(false)
+      fetchData()
+    } catch { toast.error("Operation failed") }
+  }
+
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm("Delete this category?")) return
+    try { await api.delete(`store/stock/categories/${id}/`); toast.success("Deleted"); fetchData() }
+    catch { toast.error("Failed") }
+  }
+
+  const handleUnitSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = { name: fd.get("name"), symbol: fd.get("symbol") }
+    try {
+      editingUnit
+        ? await api.put(`store/stock/units/${editingUnit.id}/`, data)
+        : await api.post("store/stock/units/", data)
+      toast.success(editingUnit ? "Unit updated" : "Unit created")
+      setIsUnitModalOpen(false)
+      fetchData()
+    } catch { toast.error("Operation failed") }
+  }
+
+  const handleDeleteUnit = async (id: number) => {
+    if (!confirm("Delete this unit?")) return
+    try { await api.delete(`store/stock/units/${id}/`); toast.success("Deleted"); fetchData() }
+    catch { toast.error("Failed") }
+  }
+
+  const handleLocationSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    const data = { name: fd.get("name"), is_active: fd.get("is_active") === "true" }
+    try {
+      editingLocation
+        ? await api.put(`store/stock/locations/${editingLocation.id}/`, data)
+        : await api.post("store/stock/locations/", data)
+      toast.success(editingLocation ? "Location updated" : "Location created")
+      setIsLocationModalOpen(false)
+      fetchData()
+    } catch { toast.error("Operation failed") }
+  }
+
+  const handleDeleteLocation = async (id: number) => {
+    if (!confirm("Delete this location?")) return
+    try { await api.delete(`store/stock/locations/${id}/`); toast.success("Deleted"); fetchData() }
+    catch { toast.error("Failed") }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage school settings and permissions</p>
+        <p className="text-muted-foreground mt-1">Manage school settings, store catalog and permissions</p>
       </div>
 
       <Tabs defaultValue="school" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="school">
-            <Building2 className="w-4 h-4 mr-2" />
-            School
-          </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="w-4 h-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="w-4 h-4 mr-2" />
-            Notifications
-          </TabsTrigger>
-          <TabsTrigger value="security">
-            <Shield className="w-4 h-4 mr-2" />
-            Security
-          </TabsTrigger>
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+          <TabsTrigger value="school"><Building2 className="w-4 h-4 mr-2" />School</TabsTrigger>
+          <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
+          <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
+          <TabsTrigger value="security"><Shield className="w-4 h-4 mr-2" />Security</TabsTrigger>
+          <TabsTrigger value="locations"><Store className="w-4 h-4 mr-2" />Magasins</TabsTrigger>
+          <TabsTrigger value="articles"><Package className="w-4 h-4 mr-2" />Articles</TabsTrigger>
+          <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Categories</TabsTrigger>
+          <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>
         </TabsList>
 
+        {/* ── School ── */}
         <TabsContent value="school">
           <Card>
             <CardHeader>
@@ -54,70 +208,27 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="schoolName">School Name</Label>
-                  <Input id="schoolName" defaultValue="Saint-Martin Primary School" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="schoolCode">School Code</Label>
-                  <Input id="schoolCode" defaultValue="ESM-2024" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="address">Address</Label>
-                  <Input id="address" defaultValue="123 Education Street, 75001 Paris" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" type="tel" defaultValue="01 23 45 67 89" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="contact@ecole-saint-martin.fr" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="director">Director</Label>
-                  <Input id="director" defaultValue="Mrs Catherine Dubois" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="academicYear">Academic Year</Label>
-                  <Input id="academicYear" defaultValue="2024-2025" />
-                </div>
+                <div className="space-y-2"><Label>School Name</Label><Input defaultValue="Saint-Martin Primary School" /></div>
+                <div className="space-y-2"><Label>School Code</Label><Input defaultValue="ESM-2024" /></div>
+                <div className="space-y-2 md:col-span-2"><Label>Address</Label><Input defaultValue="123 Education Street, 75001 Paris" /></div>
+                <div className="space-y-2"><Label>Phone</Label><Input type="tel" defaultValue="01 23 45 67 89" /></div>
+                <div className="space-y-2"><Label>Email</Label><Input type="email" defaultValue="contact@ecole-saint-martin.fr" /></div>
+                <div className="space-y-2"><Label>Director</Label><Input defaultValue="Mrs Catherine Dubois" /></div>
+                <div className="space-y-2"><Label>Academic Year</Label><Input defaultValue="2024-2025" /></div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">School Hours</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="openTime">Opening Time</Label>
-                    <Input id="openTime" type="time" defaultValue="07:30" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="closeTime">Closing Time</Label>
-                    <Input id="closeTime" type="time" defaultValue="18:00" />
-                  </div>
-                </div>
-              </div>
-
               <div className="flex justify-end">
-                <Button>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
-                </Button>
+                <Button><Save className="w-4 h-4 mr-2" />Save Changes</Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Users ── */}
         <TabsContent value="users">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage accounts and user permissions</CardDescription>
-                </div>
+                <div><CardTitle>User Management</CardTitle><CardDescription>Manage accounts and permissions</CardDescription></div>
                 <Button>Add User</Button>
               </div>
             </CardHeader>
@@ -126,255 +237,344 @@ export default function SettingsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Name</TableHead><TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead><TableHead>Status</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{user.role}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                            {user.status === "active" ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            Edit
-                          </Button>
-                        </TableCell>
+                    {staticUsers.map(u => (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">{u.name}</TableCell>
+                        <TableCell>{u.email}</TableCell>
+                        <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
+                        <TableCell><Badge variant={u.status === "active" ? "default" : "secondary"}>{u.status === "active" ? "Active" : "Inactive"}</Badge></TableCell>
+                        <TableCell className="text-right"><Button variant="ghost" size="sm">Edit</Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Role Permissions</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Administrator</p>
-                      <p className="text-sm text-muted-foreground">Full access to all features</p>
-                    </div>
-                    <Badge>All rights</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Teacher</p>
-                      <p className="text-sm text-muted-foreground">Manage classes, grades, and attendance</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Configure
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Driver</p>
-                      <p className="text-sm text-muted-foreground">Access to transport interface only</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Configure
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">Parent</p>
-                      <p className="text-sm text-muted-foreground">View information about their children</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Configure
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Notifications ── */}
         <TabsContent value="notifications">
           <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Configure notifications for different events</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Email Notifications</h3>
-                <div className="space-y-3">
+            <CardHeader><CardTitle>Notification Preferences</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                { label: "New Enrollments", desc: "Receive an email for new registrations", checked: true },
+                { label: "Payments Received", desc: "Notification upon receiving a payment", checked: true },
+                { label: "Absences", desc: "Alert for unjustified absences", checked: true },
+                { label: "Transport Delays", desc: "Notification for travel delays", checked: false },
+              ].map((n, i) => (
+                <div key={i}>
                   <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>New Enrollments</Label>
-                      <p className="text-sm text-muted-foreground">Receive an email for new registrations</p>
-                    </div>
-                    <Switch defaultChecked />
+                    <div><Label>{n.label}</Label><p className="text-sm text-muted-foreground">{n.desc}</p></div>
+                    <Switch defaultChecked={n.checked} />
                   </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Payments Received</Label>
-                      <p className="text-sm text-muted-foreground">Notification upon receiving a payment</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Absences</Label>
-                      <p className="text-sm text-muted-foreground">Alert for unjustified absences</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Transport Delays</Label>
-                      <p className="text-sm text-muted-foreground">Notification for travel delays</p>
-                    </div>
-                    <Switch />
-                  </div>
+                  {i < 3 && <Separator className="mt-3" />}
                 </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">SMS Notifications</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Emergencies</Label>
-                      <p className="text-sm text-muted-foreground">SMS in case of emergency situations</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Payment Reminders</Label>
-                      <p className="text-sm text-muted-foreground">SMS reminder for overdue invoices</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Preferences
-                </Button>
+              ))}
+              <div className="flex justify-end pt-2">
+                <Button><Save className="w-4 h-4 mr-2" />Save Preferences</Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* ── Security ── */}
         <TabsContent value="security">
           <Card>
+            <CardHeader><CardTitle>Security and Privacy</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div><Label>Minimum Password Length</Label><p className="text-sm text-muted-foreground">Minimum characters required</p></div>
+                <Input type="number" defaultValue="8" className="w-20" />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div><Label>Two-Factor Authentication</Label><p className="text-sm text-muted-foreground">Enable 2FA for administrators</p></div>
+                <Switch defaultChecked />
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button><Save className="w-4 h-4 mr-2" />Save Settings</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Locations (Magasins) ── */}
+        <TabsContent value="locations">
+          <Card>
             <CardHeader>
-              <CardTitle>Security and Privacy</CardTitle>
-              <CardDescription>Manage security settings for your institution</CardDescription>
+              <div className="flex items-center justify-between">
+                <div><CardTitle>Magasins / Locations</CardTitle><CardDescription>Manage the active store locations (Cantine, Boutique, etc.)</CardDescription></div>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingLocation(null); setIsLocationModalOpen(true) }}>
+                  <Plus className="w-4 h-4 mr-2" />New Location
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Password Policy</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Minimum Length</Label>
-                      <p className="text-sm text-muted-foreground">Minimum number of characters required</p>
-                    </div>
-                    <Input type="number" defaultValue="8" className="w-20" />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Password Expiration</Label>
-                      <p className="text-sm text-muted-foreground">Force password change every X days</p>
-                    </div>
-                    <Switch />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Two-Factor Authentication</Label>
-                      <p className="text-sm text-muted-foreground">Enable 2FA for all administrators</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </div>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead><TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {locations.length === 0
+                      ? <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No locations found</TableCell></TableRow>
+                      : locations.map(l => (
+                        <TableRow key={l.id}>
+                          <TableCell className="font-medium">{l.name}</TableCell>
+                          <TableCell><Badge variant={l.is_active ? "default" : "secondary"}>{l.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingLocation(l); setIsLocationModalOpen(true) }}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteLocation(l.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Data Backup</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Automatic Backup</Label>
-                      <p className="text-sm text-muted-foreground">Daily backup at 2:00 AM</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Last Backup</Label>
-                      <p className="text-sm text-muted-foreground">Today at 2:00 AM</p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      Backup Now
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Activity Log</h3>
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Login - Marie Dubois</span>
-                    <span className="text-muted-foreground">2 hours ago</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between text-sm">
-                    <span>Student modified - Jean Martin</span>
-                    <span className="text-muted-foreground">4 hours ago</span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between text-sm">
-                    <span>New invoice created</span>
-                    <span className="text-muted-foreground">6 hours ago</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full bg-transparent">
-                  View Full Log
+        {/* ── Articles ── */}
+        <TabsContent value="articles">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div><CardTitle>Articles (Products)</CardTitle><CardDescription>Store products with category and unit</CardDescription></div>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true) }}>
+                  <Plus className="w-4 h-4 mr-2" />New Article
                 </Button>
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead><TableHead>Category</TableHead><TableHead>Type</TableHead>
+                      <TableHead>Unit</TableHead><TableHead>Min Stock</TableHead><TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.length === 0
+                      ? <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No articles found</TableCell></TableRow>
+                      : products.map(p => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell>{p.category_name || "—"}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={p.category_type === "vivre" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
+                              {p.category_type === "vivre" ? "Food" : "Equipment"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{p.unit_name} ({p.unit_symbol})</TableCell>
+                          <TableCell>{p.minimum_stock} {p.unit_symbol}</TableCell>
+                          <TableCell><Badge variant={p.is_active ? "default" : "secondary"}>{p.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingProduct(p); setIsProductModalOpen(true) }}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteProduct(p.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <div className="flex justify-end">
-                <Button>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Settings
+        {/* ── Categories ── */}
+        <TabsContent value="categories">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div><CardTitle>Categories</CardTitle><CardDescription>Product categories: food or equipment</CardDescription></div>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true) }}>
+                  <Plus className="w-4 h-4 mr-2" />New Category
                 </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Articles</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.length === 0
+                      ? <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No categories found</TableCell></TableRow>
+                      : categories.map(c => (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={c.type === "vivre" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
+                              {c.type === "vivre" ? "Food" : "Equipment"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{products.filter(p => p.category === c.id).length} articles</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingCategory(c); setIsCategoryModalOpen(true) }}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteCategory(c.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Units ── */}
+        <TabsContent value="units">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div><CardTitle>Units of Measure</CardTitle><CardDescription>kg, litre, piece, etc.</CardDescription></div>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingUnit(null); setIsUnitModalOpen(true) }}>
+                  <Plus className="w-4 h-4 mr-2" />New Unit
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead><TableHead>Symbol</TableHead><TableHead>Articles using it</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {units.length === 0
+                      ? <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No units found</TableCell></TableRow>
+                      : units.map(u => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.name}</TableCell>
+                          <TableCell><Badge variant="outline">{u.symbol}</Badge></TableCell>
+                          <TableCell className="text-muted-foreground">{products.filter(p => p.unit === u.id).length} articles</TableCell>
+                          <TableCell className="text-right space-x-1">
+                            <Button variant="ghost" size="sm" onClick={() => { setEditingUnit(u); setIsUnitModalOpen(true) }}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteUnit(u.id)}><Trash2 className="w-4 h-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Location Modal ── */}
+      <Dialog open={isLocationModalOpen} onOpenChange={setIsLocationModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingLocation ? "Edit Location" : "New Location"}</DialogTitle></DialogHeader>
+          <form onSubmit={handleLocationSubmit} className="space-y-4">
+            <div className="space-y-2"><Label>Location Name</Label><Input name="name" defaultValue={editingLocation?.name} placeholder="e.g. Cantine" required /></div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select name="is_active" defaultValue={String(editingLocation?.is_active ?? true)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter><Button type="submit">{editingLocation ? "Update" : "Create"}</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Article Modal ── */}
+      <Dialog open={isProductModalOpen} onOpenChange={setIsProductModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingProduct ? "Edit Article" : "New Article"}</DialogTitle></DialogHeader>
+          <form onSubmit={handleProductSubmit} className="space-y-4">
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingProduct?.name} required /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select name="category" defaultValue={editingProduct ? String(editingProduct.category) : undefined}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Select name="unit" defaultValue={editingProduct ? String(editingProduct.unit) : undefined}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{units.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.name} ({u.symbol})</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>Min Stock</Label><Input name="minimum_stock" type="number" step="0.1" defaultValue={editingProduct?.minimum_stock ?? 0} /></div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select name="is_active" defaultValue={String(editingProduct?.is_active ?? true)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Active</SelectItem>
+                    <SelectItem value="false">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter><Button type="submit">{editingProduct ? "Update" : "Create"}</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Category Modal ── */}
+      <Dialog open={isCategoryModalOpen} onOpenChange={setIsCategoryModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingCategory ? "Edit Category" : "New Category"}</DialogTitle></DialogHeader>
+          <form onSubmit={handleCategorySubmit} className="space-y-4">
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name} required /></div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select name="type" defaultValue={editingCategory?.type ?? "vivre"}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="vivre">Food (Vivre)</SelectItem>
+                  <SelectItem value="non_vivre">Equipment (Non-Vivre)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter><Button type="submit">{editingCategory ? "Update" : "Create"}</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Unit Modal ── */}
+      <Dialog open={isUnitModalOpen} onOpenChange={setIsUnitModalOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingUnit ? "Edit Unit" : "New Unit"}</DialogTitle></DialogHeader>
+          <form onSubmit={handleUnitSubmit} className="space-y-4">
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingUnit?.name} placeholder="e.g. Kilogram" required /></div>
+            <div className="space-y-2"><Label>Symbol</Label><Input name="symbol" defaultValue={editingUnit?.symbol} placeholder="e.g. kg" required /></div>
+            <DialogFooter><Button type="submit">{editingUnit ? "Update" : "Create"}</Button></DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
