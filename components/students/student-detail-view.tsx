@@ -2,7 +2,8 @@
 
 import { StudentDetail } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, User, Mail, Phone, MapPin, FileText, Users, Calendar, GraduationCap, Receipt, BarChart3, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Phone, Mail, MapPin, Users, FileText, Calendar, GraduationCap } from "lucide-react";
+import { UploadStudentDocumentDialog } from "./upload-document-dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
@@ -164,10 +165,13 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                 </TabsContent>
 
                 <TabsContent value="documents" className="p-6 m-0 space-y-6">
-                    <h3 className="text-lg font-semibold flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        Academic Documents
-                    </h3>
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-muted-foreground" />
+                            Academic Documents
+                        </h3>
+                        <UploadStudentDocumentDialog studentId={student.id} />
+                    </div>
                     {student.documents?.length === 0 ? (
                         <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
                             <p className="text-muted-foreground">No documents uploaded yet.</p>
