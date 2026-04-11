@@ -62,8 +62,11 @@ const navigation: NavItem[] = [
       { name: "Payments", href: "/dashboard/finances/payments" },
     ]
   },
-  { name: "Évaluations", href: "/dashboard/assessments", icon: BookOpen },
-  { name: "Pédagogie", href: "/dashboard/pedagogy", icon: BookOpen },
+  { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
+
+  { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck },
+
+
   { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
   { name: "Transport", href: "/dashboard/transport", icon: Truck },
   { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },

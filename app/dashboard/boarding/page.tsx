@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -156,6 +157,12 @@ export default function BoardingPage() {
   const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);
   const [editingExit, setEditingExit] = useState<ExitPermission | null>(null);
   const [editingBed, setEditingBed] = useState<Bed | null>(null);
+
+  // Student search for forms
+  const [studentSearch, setStudentSearch] = useState("");
+  const [selectedStudentId, setSelectedStudentId] = useState<string>("");
+  const [studentDropdownOpen, setStudentDropdownOpen] = useState(false);
+  const studentDropdownRef = useRef<HTMLDivElement>(null);
 
   const [housingSearch, setHousingSearch] = useState("");
   const [housingStatusFilter, setHousingStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -385,6 +392,33 @@ export default function BoardingPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Close student dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (studentDropdownRef.current && !studentDropdownRef.current.contains(event.target as Node)) {
+        setStudentDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredStudentOptions = useMemo(() => {
+    if (!studentSearch) return students;
+    const q = studentSearch.toLowerCase();
+    return students.filter(
+      (s) =>
+        (s.full_name || "").toLowerCase().includes(q) ||
+        (s.enrollment_number || "").toLowerCase().includes(q)
+    );
+  }, [students, studentSearch]);
+
+  const selectedStudentLabel = useMemo(() => {
+    if (!selectedStudentId) return "";
+    const s = students.find((s) => String(s.id) === selectedStudentId);
+    return s ? `${s.full_name || s.enrollment_number}` : "";
+  }, [selectedStudentId, students]);
 
   // ─── Filters ──────────────────────────────────────────────────────────────
 
@@ -1108,22 +1142,69 @@ export default function BoardingPage() {
       </Dialog>
 
       {/* Housing Modal */}
-      <Dialog open={isHousingModalOpen} onOpenChange={setIsHousingModalOpen}>
-        <DialogContent>
+      <Dialog open={isHousingModalOpen} onOpenChange={(open) => {
+        setIsHousingModalOpen(open);
+        if (open) {
+          const initId = editingHousing ? String(editingHousing.student) : "";
+          setSelectedStudentId(initId);
+          setStudentSearch("");
+        }
+      }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingHousing ? "Edit Assignment" : "New Assignment"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleHousingSubmit} className="space-y-4">
+            {/* ── Searchable Student Picker ── */}
             <div className="space-y-2">
-              <Label htmlFor="student">Student</Label>
-              <Select name="student" defaultValue={editingHousing ? String(editingHousing.student) : undefined}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Student" />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="student-search">Student</Label>
+              <input type="hidden" name="student" value={selectedStudentId} />
+              <div className="relative" ref={studentDropdownRef}>
+                <Input
+                  id="student-search"
+                  placeholder="Search by name or enrollment number…"
+                  value={studentSearch || selectedStudentLabel}
+                  onChange={(e) => {
+                    setStudentSearch(e.target.value);
+                    setSelectedStudentId("");
+                    setStudentDropdownOpen(true);
+                  }}
+                  onFocus={() => setStudentDropdownOpen(true)}
+                  autoComplete="off"
+                  className="w-full"
+                />
+                {studentDropdownOpen && filteredStudentOptions.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                    {filteredStudentOptions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 dark:hover:bg-purple-950 flex items-center justify-between gap-2 ${
+                          selectedStudentId === String(s.id) ? "bg-purple-100 dark:bg-purple-900 font-semibold" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedStudentId(String(s.id));
+                          setStudentSearch("");
+                          setStudentDropdownOpen(false);
+                        }}
+                      >
+                        <span className="truncate">{s.full_name || "—"}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{s.enrollment_number}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {studentDropdownOpen && filteredStudentOptions.length === 0 && studentSearch && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-sm text-slate-500">
+                    No students found
+                  </div>
+                )}
+              </div>
+              {selectedStudentId && (
+                <p className="text-xs text-green-600 dark:text-green-400">
+                  ✓ Selected: {selectedStudentLabel}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

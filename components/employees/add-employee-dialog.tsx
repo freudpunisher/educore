@@ -50,7 +50,7 @@ export default function AddEmployeeDialog() {
 
   const form = useForm<EmployeeCreateInput>({
     resolver: zodResolver(employeeCreateSchema),
-    default_value: {
+    defaultValues: {
       username: "",
       password: "",
       email: "",
@@ -61,6 +61,7 @@ export default function AddEmployeeDialog() {
       address: "",
       active: true,
     },
+
   });
 
   const onSubmit = (data: EmployeeCreateInput) => {
