@@ -53,8 +53,6 @@ const navigation: NavItem[] = [
   { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
   { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
-  { name: "Assessments", href: "/dashboard/assessments", icon: BookOpen },
-  { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
   {
     name: "Finances",
     icon: DollarSign,

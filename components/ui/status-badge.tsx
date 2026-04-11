@@ -27,15 +27,6 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
       dot: "bg-orange-600 dark:bg-orange-500",
       label: "Maintenance",
     },
-    default: {
-      bg: "bg-slate-100 dark:bg-slate-800",
-      text: "text-slate-700 dark:text-slate-300",
-      dot: "bg-slate-600 dark:bg-slate-500",
-      label: status || "Unknown",
-    },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.default;
     pending: {
       bg: "bg-blue-100 dark:bg-blue-950",
       text: "text-blue-700 dark:text-blue-300",
