@@ -127,14 +127,193 @@ export const studentDetailSchema = z.object({
   full_name: z.string(),
   gender: z.coerce.number(),
   date_of_birth: z.union([z.string(), z.date()]).nullable().transform((val) => (val ? new Date(val) : null)),
-  enrollment_date: z.union([z.string(), z.date()]).transform((val) => new Date(val)),
+  enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   enrollment_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   is_enrolled: z.coerce.boolean().optional(),
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
-  parent_contact: z.string().nullable(),
-  parent_email: z.string().nullable(),
+  parent_contact: z.string().nullish(),
+  parent_email: z.string().nullish(),
   documents: z.array(studentDocumentSchema).default([]),
   parents_info: z.array(studentParentSchema).nullish().transform(val => val ?? []),
 }).passthrough();
 
 export type StudentDetail = z.infer<typeof studentDetailSchema>;
+
+// --- Academics ---
+export const studentGradesSchema = z.object({
+  assessment_title: z.string(),
+  comment: z.string().optional().nullable(),
+  course_name: z.string(),
+  percentage: z.string(),
+  score: z.string(),
+}).passthrough();
+
+export const enrollmentAcademicsSchema = z.object({
+  id: z.number(),
+  academic_year_label: z.string(),
+  class_name: z.string(),
+  date_enrolled: z.string().transform((str) => new Date(str)),
+  grades: z.array(studentGradesSchema).default([]),
+  is_current: z.boolean().optional(),
+  report_cards_data: z.any().optional(),
+}).passthrough();
+
+export const studentAcademicsResponseSchema = z.object({
+  academic_history: z.array(enrollmentAcademicsSchema).default([]),
+}).passthrough();
+
+export type StudentAcademics = z.infer<typeof studentAcademicsResponseSchema>;
+
+// --- Finance ---
+export const studentPaymentSchema = z.object({
+  id: z.number(),
+  amount: z.string(),
+  created_at: z.string().transform((str) => new Date(str)),
+  payment_mode: z.number().optional(),
+}).passthrough();
+
+export const studentInvoiceSchema = z.object({
+  id: z.number(),
+  reference: z.string(),
+  amount: z.string(),
+  balance: z.string(),
+  status: z.number().optional(),
+  created_at: z.string().transform((str) => new Date(str)),
+  payments: z.array(studentPaymentSchema).default([]),
+}).passthrough();
+
+export const studentFinanceResponseSchema = z.object({
+  invoices: z.array(studentInvoiceSchema).default([]),
+  outstanding_balance: z.string(),
+  total_due: z.string(),
+  total_paid: z.string(),
+}).passthrough();
+
+export type StudentFinance = z.infer<typeof studentFinanceResponseSchema>;
+
+// --- Student Life ---
+export const attendanceStatsSchema = z.object({
+  absent_count: z.number(),
+  late_count: z.number(),
+  present_count: z.number(),
+  total_count: z.number(),
+}).passthrough();
+
+export enum DisciplineStatusEnum {
+  Appealed = "appealed",
+  Cancelled = "cancelled",
+  Recorded = "recorded",
+}
+
+export const studentRecordSchema = z.object({
+  id: z.number(),
+  date_incident: z.string().transform((str) => new Date(str)),
+  description: z.string().optional().nullable(),
+  points_deducted: z.string(),
+  reason_name: z.string(),
+  status: z.nativeEnum(DisciplineStatusEnum).optional(),
+}).passthrough();
+
+export const studentLifeResponseSchema = z.object({
+  attendance_stats: attendanceStatsSchema.optional(),
+  discipline_history: z.array(studentRecordSchema).default([]),
+  discipline_score: z.string(),
+}).passthrough();
+
+export type StudentLife = z.infer<typeof studentLifeResponseSchema>;
+
+// --- Services ---
+export const studentDaycareSchema = z.object({
+  id: z.number(),
+  daycare_name: z.string(),
+  is_active: z.boolean().optional(),
+  start_date: z.string().transform((str) => new Date(str)),
+}).passthrough();
+
+export const studentHousingSchema = z.object({
+  id: z.number(),
+  room_name: z.string(),
+  room_type: z.string(),
+  bed_number: z.string(),
+  fees: z.number(),
+  is_active: z.boolean().optional(),
+  start_date: z.string().transform((str) => new Date(str)),
+  end_date: z.string().nullable().transform((val) => (val ? new Date(val) : null)).optional(),
+  bed: z.number().optional(),
+  room: z.number().optional(),
+  student: z.number().optional(),
+  student_name: z.string().optional(),
+}).passthrough();
+
+export const mealPlanSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  monthly_cost: z.string(),
+  is_active: z.boolean().optional(),
+  description: z.string().nullable().optional(),
+  includes_breakfast: z.boolean().optional(),
+  includes_dinner: z.boolean().optional(),
+  includes_lunch: z.boolean().optional(),
+  meals_composition: z.array(z.string()).default([]),
+  meals_per_week: z.number().optional(),
+}).passthrough();
+
+export enum StudentMealSubscriptionStatusEnum {
+  Active = "active",
+  Cancelled = "cancelled",
+  Expired = "expired",
+  Paused = "paused",
+}
+
+export const studentMealSubscriptionSchema = z.object({
+  id: z.number(),
+  meal_plan_detail: mealPlanSchema,
+  amount_paid: z.string().optional(),
+  amount_remaining: z.string(),
+  total_amount_due: z.string(),
+  is_paid: z.boolean(),
+  is_expired: z.boolean(),
+  start_date: z.string().transform((str) => new Date(str)),
+  end_date: z.string().nullable().transform((val) => (val ? new Date(val) : null)).optional(),
+  status: z.nativeEnum(StudentMealSubscriptionStatusEnum).optional(),
+  student_name: z.string().optional(),
+  student_enrollment: z.string().optional(),
+}).passthrough();
+
+export const studentServicesResponseSchema = z.object({
+  daycare: z.array(studentDaycareSchema).default([]),
+  housing: z.array(studentHousingSchema).default([]),
+  meals: z.array(studentMealSubscriptionSchema).default([]),
+}).passthrough();
+
+export type StudentServices = z.infer<typeof studentServicesResponseSchema>;
+
+// --- Transactions ---
+export enum Status4EcEnum {
+  Active = "active",
+  Damaged = "damaged",
+  Returned = "returned",
+}
+
+export const studentDistributionSchema = z.object({
+  id: z.number(),
+  product_name: z.string(),
+  quantity: z.number().optional(),
+  distribution_date: z.string().transform((str) => new Date(str)),
+  status: z.nativeEnum(Status4EcEnum).optional(),
+}).passthrough();
+
+export const studentSaleSchema = z.object({
+  id: z.number(),
+  product_name: z.string(),
+  quantity: z.number().optional(),
+  total_price: z.string(),
+  date: z.string().transform((str) => new Date(str)),
+}).passthrough();
+
+export const studentTransactionsResponseSchema = z.object({
+  distributions: z.array(studentDistributionSchema).default([]),
+  sales: z.array(studentSaleSchema).default([]),
+}).passthrough();
+
+export type StudentTransactions = z.infer<typeof studentTransactionsResponseSchema>;

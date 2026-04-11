@@ -53,6 +53,7 @@ export function UploadStudentDocumentDialog({ studentId }: UploadStudentDocument
 
     const onSubmit = (data: UploadDocumentData) => {
         const formData = new FormData();
+        formData.append("student", String(studentId));
         formData.append("document_type", data.document_type);
         if (data.description) formData.append("description", data.description);
         formData.append("is_public", String(data.is_public));

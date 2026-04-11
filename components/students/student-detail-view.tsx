@@ -2,15 +2,18 @@
 
 import { StudentDetail } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Mail, MapPin, Users, FileText, Calendar, GraduationCap } from "lucide-react";
+import { Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity, Sparkles, ShoppingBag } from "lucide-react";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
+import { AcademicsTab } from "./tabs/academics-tab";
+import { FinanceTab } from "./tabs/finance-tab";
+import { LifeTab } from "./tabs/life-tab";
+import { ServicesTab } from "./tabs/services-tab";
+import { TransactionsTab } from "./tabs/transactions-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState, useMemo } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getMockBills, getMockGrades, getMockAttendance, MOCK_ACADEMIC_YEARS } from "@/lib/student-mock-utils";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface StudentDetailViewProps {
@@ -47,14 +50,44 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         Overview
                     </TabsTrigger>
                     <TabsTrigger
+                        value="academics"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                    >
+                        Academics
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="finance"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                    >
+                        Finance
+                    </TabsTrigger>
+                    <TabsTrigger
                         value="family"
-                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-base"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
                     >
                         Family
                     </TabsTrigger>
                     <TabsTrigger
+                        value="life"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                    >
+                        Student Life
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="services"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                    >
+                        Services
+                    </TabsTrigger>
+                    <TabsTrigger
+                        value="inventory"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                    >
+                        Transactions
+                    </TabsTrigger>
+                    <TabsTrigger
                         value="documents"
-                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-base"
+                        className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
                     >
                         Documents
                     </TabsTrigger>
@@ -207,6 +240,26 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             ))}
                         </div>
                     )}
+                </TabsContent>
+
+                <TabsContent value="academics" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <AcademicsTab studentId={student.id} />
+                </TabsContent>
+
+                <TabsContent value="finance" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <FinanceTab studentId={student.id} />
+                </TabsContent>
+
+                <TabsContent value="life" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <LifeTab studentId={student.id} />
+                </TabsContent>
+
+                <TabsContent value="services" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <ServicesTab studentId={student.id} />
+                </TabsContent>
+
+                <TabsContent value="inventory" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                    <TransactionsTab studentId={student.id} />
                 </TabsContent>
             </ScrollArea>
         </Tabs>
