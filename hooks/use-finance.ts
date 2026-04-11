@@ -40,8 +40,12 @@ export function usePayInvoice() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (data: PaymentPayload) => {
-            const response = await axiosInstance.post("/finance/payments/", data);
+        mutationFn: async (data: FormData) => {
+            const response = await axiosInstance.post("/finance/payments/", data, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
             return response.data;
         },
         onSuccess: () => {

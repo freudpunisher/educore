@@ -4,13 +4,17 @@ import { Invoice } from "@/types/finance";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer } from "lucide-react";
+import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePayInvoice } from "@/hooks/use-finance";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import toast from "react-hot-toast";
+import { cn } from "@/lib/utils";
 
 interface InvoicesTableProps {
     invoices: Invoice[];
@@ -21,6 +25,10 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
     const payMutation = usePayInvoice();
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState<string>("");
+    const [paymentMode, setPaymentMode] = useState<string>("1");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePrint = (invoice: Invoice) => {
         const printWindow = window.open('', '_blank');
@@ -135,17 +143,25 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
     };
 
     const handleConfirmPayment = () => {
-        if (!selectedInvoice) return;
+        if (!selectedInvoice || !paymentAmount) return;
 
-        payMutation.mutate({
-            invoice: selectedInvoice.id,
-            amount: selectedInvoice.amount,
-            invoice_reference: selectedInvoice.reference,
-        }, {
+        const formData = new FormData();
+        formData.append("invoice", selectedInvoice.id.toString());
+        formData.append("amount", paymentAmount);
+        formData.append("invoice_reference", selectedInvoice.reference);
+        formData.append("payment_mode", paymentMode);
+        if (selectedFile) {
+            formData.append("document", selectedFile);
+        }
+
+        payMutation.mutate(formData, {
             onSuccess: () => {
                 toast.success(`Payment for ${selectedInvoice.reference} processed successfully.`);
                 setIsDialogOpen(false);
                 setSelectedInvoice(null);
+                setPaymentAmount("");
+                setPaymentMode("1");
+                setSelectedFile(null);
             },
             onError: (err: any) => {
                 toast.error(err.response?.data?.message || `Failed to process payment.`);
@@ -243,6 +259,9 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                         className="bg-primary text-primary-foreground hover:bg-primary/90"
                                         onClick={() => {
                                             setSelectedInvoice(invoice);
+                                            setPaymentAmount(invoice.amount.toString());
+                                            setPaymentMode("1");
+                                            setSelectedFile(null);
                                             setIsDialogOpen(true);
                                         }}
                                     >
@@ -277,18 +296,101 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="py-4 space-y-3">
-                        <div className="flex justify-between items-center rounded-lg border p-3">
-                            <span className="text-sm text-muted-foreground">Amount Due</span>
-                            <span className="font-bold text-lg">{Number(selectedInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+                    <div className="py-4 space-y-5">
+                        <div className="flex justify-between items-center rounded-xl border p-4 bg-muted/30">
+                            <div>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Student</span>
+                                <span className="font-bold text-foreground">{selectedInvoice?.student_name || "Institutional Fee"}</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Invoice Info</span>
+                                <span className="font-mono text-xs font-bold text-primary">{selectedInvoice?.reference}</span>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center rounded-lg border p-3 bg-muted/30">
-                            <span className="text-sm text-muted-foreground">Student</span>
-                            <span className="font-medium">{selectedInvoice?.student_name || "Institutional Fee"}</span>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="paymentAmount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Amount (FBU)</Label>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="paymentAmount"
+                                        type="number"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        placeholder="0.00"
+                                        className="pl-9 font-bold h-11 border-primary/20 focus-visible:ring-primary"
+                                    />
+                                </div>
+                                <p className="text-[15px] text-muted-foreground">
+                                    Total due: <span className="font-bold">{Number(selectedInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="paymentMode" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Mode</Label>
+                                <Select
+                                    value={paymentMode}
+                                    onValueChange={(val) => {
+                                        setPaymentMode(val);
+                                        if (val === "1") setSelectedFile(null);
+                                    }}
+                                >
+                                    <SelectTrigger id="paymentMode" className="h-11 border-primary/20">
+                                        <SelectValue placeholder="Select mode" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">Cash</SelectItem>
+                                        <SelectItem value="2">Check</SelectItem>
+                                        <SelectItem value="3">Deposit</SelectItem>
+                                        <SelectItem value="4">Bank Transfer</SelectItem>
+                                        <SelectItem value="5">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
-                        <div className="flex justify-between items-center rounded-lg border p-3 bg-muted/30">
-                            <span className="text-sm text-muted-foreground">Fee Category</span>
-                            <span className="font-medium">{selectedInvoice?.fees_detail?.fee_category_name || "N/A"}</span>
+
+                        {paymentMode !== "1" && (
+                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Proof Document (Optional)</Label>
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={cn(
+                                        "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all gap-2",
+                                        selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
+                                    )}
+                                >
+                                    <Input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) setSelectedFile(file);
+                                        }}
+                                    />
+                                    <Upload className={cn("h-6 w-6", selectedFile ? "text-primary" : "text-muted-foreground")} />
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold">
+                                            {selectedFile ? selectedFile.name : "Click to upload document"}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                                            {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "PDF, JPG, PNG allowed"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 pb-2 text-[11px]">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Badge variant="outline" className="rounded-md px-1 py-0 h-4 uppercase text-[9px] font-bold">Category</Badge>
+                                <span className="font-medium truncate">{selectedInvoice?.fees_detail?.fee_category_name || "N/A"}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                                <Badge variant="outline" className="rounded-md px-1 py-0 h-4 uppercase text-[9px] font-bold">Period</Badge>
+                                <span className="font-medium truncate">{selectedInvoice?.fees_detail?.period_name || "N/A"}</span>
+                            </div>
                         </div>
                     </div>
 
