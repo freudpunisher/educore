@@ -107,8 +107,8 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                         <code className="font-mono bg-muted px-2 py-0.5 rounded text-sm">{student.enrollment_number}</code>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
-                                        <span className="text-muted-foreground">Class Level</span>
-                                        <span className="font-medium">{student.class_level}</span>
+                                        <span className="text-muted-foreground">Enrollment Info</span>
+                                        <span className="font-medium">{student.enrollment_info || "N/A"}</span>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
                                         <span className="text-muted-foreground">Status</span>
@@ -144,9 +144,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
                                         <span className="text-muted-foreground">Account Status</span>
-                                        <Badge variant={student.account_info.active ? "default" : "destructive"}>
-                                            {student.account_info.active ? "Active" : "Inactive"}
-                                        </Badge>
+                                        <span className="font-medium capitalize">{student.account_info || "Inactive"}</span>
                                     </div>
                                 </CardContent>
                             </Card>

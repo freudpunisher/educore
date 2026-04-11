@@ -122,19 +122,19 @@ export const studentAccountInfoSchema = z.object({
 export const studentDetailSchema = z.object({
   id: z.coerce.number(),
   enrollment_number: z.string(),
-  first_name: z.string(),
-  last_name: z.string(),
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable(),
   full_name: z.string(),
   gender: z.coerce.number(),
   date_of_birth: z.union([z.string(), z.date()]).nullable().transform((val) => (val ? new Date(val) : null)),
-  class_level: z.string(),
   enrollment_date: z.union([z.string(), z.date()]).transform((val) => new Date(val)),
+  enrollment_info: z.string().nullable().optional(),
   is_enrolled: z.coerce.boolean().optional(),
-  account_info: studentAccountInfoSchema,
+  account_info: z.string().nullable().optional(),
   parent_contact: z.string().nullable(),
   parent_email: z.string().nullable(),
-  documents: z.array(z.any()), // Temporarily relax documents/parents for debugging
-  parents: z.array(z.any()),
+  documents: z.array(studentDocumentSchema),
+  parents: z.array(studentParentSchema),
 }).passthrough();
 
 export type StudentDetail = z.infer<typeof studentDetailSchema>;
