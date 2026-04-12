@@ -25,7 +25,18 @@ import {
   Pencil,
   Trash2,
   MoreVertical,
+  AlertTriangle,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { api } from "@/lib/api";
 import {
   Dialog,
@@ -76,7 +87,7 @@ type Housing = {
   bed: number;
   bed_number: string;
   fees: number;
-  period: number;
+  period_category: number;
   start_date: string;
   end_date: string | null;
   is_active: boolean;
@@ -151,6 +162,14 @@ export default function BoardingPage() {
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isBedModalOpen, setIsBedModalOpen] = useState(false);
 
+  // Confirm delete dialog
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  }>({ open: false, title: "", description: "", onConfirm: () => {} });
+
   // Edit states
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editingHousing, setEditingHousing] = useState<Housing | null>(null);
@@ -207,48 +226,72 @@ export default function BoardingPage() {
 
   // ─── CRUD Handlers ────────────────────────────────────────────────────────
 
-  const handleDeleteRoom = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this room?")) return;
-    try {
-      await api.delete(`boarding/internat/rooms/${id}/`);
-      toast.success("Room deleted successfully");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete room");
-    }
+  const confirmDelete = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmDialog({ open: true, title, description, onConfirm });
   };
 
-  const handleDeleteHousing = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this assignment?")) return;
-    try {
-      await api.delete(`boarding/internat/housing/${id}/`);
-      toast.success("Assignment deleted successfully");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete assignment");
-    }
+  const handleDeleteRoom = (id: number) => {
+    confirmDelete(
+      "Delete Room",
+      "Are you sure you want to delete this room? This action cannot be undone and will also remove all associated beds.",
+      async () => {
+        try {
+          await api.delete(`boarding/internat/rooms/${id}/`);
+          toast.success("Room deleted successfully");
+          fetchData();
+        } catch {
+          toast.error("Failed to delete room");
+        }
+      }
+    );
   };
 
-  const handleDeleteAttendance = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this attendance record?")) return;
-    try {
-      await api.delete(`boarding/internat/attendances/${id}/`);
-      toast.success("Attendance deleted successfully");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete attendance");
-    }
+  const handleDeleteHousing = (id: number) => {
+    confirmDelete(
+      "Remove Assignment",
+      "Are you sure you want to remove this student's room assignment? The bed will be marked as free again.",
+      async () => {
+        try {
+          await api.delete(`boarding/internat/housing/${id}/`);
+          toast.success("Assignment removed successfully");
+          fetchData();
+        } catch {
+          toast.error("Failed to remove assignment");
+        }
+      }
+    );
   };
 
-  const handleDeleteExit = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this exit request?")) return;
-    try {
-      await api.delete(`boarding/internat/exit-permissions/${id}/`);
-      toast.success("Exit request deleted successfully");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete exit request");
-    }
+  const handleDeleteAttendance = (id: number) => {
+    confirmDelete(
+      "Delete Attendance Record",
+      "Are you sure you want to delete this attendance record? This action cannot be undone.",
+      async () => {
+        try {
+          await api.delete(`boarding/internat/attendances/${id}/`);
+          toast.success("Attendance deleted successfully");
+          fetchData();
+        } catch {
+          toast.error("Failed to delete attendance");
+        }
+      }
+    );
+  };
+
+  const handleDeleteExit = (id: number) => {
+    confirmDelete(
+      "Delete Exit Request",
+      "Are you sure you want to delete this exit request? This action cannot be undone.",
+      async () => {
+        try {
+          await api.delete(`boarding/internat/exit-permissions/${id}/`);
+          toast.success("Exit request deleted successfully");
+          fetchData();
+        } catch {
+          toast.error("Failed to delete exit request");
+        }
+      }
+    );
   };
 
   const handleRoomSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -283,7 +326,7 @@ export default function BoardingPage() {
       room: parseInt(formData.get("room") as string),
       bed: parseInt(formData.get("bed") as string),
       fees: parseInt(formData.get("fees") as string),
-      period: parseInt(formData.get("period") as string),
+      period_category: parseInt(formData.get("period_category") as string),
       is_active: formData.get("is_active") === "true",
       end_date: formData.get("end_date") || null,
     };
@@ -353,15 +396,20 @@ export default function BoardingPage() {
     }
   };
 
-  const handleDeleteBed = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this bed?")) return;
-    try {
-      await api.delete(`boarding/internat/beds/${id}/`);
-      toast.success("Bed deleted successfully");
-      fetchData();
-    } catch (error) {
-      toast.error("Failed to delete bed");
-    }
+  const handleDeleteBed = (id: number) => {
+    confirmDelete(
+      "Delete Bed",
+      "Are you sure you want to delete this bed? This action cannot be undone.",
+      async () => {
+        try {
+          await api.delete(`boarding/internat/beds/${id}/`);
+          toast.success("Bed deleted successfully");
+          fetchData();
+        } catch {
+          toast.error("Failed to delete bed");
+        }
+      }
+    );
   };
 
   const handleBedSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1243,13 +1291,16 @@ export default function BoardingPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="period">Period</Label>
-                <Select name="period" defaultValue={editingHousing ? String(editingHousing.period) : undefined}>
+                <Label htmlFor="period_category">Period</Label>
+                <Select name="period_category" defaultValue={editingHousing ? String((editingHousing as any).period_category) : "4"}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select Period" />
                   </SelectTrigger>
                   <SelectContent>
-                    {periods.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.display_name}</SelectItem>)}
+                    <SelectItem value="1">Monthly</SelectItem>
+                    <SelectItem value="2">Quarterly</SelectItem>
+                    <SelectItem value="3">Semiannually</SelectItem>
+                    <SelectItem value="4">Annually</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1406,6 +1457,43 @@ export default function BoardingPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* ── Confirm Delete Dialog ─────────────────────────────────────────── */}
+      <AlertDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => setConfirmDialog((d) => ({ ...d, open }))}
+      >
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 dark:bg-red-950 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <AlertDialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+                {confirmDialog.title}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed pl-13">
+              {confirmDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="flex-1">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white focus:ring-red-500"
+              onClick={() => {
+                confirmDialog.onConfirm();
+                setConfirmDialog((d) => ({ ...d, open: false }));
+              }}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

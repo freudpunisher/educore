@@ -65,7 +65,7 @@ export default function InvoicesPage() {
                 <td><strong>${inv.reference}</strong><br/><small style="color: #64748b;">${inv.fees_detail.code}</small></td>
                 <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail.label}</small></td>
                 <td>${inv.fees_detail.fee_category_name}</td>
-                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong><br/><small style="color: #64748b;">${inv.fees_detail.period_name}</small></td>
+                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong><br/><small style="color: #64748b;">${inv.fees_detail.fee_category_name || ''}</small></td>
                 <td>${inv.date}</td>
                 <td>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${inv.status === 1 ? '#dcfce7' : '#fee2e2'}; color: ${inv.status === 1 ? '#166534' : '#991b1b'}; border: 1px solid ${inv.status === 1 ? '#bbf7d0' : '#fecaca'};">
