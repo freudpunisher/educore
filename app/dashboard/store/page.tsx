@@ -494,6 +494,22 @@ export default function StorePage() {
     printWindow.document.close();
   };
 
+  const handleAdjustSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!adjustingInventory) return;
+    const formData = new FormData(e.currentTarget);
+    const quantity = parseFloat(formData.get("quantity") as string);
+    
+    try {
+      await api.patch(`store/stock/inventory/${adjustingInventory.id}/`, { quantity });
+      toast.success("Inventory adjusted successfully");
+      setIsAdjustModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to adjust inventory");
+    }
+  };
+
   // ─── Filters ──────────────────────────────────────────────────────────────
 
   const filteredInventory = useMemo(() => {
