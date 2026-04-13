@@ -48,16 +48,26 @@ export enum DocumentTypeEnum {
 }
 
 export const studentDocumentSchema = z.object({
-  id: z.number(),
-  student: z.number(),
-  document_type: z.nativeEnum(DocumentTypeEnum),
-  file: z.string(),
-  file_url: z.string(),
-  description: z.string().nullable(),
-  is_public: z.boolean().optional(),
-  uploaded_at: z.string().transform((str) => new Date(str)),
-  uploaded_by_user: z.string(),
-});
+  // Real API keys (based on sample)
+  type: z.string().optional(),
+  file: z.string().optional(),
+  date: z.union([z.string(), z.date()]).nullish(),
+
+  // Internal/Legacy keys for compatibility
+  id: z.coerce.number().optional(),
+  student: z.coerce.number().optional(),
+  document_type: z.union([z.nativeEnum(DocumentTypeEnum), z.string()]).optional(),
+  file_url: z.string().optional(),
+  description: z.string().nullable().optional(),
+  is_public: z.coerce.boolean().optional(),
+  uploaded_at: z.union([z.string(), z.date()]).nullish(),
+  uploaded_by_user: z.string().optional(),
+}).passthrough().transform((data) => ({
+  ...data,
+  document_type: data.type || data.document_type || "Document",
+  file_url: data.file || data.file_url,
+  uploaded_at: data.date || data.uploaded_at || new Date(),
+}));
 
 export type StudentDocument = z.infer<typeof studentDocumentSchema>;
 
@@ -102,13 +112,24 @@ export enum RelationshipEnum {
 }
 
 export const studentParentSchema = z.object({
-  first_name: z.string(),
-  last_name: z.string(),
-  email: z.string().email().nullable().or(z.literal("")),
-  phone_number: z.string().nullable().or(z.literal("")),
-  relationship: z.union([z.nativeEnum(RelationshipEnum), z.string()]),
+  // Real API keys (based on sample)
+  full_name: z.string().optional(),
+  relationship: z.union([z.nativeEnum(RelationshipEnum), z.string()]).optional(),
+  phone: z.string().optional(),
+  is_primary: z.boolean().optional(),
+
+  // Internal/Legacy keys
+  first_name: z.string().optional(),
+  last_name: z.string().optional(),
+  email: z.string().email().nullable().or(z.literal("")).optional(),
+  phone_number: z.string().nullable().or(z.literal("")).optional(),
   is_primary_contact: z.boolean().optional(),
-});
+}).passthrough().transform((data) => ({
+  ...data,
+  full_name: data.full_name || `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Parent",
+  phone: data.phone || data.phone_number,
+  is_primary: data.is_primary ?? data.is_primary_contact ?? false,
+}));
 
 export type StudentParent = z.infer<typeof studentParentSchema>;
 
@@ -131,11 +152,17 @@ export const studentDetailSchema = z.object({
   enrollment_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   is_enrolled: z.coerce.boolean().optional(),
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
+  account: z.any().optional(),
   parent_contact: z.string().nullish(),
   parent_email: z.string().nullish(),
   documents: z.array(studentDocumentSchema).default([]),
-  parents_info: z.array(studentParentSchema).nullish().transform(val => val ?? []),
-}).passthrough();
+  responsables: z.array(studentParentSchema).nullish(),
+  parents_info: z.array(studentParentSchema).nullish(),
+}).passthrough().transform((data) => ({
+  ...data,
+  parents_info: data.responsables || data.parents_info || [],
+  account_info: data.account || data.account_info,
+}));
 
 export type StudentDetail = z.infer<typeof studentDetailSchema>;
 

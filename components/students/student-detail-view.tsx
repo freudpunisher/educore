@@ -2,8 +2,12 @@
 
 import { StudentDetail } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity, Sparkles, ShoppingBag } from "lucide-react";
+import {
+    Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
+    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen
+} from "lucide-react";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
+import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { AcademicsTab } from "./tabs/academics-tab";
 import { FinanceTab } from "./tabs/finance-tab";
 import { LifeTab } from "./tabs/life-tab";
@@ -157,14 +161,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {student.parents_info?.map((p, index) => (
                                     <Card key={index} className="relative overflow-hidden group hover:shadow-md transition-shadow">
-                                        {p.is_primary_contact && (
+                                        {p.is_primary && (
                                             <div className="absolute top-0 right-0">
                                                 <Badge className="rounded-tr-none rounded-bl-lg text-[10px] uppercase font-bold" variant="default">Primary</Badge>
                                             </div>
                                         )}
                                         <CardHeader className="pb-2">
                                             <p className="font-bold text-lg">
-                                                {p.first_name} {p.last_name}
+                                                {p.full_name}
                                             </p>
                                             <Badge variant="outline" className="w-fit capitalize text-xs bg-muted/50">
                                                 {p.relationship}
@@ -173,12 +177,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                         <CardContent className="space-y-3 text-sm">
                                             <div className="flex items-center gap-3 text-muted-foreground">
                                                 <div className="p-1.5 bg-primary/5 rounded-full"><Phone className="h-4 w-4 text-primary" /></div>
-                                                <span>{p.phone_number || "No phone recorded"}</span>
+                                                <span>{p.phone || "No phone recorded"}</span>
                                             </div>
-                                            <div className="flex items-center gap-3 text-muted-foreground">
-                                                <div className="p-1.5 bg-primary/5 rounded-full"><Mail className="h-4 w-4 text-primary" /></div>
-                                                <span className="truncate">{p.email || "No email recorded"}</span>
-                                            </div>
+                                            {p.email && (
+                                                <div className="flex items-center gap-3 text-muted-foreground">
+                                                    <div className="p-1.5 bg-primary/5 rounded-full"><Mail className="h-4 w-4 text-primary" /></div>
+                                                    <span className="truncate">{p.email}</span>
+                                                </div>
+                                            )}
                                         </CardContent>
                                     </Card>
                                 ))}
@@ -200,33 +206,54 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-3">
-                                {student.documents?.map((doc) => (
-                                    <div
-                                        key={doc.id}
-                                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group border-l-4 border-l-primary"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="p-2.5 bg-primary/10 rounded-lg text-primary">
-                                                <FileText className="h-6 w-6" />
+                                {student.documents?.map((doc, idx) => {
+                                    const getIcon = (type: string) => {
+                                        switch (type) {
+                                            case "bulletin": return <ClipboardList className="h-6 w-6" />;
+                                            case "certificate": return <Award className="h-6 w-6" />;
+                                            case "enrollment": return <Folder className="h-6 w-6" />;
+                                            case "exam_copy": return <BookOpen className="h-6 w-6" />;
+                                            case "medical": return <Activity className="h-6 w-6" />;
+                                            default: return <FileText className="h-6 w-6" />;
+                                        }
+                                    };
+
+                                    return (
+                                        <div
+                                            key={doc.id || `doc-${idx}`}
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border bg-card hover:bg-accent/30 transition-all group border-l-4 border-l-primary shadow-sm hover:shadow-md"
+                                        >
+                                            <div className="flex items-center gap-5">
+                                                <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-inner">
+                                                    {getIcon(doc.document_type || "")}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold capitalize text-base tracking-tight">{(doc.document_type || "Document").replace("_", " ")}</p>
+                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                                                            <Calendar className="h-3.5 w-3.5" />
+                                                            {doc.uploaded_at ? `Mis en ligne le ${format(new Date(doc.uploaded_at), "PPP")}` : "Date inconnue"}
+                                                        </p>
+                                                        {doc.uploaded_by_user && (
+                                                            <p className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-bold uppercase tracking-wider">
+                                                                Par {doc.uploaded_by_user}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-bold capitalize text-sm">{doc.document_type.replace("_", " ")}</p>
-                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                                                    <Calendar className="h-3 w-3" />
-                                                    Uploaded {format(new Date(doc.uploaded_at), "PPP")}
-                                                </p>
+                                            <div className="flex items-center gap-3 mt-4 sm:mt-0">
+                                                {doc.file_url && (
+                                                    <DocumentPreviewDialog
+                                                        fileUrl={doc.file_url}
+                                                        documentType={doc.document_type || "Document"}
+                                                        fileName={doc.file_url.split('/').pop()}
+                                                    />
+                                                )}
                                             </div>
                                         </div>
-                                        <a
-                                            href={doc.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-2 text-primary font-semibold text-sm hover:underline px-4 py-2 rounded-full border border-primary/20 hover:bg-primary/5 transition-all"
-                                        >
-                                            View File
-                                        </a>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </TabsContent>

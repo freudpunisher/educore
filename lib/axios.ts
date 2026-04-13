@@ -5,7 +5,7 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL = process.env.NEXT_PRIVATE_API_URL || "http://192.168.200.197:8000/api/"; // Client-side → goes through Next.js proxy (recommended!)
+const baseURL = process.env.NEXT_PRIVATE_API_URL || "http://192.168.200.68:10000/api/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,
@@ -81,20 +81,20 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refresh_token");
         if (!refreshToken) throw new Error("No refresh token");
-        
+
         // Use basic axios to avoid infinite loops if refresh fails
         const { data } = await axios.post(`${baseURL}refresh/`, { refresh: refreshToken });
-        
+
         // Depending on your API, it might return data.access or data.data.access
         // With standard response mixin, it might wrap it. Let's assume standard SimpleJWT:
         const newAccessToken = data.access || (data.data && data.data.access);
-        
+
         if (newAccessToken) {
-            localStorage.setItem("access_token", newAccessToken);
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-            return axiosInstance(originalRequest);
+          localStorage.setItem("access_token", newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return axiosInstance(originalRequest);
         } else {
-            throw new Error("Invalid refresh response");
+          throw new Error("Invalid refresh response");
         }
       } catch (refreshError) {
         // Force logout, redirect to login
