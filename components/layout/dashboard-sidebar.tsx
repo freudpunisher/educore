@@ -67,10 +67,10 @@ const navigation: NavItem[] = [
   { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck },
 
 
-  { name: "Logistique", href: "/dashboard/logistics", icon: Truck },
+  { name: "Logistics", href: "/dashboard/logistics", icon: Truck },
   { name: "Transport", href: "/dashboard/transport", icon: Truck },
-  { name: "Canteen", href: "/dashboard/canteen", icon: UtensilsCrossed },
-  { name: "Store", href: "/dashboard/store", icon: Package },
+  { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed },
+  { name: "Storage", href: "/dashboard/store", icon: Package },
   { name: "Boarding", href: "/dashboard/boarding", icon: Home },
   { name: "Daycare", href: "/dashboard/daycare", icon: Baby },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },

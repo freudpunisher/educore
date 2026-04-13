@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import {
@@ -26,7 +27,8 @@ import {
     Play,
     CheckCircle,
     FileText,
-    Plus
+    Plus,
+    History
 } from "lucide-react"
 
 type DashboardStats = {
@@ -69,12 +71,16 @@ type Student = {
 }
 
 export default function DaycarePage() {
+    const today = new Date().toISOString().split("T")[0]
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [records, setRecords] = useState<DailyRecord[]>([])
+    const [historyRecords, setHistoryRecords] = useState<DailyRecord[]>([])
     const [activities, setActivities] = useState<DaycareActivity[]>([])
     const [students, setStudents] = useState<Student[]>([])
     const [isLoadingStats, setIsLoadingStats] = useState(true)
     const [isLoadingRecords, setIsLoadingRecords] = useState(true)
+    const [isLoadingHistory, setIsLoadingHistory] = useState(true)
+    const [historyDate, setHistoryDate] = useState(today)
 
     // Dialog States
     const [activeRecord, setActiveRecord] = useState<DailyRecord | null>(null)
@@ -93,6 +99,10 @@ export default function DaycarePage() {
         fetchDailyRecords()
         fetchActivities()
     }, [])
+
+    useEffect(() => {
+        fetchHistoryRecords(historyDate)
+    }, [historyDate])
 
     const fetchDashboardStats = async () => {
         setIsLoadingStats(true)
@@ -118,13 +128,24 @@ export default function DaycarePage() {
     const fetchDailyRecords = async () => {
         setIsLoadingRecords(true)
         try {
-            const today = new Date().toISOString().split('T')[0]
             const resp = await api.get<any>(`daycare/daily-records/?date=${today}`)
             setRecords(resp.results || resp)
         } catch {
             toast.error("Failed to load daily records")
         } finally {
             setIsLoadingRecords(false)
+        }
+    }
+
+    const fetchHistoryRecords = async (date: string) => {
+        setIsLoadingHistory(true)
+        try {
+            const resp = await api.get<any>(`daycare/daily-records/?date=${date}`)
+            setHistoryRecords(resp.results || resp)
+        } catch {
+            toast.error("Failed to load daily record history")
+        } finally {
+            setIsLoadingHistory(false)
         }
     }
 
@@ -140,6 +161,11 @@ export default function DaycarePage() {
     const formatTime = (timeString: string | null) => {
         if (!timeString) return "—"
         return new Date(timeString).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    }
+
+    const formatDayLabel = (dateString: string) => {
+        const parsedDate = new Date(dateString)
+        return format(parsedDate, "PPP")
     }
 
     // --- API Handlers ---
@@ -387,6 +413,18 @@ export default function DaycarePage() {
         }
     ];
 
+    const historyColumns: any[] = [
+        {
+            key: "date",
+            label: "Date",
+            sortable: true,
+            render: (_: any, r: DailyRecord) => (
+                <span className="font-medium">{formatDayLabel(r.date)}</span>
+            )
+        },
+        ...columns
+    ]
+
     return (
 
         <div className="space-y-6">
@@ -396,7 +434,7 @@ export default function DaycarePage() {
                     <p className="text-muted-foreground">Monitor and manage daily daycare activities.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => { fetchDashboardStats(); fetchDailyRecords(); }}>
+                    <Button variant="outline" onClick={() => { fetchDashboardStats(); fetchDailyRecords(); fetchHistoryRecords(historyDate); }}>
                         Refresh
                     </Button>
                     <Button onClick={() => openAction("new")}>
@@ -480,33 +518,89 @@ export default function DaycarePage() {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Daily Records</CardTitle>
-                    <CardDescription>Overview of all children enrolled in daycare for today.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoadingRecords ? (
-                        <div className="flex justify-center p-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
-                    ) : records.length === 0 ? (
-                        <div className="text-center p-8 text-muted-foreground">
-                            <Baby className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                            <p>No children are recorded in the daycare today.</p>
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <DataTable
-                                columns={columns}
-                                data={records}
-                                searchableColumns={["child_name", "child_enrollment_number"]}
-                                itemsPerPage={10}
-                            />
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="today" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2 md:w-[420px]">
+                    <TabsTrigger value="today">Daily Records</TabsTrigger>
+                    <TabsTrigger value="history">Daily Records History</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="today" className="m-0">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Daily Records</CardTitle>
+                            <CardDescription>Overview of all children enrolled in daycare for today.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingRecords ? (
+                                <div className="flex justify-center p-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            ) : records.length === 0 ? (
+                                <div className="text-center p-8 text-muted-foreground">
+                                    <Baby className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                                    <p>No children are recorded in the daycare today.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <DataTable
+                                        columns={columns}
+                                        data={records}
+                                        searchableColumns={["child_name", "child_enrollment_number"]}
+                                        itemsPerPage={10}
+                                    />
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="history" className="m-0">
+                    <Card>
+                        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <History className="h-5 w-5" />
+                                    Daily Records History
+                                </CardTitle>
+                                <CardDescription>Consult daycare records for a specific day.</CardDescription>
+                            </div>
+                            <div className="w-full md:w-[220px] space-y-2">
+                                <label htmlFor="history-date" className="text-sm font-medium">
+                                    Select a date
+                                </label>
+                                <Input
+                                    id="history-date"
+                                    type="date"
+                                    value={historyDate}
+                                    max={today}
+                                    onChange={(e) => setHistoryDate(e.target.value)}
+                                />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {isLoadingHistory ? (
+                                <div className="flex justify-center p-8">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                </div>
+                            ) : historyRecords.length === 0 ? (
+                                <div className="text-center p-8 text-muted-foreground">
+                                    <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                                    <p>No daycare record found for {formatDayLabel(historyDate)}.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <DataTable
+                                        columns={historyColumns}
+                                        data={historyRecords}
+                                        searchableColumns={["child_name", "child_enrollment_number"]}
+                                        itemsPerPage={10}
+                                    />
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             {/* --- Action Dialogs --- */}
             <Dialog open={dialogType === "new"} onOpenChange={closeDialogs}>

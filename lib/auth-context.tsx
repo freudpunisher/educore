@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .filter(Boolean)
           .join(" ")
           .trim()
-        : userData?.username || profile.username || "Utilisateur";
+        : userData?.username || profile.username || "User";
 
     const cleanUser: User = {
       id: profile.id || userData?.id || 0,

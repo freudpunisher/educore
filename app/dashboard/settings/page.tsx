@@ -230,7 +230,7 @@ export default function SettingsPage() {
           <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
           <TabsTrigger value="security"><Shield className="w-4 h-4 mr-2" />Security</TabsTrigger>
-          <TabsTrigger value="locations"><Store className="w-4 h-4 mr-2" />Magasins</TabsTrigger>
+          <TabsTrigger value="locations"><Store className="w-4 h-4 mr-2" />Locations</TabsTrigger>
           <TabsTrigger value="articles"><Package className="w-4 h-4 mr-2" />Articles</TabsTrigger>
           <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Categories</TabsTrigger>
           <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>

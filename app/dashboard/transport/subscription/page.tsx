@@ -92,7 +92,7 @@ export default function SubscriptionPage() {
       label: "Monthly Fee",
       sortable: true,
       render: (value: number) => (
-        <span className="font-semibold text-slate-900 dark:text-white">${value}</span>
+        <span className="font-semibold text-slate-900 dark:text-white">BIF {value}</span>
       ),
     },
   ];
@@ -147,7 +147,7 @@ export default function SubscriptionPage() {
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
             <p className="text-sm text-muted-foreground dark:text-slate-400">Monthly Revenue</p>
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-              ${totalRevenue}
+              BIF {totalRevenue}
             </p>
           </div>
         </div>

@@ -90,7 +90,7 @@ export function CreateDistributionDialog({
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                    <DialogTitle>Assign Equipment (Non-Vivre)</DialogTitle>
+                    <DialogTitle>Assign Equipment (Non-Food Items)</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

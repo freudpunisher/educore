@@ -117,7 +117,7 @@ export function AssessmentDashboard() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            placeholder="Rechercher une évaluation..."
+            placeholder="Search an assessment..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-11 h-12"

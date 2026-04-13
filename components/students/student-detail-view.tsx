@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, User, Mail, Phone, MapPin, FileText, Users, Calendar, GraduationCap, Receipt, BarChart3, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useMemo } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,6 +18,16 @@ interface StudentDetailViewProps {
 
 export function StudentDetailView({ student }: StudentDetailViewProps) {
     const [academicYear, setAcademicYear] = useState(String(MOCK_ACADEMIC_YEARS[0].id));
+    const accountInfo = student.account_info ?? null;
+    const parents = student.parents ?? [];
+    const documents = student.documents ?? [];
+
+    const formatDate = (value: Date | string | null | undefined, pattern = "PPP") => {
+        if (!value) return "N/A";
+
+        const parsedDate = value instanceof Date ? value : new Date(value);
+        return isValid(parsedDate) ? format(parsedDate, pattern) : "N/A";
+    };
 
     const bills = useMemo(() => getMockBills(student.id, Number(academicYear)), [student.id, academicYear]);
     const grades = useMemo(() => getMockGrades(student.id, Number(academicYear)), [student.id, academicYear]);
@@ -118,7 +128,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
                                         <span className="text-muted-foreground">Enrollment Date</span>
-                                        <span className="font-medium">{format(new Date(student.enrollment_date), "PPP")}</span>
+                                        <span className="font-medium">{formatDate(student.enrollment_date)}</span>
                                     </div>
                                 </CardContent>
                             </Card>
@@ -139,13 +149,13 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                     <div className="flex justify-between border-b pb-2">
                                         <span className="text-muted-foreground">Date of Birth</span>
                                         <span className="font-medium">
-                                            {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "N/A"}
+                                            {formatDate(student.date_of_birth)}
                                         </span>
                                     </div>
                                     <div className="flex justify-between border-b pb-2">
                                         <span className="text-muted-foreground">Account Status</span>
-                                        <Badge variant={student.account_info.active ? "default" : "destructive"}>
-                                            {student.account_info.active ? "Active" : "Inactive"}
+                                        <Badge variant={accountInfo?.active ? "default" : "destructive"}>
+                                            {accountInfo?.active ? "Active" : "Unavailable"}
                                         </Badge>
                                     </div>
                                 </CardContent>
@@ -159,13 +169,13 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <Users className="h-5 w-5 text-muted-foreground" />
                         Parent / Guardian Contacts
                     </h3>
-                    {student.parents.length === 0 ? (
+                    {parents.length === 0 ? (
                         <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
                             <p className="text-muted-foreground">No family information recorded.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {student.parents.map((p) => (
+                            {parents.map((p) => (
                                 <Card key={p.id} className="relative overflow-hidden group hover:shadow-md transition-shadow">
                                     {p.is_primary_contact && (
                                         <div className="absolute top-0 right-0">
@@ -297,7 +307,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 <TableBody>
                                     {attendance.map((record) => (
                                         <TableRow key={record.id}>
-                                            <TableCell className="font-medium">{format(new Date(record.date), "PPP")}</TableCell>
+                                            <TableCell className="font-medium">{formatDate(record.date)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={record.status === "present" ? "default" : record.status === "late" ? "secondary" : "destructive"}>
                                                     {record.status}
@@ -334,7 +344,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                         <TableCell className="font-mono text-xs">{bill.id}</TableCell>
                                         <TableCell className="font-medium text-xs">{bill.description}</TableCell>
                                         <TableCell className="font-bold">{bill.amount.toLocaleString("en-US")} FBU</TableCell>
-                                        <TableCell>{format(new Date(bill.dueDate), "PP")}</TableCell>
+                                        <TableCell>{formatDate(bill.dueDate, "PP")}</TableCell>
                                         <TableCell>
                                             <Badge
                                                 className="uppercase text-[10px] font-bold"
@@ -364,15 +374,15 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <FileText className="h-5 w-5 text-muted-foreground" />
                         Academic Documents
                     </h3>
-                    {student.documents.length === 0 ? (
+                    {documents.length === 0 ? (
                         <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
                             <p className="text-muted-foreground">No documents uploaded yet.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-3">
-                            {student.documents.map((doc) => (
+                            {documents.map((doc, index) => (
                                 <div
-                                    key={doc.id}
+                                    key={doc.id ?? doc.file_url ?? index}
                                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors group border-l-4 border-l-primary"
                                 >
                                     <div className="flex items-center gap-4">
@@ -380,21 +390,27 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                             <FileText className="h-6 w-6" />
                                         </div>
                                         <div>
-                                            <p className="font-bold capitalize text-sm">{doc.document_type.replace("_", " ")}</p>
+                                            <p className="font-bold capitalize text-sm">{(doc.document_type ?? "document").replace("_", " ")}</p>
                                             <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                                 <Calendar className="h-3 w-3" />
-                                                Uploaded {format(new Date(doc.uploaded_at), "PPP")}
+                                                Uploaded {formatDate(doc.uploaded_at)}
                                             </p>
                                         </div>
                                     </div>
-                                    <a
-                                        href={doc.file_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-primary font-semibold text-sm hover:underline px-4 py-2 rounded-full border border-primary/20 hover:bg-primary/5 transition-all"
-                                    >
-                                        View File
-                                    </a>
+                                    {doc.file_url ? (
+                                        <a
+                                            href={doc.file_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-2 text-primary font-semibold text-sm hover:underline px-4 py-2 rounded-full border border-primary/20 hover:bg-primary/5 transition-all"
+                                        >
+                                            View File
+                                        </a>
+                                    ) : (
+                                        <span className="px-4 py-2 text-sm text-muted-foreground border border-dashed rounded-full">
+                                            File unavailable
+                                        </span>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -404,4 +420,3 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
         </Tabs>
     );
 }
-

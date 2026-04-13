@@ -192,7 +192,7 @@ export default function GradeStudentsPage() {
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2">
           <Button size="lg" className="shadow-2xl text-xl px-12 py-8 rounded-full gap-3">
             <Save className="w-6 h-6" />
-            Enregistrer toutes les notes
+            Save All Grades
           </Button>
         </div>
       </div>
