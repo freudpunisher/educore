@@ -191,15 +191,16 @@ export default function StorePage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [locations, setLocations] = useState<StoreLocation[]>([]);
 
-  // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isStoreProductModalOpen, setIsStoreProductModalOpen] = useState(false);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
 
   // Edit states
+  const [adjustingInventory, setAdjustingInventory] = useState<Inventory | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
   const [editingDistribution, setEditingDistribution] = useState<Distribution | null>(null);
@@ -493,6 +494,22 @@ export default function StorePage() {
     printWindow.document.close();
   };
 
+  const handleAdjustSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!adjustingInventory) return;
+    const formData = new FormData(e.currentTarget);
+    const quantity = parseFloat(formData.get("quantity") as string);
+    
+    try {
+      await api.patch(`store/stock/inventory/${adjustingInventory.id}/`, { quantity });
+      toast.success("Inventory adjusted successfully");
+      setIsAdjustModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to adjust inventory");
+    }
+  };
+
   // ─── Filters ──────────────────────────────────────────────────────────────
 
   const filteredInventory = useMemo(() => {
@@ -579,6 +596,22 @@ export default function StorePage() {
       label: "Status",
       sortable: true,
       render: (v: boolean) => <StatusBadge status={v ? "inactive" : "active"} />,
+    },
+    {
+      key: "id" as any,
+      label: "Actions",
+      render: (_: any, item: Inventory) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => { setAdjustingInventory(item); setIsAdjustModalOpen(true); }}>
+              <Pencil className="w-4 h-4 mr-2" /> Ajuster Stock
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
@@ -1631,6 +1664,32 @@ export default function StorePage() {
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white w-full">Save Local Stock</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Inventory Modal */}
+      <Dialog open={isAdjustModalOpen} onOpenChange={setIsAdjustModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajuster l'Inventaire: {adjustingInventory?.product_name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdjustSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Nouvelle Quantité Réelle</Label>
+              <div className="flex gap-2 items-center">
+                  <Input id="quantity" name="quantity" type="number" step="0.01" defaultValue={adjustingInventory?.quantity} required />
+                  <span className="text-sm text-slate-500 whitespace-nowrap">{adjustingInventory?.unit_symbol}</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                La quantité actuelle est de <strong>{adjustingInventory?.quantity} {adjustingInventory?.unit_symbol}</strong>. <br/>
+                Saisissez un chiffre plus bas pour déclarer une perte, ou un chiffre plus élevé pour corriger un excédent de stock non justifié.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAdjustModalOpen(false)}>Annuler</Button>
+              <Button type="submit" className="bg-slate-900 text-white">Confirmer l'Ajustement</Button>
             </DialogFooter>
           </form>
         </DialogContent>

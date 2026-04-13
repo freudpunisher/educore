@@ -53,6 +53,19 @@ type StoreLocation = {
   is_active: boolean
 }
 
+type SchoolConfig = {
+  id: number
+  name: string
+  code: string
+  address: string
+  phone: string
+  email: string
+  director_name: string
+  academic_year: string
+  currency_symbol: string
+}
+
+
 const staticUsers = [
   { id: "1", name: "Marie Dubois", email: "marie.dubois@school.fr", role: "Admin", status: "active" },
   { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Teacher", status: "active" },
@@ -65,6 +78,8 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [units, setUnits] = useState<Unit[]>([])
   const [locations, setLocations] = useState<StoreLocation[]>([])
+  const [config, setConfig] = useState<SchoolConfig | null>(null)
+
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
@@ -77,20 +92,26 @@ export default function SettingsPage() {
 
   const fetchData = async () => {
     try {
-      const [pRes, cRes, uRes, lRes] = await Promise.all([
+      const [pRes, cRes, uRes, lRes, configRes] = await Promise.all([
         api.get<any>("store/stock/products/"),
         api.get<any>("store/stock/categories/"),
         api.get<any>("store/stock/units/"),
         api.get<any>("store/stock/locations/"),
+        api.get<any>("config/school-config/"),
       ])
       setProducts(Array.isArray(pRes) ? pRes : pRes.results || [])
       setCategories(Array.isArray(cRes) ? cRes : cRes.results || [])
       setUnits(Array.isArray(uRes) ? uRes : uRes.results || [])
       setLocations(Array.isArray(lRes) ? lRes : lRes.results || [])
+
+      // SchoolConfig is a list with one item
+      const configData = Array.isArray(configRes) ? configRes[0] : configRes.results?.[0]
+      if (configData) setConfig(configData)
     } catch {
-      toast.error("Failed to load store data")
+      toast.error("Failed to load settings data")
     }
   }
+
 
   useEffect(() => { fetchData() }, [])
 
@@ -180,6 +201,21 @@ export default function SettingsPage() {
     catch { toast.error("Failed") }
   }
 
+  const handleConfigSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!config) return
+    const fd = new FormData(e.currentTarget)
+    const data = Object.fromEntries(fd.entries())
+    try {
+      await api.put(`config/school-config/${config.id}/`, data)
+      toast.success("Settings updated")
+      fetchData()
+    } catch {
+      toast.error("Failed to update settings")
+    }
+  }
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -190,6 +226,7 @@ export default function SettingsPage() {
       <Tabs defaultValue="school" className="space-y-4">
         <TabsList className="flex flex-wrap gap-1 h-auto p-1">
           <TabsTrigger value="school"><Building2 className="w-4 h-4 mr-2" />School</TabsTrigger>
+          <TabsTrigger value="config"><Save className="w-4 h-4 mr-2" />Configuration</TabsTrigger>
           <TabsTrigger value="users"><Users className="w-4 h-4 mr-2" />Users</TabsTrigger>
           <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2" />Notifications</TabsTrigger>
           <TabsTrigger value="security"><Shield className="w-4 h-4 mr-2" />Security</TabsTrigger>
@@ -199,6 +236,7 @@ export default function SettingsPage() {
           <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>
         </TabsList>
 
+
         {/* ── School ── */}
         <TabsContent value="school">
           <Card>
@@ -206,22 +244,50 @@ export default function SettingsPage() {
               <CardTitle>School Information</CardTitle>
               <CardDescription>Manage general information about your institution</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2"><Label>School Name</Label><Input defaultValue="Saint-Martin Primary School" /></div>
-                <div className="space-y-2"><Label>School Code</Label><Input defaultValue="ESM-2024" /></div>
-                <div className="space-y-2 md:col-span-2"><Label>Address</Label><Input defaultValue="123 Education Street, 75001 Paris" /></div>
-                <div className="space-y-2"><Label>Phone</Label><Input type="tel" defaultValue="01 23 45 67 89" /></div>
-                <div className="space-y-2"><Label>Email</Label><Input type="email" defaultValue="contact@ecole-saint-martin.fr" /></div>
-                <div className="space-y-2"><Label>Director</Label><Input defaultValue="Mrs Catherine Dubois" /></div>
-                <div className="space-y-2"><Label>Academic Year</Label><Input defaultValue="2024-2025" /></div>
-              </div>
-              <div className="flex justify-end">
-                <Button><Save className="w-4 h-4 mr-2" />Save Changes</Button>
-              </div>
+            <CardContent>
+              <form onSubmit={handleConfigSubmit} className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2"><Label>School Name</Label><Input name="name" defaultValue={config?.name ?? ""} /></div>
+                  <div className="space-y-2"><Label>School Code</Label><Input name="code" defaultValue={config?.code ?? ""} /></div>
+                  <div className="space-y-2 md:col-span-2"><Label>Address</Label><Input name="address" defaultValue={config?.address ?? ""} /></div>
+                  <div className="space-y-2"><Label>Phone</Label><Input name="phone" type="tel" defaultValue={config?.phone ?? ""} /></div>
+                  <div className="space-y-2"><Label>Email</Label><Input name="email" type="email" defaultValue={config?.email ?? ""} /></div>
+                  <div className="space-y-2"><Label>Director</Label><Input name="director_name" defaultValue={config?.director_name ?? ""} /></div>
+                  <div className="space-y-2"><Label>Academic Year</Label><Input name="academic_year" defaultValue={config?.academic_year ?? ""} /></div>
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit"><Save className="w-4 h-4 mr-2" />Save Changes</Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Configuration ── */}
+        <TabsContent value="config">
+          <Card>
+            <CardHeader>
+              <CardTitle>Global Configuration</CardTitle>
+              <CardDescription>Configure localization and system-wide settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleConfigSubmit} className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Currency Symbol</Label>
+                    <Input name="currency_symbol" defaultValue={config?.currency_symbol ?? ""} placeholder="e.g. BIF, USD, EUR" />
+                    <p className="text-xs text-muted-foreground italic">Current: {config?.currency_symbol}</p>
+                  </div>
+                  {/* Additional configuration fields can go here */}
+                </div>
+                <div className="flex justify-end">
+                  <Button type="submit"><Save className="w-4 h-4 mr-2" />Save Configuration</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
 
         {/* ── Users ── */}
         <TabsContent value="users">
@@ -487,7 +553,7 @@ export default function SettingsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingLocation ? "Edit Location" : "New Location"}</DialogTitle></DialogHeader>
           <form onSubmit={handleLocationSubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Location Name</Label><Input name="name" defaultValue={editingLocation?.name} placeholder="e.g. Cantine" required /></div>
+            <div className="space-y-2"><Label>Location Name</Label><Input name="name" defaultValue={editingLocation?.name ?? ""} placeholder="e.g. Cantine" required /></div>
             <div className="space-y-2">
               <Label>Status</Label>
               <Select name="is_active" defaultValue={String(editingLocation?.is_active ?? true)}>
@@ -508,7 +574,7 @@ export default function SettingsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingProduct ? "Edit Article" : "New Article"}</DialogTitle></DialogHeader>
           <form onSubmit={handleProductSubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingProduct?.name} required /></div>
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingProduct?.name ?? ""} required /></div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Category</Label>
@@ -548,7 +614,7 @@ export default function SettingsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingCategory ? "Edit Category" : "New Category"}</DialogTitle></DialogHeader>
           <form onSubmit={handleCategorySubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name} required /></div>
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name ?? ""} required /></div>
             <div className="space-y-2">
               <Label>Type</Label>
               <Select name="type" defaultValue={editingCategory?.type ?? "vivre"}>
@@ -569,8 +635,8 @@ export default function SettingsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingUnit ? "Edit Unit" : "New Unit"}</DialogTitle></DialogHeader>
           <form onSubmit={handleUnitSubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingUnit?.name} placeholder="e.g. Kilogram" required /></div>
-            <div className="space-y-2"><Label>Symbol</Label><Input name="symbol" defaultValue={editingUnit?.symbol} placeholder="e.g. kg" required /></div>
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingUnit?.name ?? ""} placeholder="e.g. Kilogram" required /></div>
+            <div className="space-y-2"><Label>Symbol</Label><Input name="symbol" defaultValue={editingUnit?.symbol ?? ""} placeholder="e.g. kg" required /></div>
             <DialogFooter><Button type="submit">{editingUnit ? "Update" : "Create"}</Button></DialogFooter>
           </form>
         </DialogContent>
