@@ -69,22 +69,6 @@ export default function NewStudentPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="class">Class *</Label>
-                  <Select required>
-                    <SelectTrigger id="class">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="6th A">6th A</SelectItem>
-                      <SelectItem value="6th B">6th B</SelectItem>
-                      <SelectItem value="5th A">5th A</SelectItem>
-                      <SelectItem value="5th B">5th B</SelectItem>
-                      <SelectItem value="4th A">4th A</SelectItem>
-                      <SelectItem value="4th B">4th B</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="enrollmentDate">Enrollment Date *</Label>
                   <Input id="enrollmentDate" type="date" required />
                 </div>
@@ -101,8 +85,26 @@ export default function NewStudentPage() {
               <h3 className="font-semibold mb-4">Parent/Guardian Information</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="parentName">Parent Name *</Label>
-                  <Input id="parentName" placeholder="Full name" required />
+                  <Label htmlFor="parentFirstName">Parent First Name *</Label>
+                  <Input id="parentFirstName" placeholder="First Name" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="parentLastName">Parent Last Name *</Label>
+                  <Input id="parentLastName" placeholder="Last Name" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="relationship">Relationship *</Label>
+                  <Select required>
+                    <SelectTrigger id="relationship">
+                      <SelectValue placeholder="Select Relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mother">Mother</SelectItem>
+                      <SelectItem value="father">Father</SelectItem>
+                      <SelectItem value="guardian">Guardian</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="parentPhone">Phone *</Label>

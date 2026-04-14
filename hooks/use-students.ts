@@ -1,6 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedStudentListSchema, AcademicsEnrollmentsListRequest, studentDetailSchema } from "@/types/student";
+import {
+  paginatedStudentListSchema,
+  AcademicsEnrollmentsListRequest,
+  studentDetailSchema,
+  studentAcademicsResponseSchema,
+  studentFinanceResponseSchema,
+  studentLifeResponseSchema,
+  studentServicesResponseSchema,
+  studentTransactionsResponseSchema
+} from "@/types/student";
+import { toast } from "sonner";
 
 export function useStudents(params?: AcademicsEnrollmentsListRequest) {
   return useQuery({
@@ -8,13 +18,9 @@ export function useStudents(params?: AcademicsEnrollmentsListRequest) {
     queryFn: async () => {
       try {
         const { data: rawResponse } = await axiosInstance.get("users/students/", { params });
-
-        // Extract the 'data' part if the response is wrapped (Standard API pattern)
         const data = (rawResponse && typeof rawResponse === 'object' && 'status' in rawResponse && rawResponse.status === 'success')
           ? rawResponse.data
           : rawResponse;
-
-        console.log("Students API Data:", data);
         return paginatedStudentListSchema.parse(data);
       } catch (err: any) {
         if (err.name === "ZodError") {
@@ -36,13 +42,10 @@ export function useStudentDetail(id: number | null) {
       if (id === null || isNaN(id)) return null;
       try {
         const response = await axiosInstance.get(`users/students/${id}/`);
-        // Handle potential double-wrapping or interceptor bypass
         const rawData = response.data;
         const studentData = (rawData && typeof rawData === 'object' && 'status' in rawData && rawData.status === 'success')
           ? rawData.data
           : rawData;
-
-        console.log("Processing Student Data:", studentData);
         return studentDetailSchema.parse(studentData);
       } catch (err: any) {
         if (err.name === "ZodError") {
@@ -55,5 +58,97 @@ export function useStudentDetail(id: number | null) {
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useStudentAcademics(id: number | null) {
+  return useQuery({
+    queryKey: ["students", "academics", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await axiosInstance.get(`users/students/${id}/academics/`);
+      const payload = data.status === 'success' ? data.data : data;
+      return studentAcademicsResponseSchema.parse(payload);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useStudentFinance(id: number | null) {
+  return useQuery({
+    queryKey: ["students", "finance", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await axiosInstance.get(`users/students/${id}/finance/`);
+      const payload = data.status === 'success' ? data.data : data;
+      return studentFinanceResponseSchema.parse(payload);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useStudentLife(id: number | null) {
+  return useQuery({
+    queryKey: ["students", "life", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await axiosInstance.get(`users/students/${id}/life/`);
+      const payload = data.status === 'success' ? data.data : data;
+      return studentLifeResponseSchema.parse(payload);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useStudentServices(id: number | null) {
+  return useQuery({
+    queryKey: ["students", "services", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await axiosInstance.get(`users/students/${id}/services/`);
+      const payload = data.status === 'success' ? data.data : data;
+      return studentServicesResponseSchema.parse(payload);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useStudentTransactions(id: number | null) {
+  return useQuery({
+    queryKey: ["students", "transactions", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const { data } = await axiosInstance.get(`users/students/${id}/transactions/`);
+      const payload = data.status === 'success' ? data.data : data;
+      return studentTransactionsResponseSchema.parse(payload);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useUploadStudentDocument(studentId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const { data } = await axiosInstance.post(`users/student-documents/`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students", "detail", studentId] });
+      toast.success("Document uploaded successfully");
+    },
+    onError: (err: any) => {
+      console.error("Document Upload Error:", err);
+      toast.error("Failed to upload document");
+    },
   });
 }

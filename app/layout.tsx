@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/lib/theme-provider"
 import "./globals.css"
 import { Providers } from "@/components/providers";
-import { Toaster } from "react-hot-toast";
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -26,25 +26,7 @@ export default function RootLayout({
         <Providers>
           <ThemeProvider>
             {children}
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: "hsl(var(--background))",
-                  color: "hsl(var(--foreground))",
-                  border: "1px solid hsl(var(--border))",
-                },
-                success: {
-                  icon: "✔️",
-                  style: { borderColor: "hsl(var(--success))" },
-                },
-                error: {
-                  icon: "❌",
-                  style: { borderColor: "hsl(var(--destructive))" },
-                },
-              }}
-            />
+            <Toaster />
           </ThemeProvider>
         </Providers>
 

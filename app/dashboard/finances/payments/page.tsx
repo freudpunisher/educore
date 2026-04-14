@@ -67,15 +67,17 @@ export default function PaymentsPage() {
 
     const handleDownloadReceipt = (payment: any) => {
         toast({
-            title: "Receipt Generated",
-            description: `Receipt for ${payment.id} has been downloaded.`,
+            variant: "success",
+            title: "Reçu Généré",
+            description: `Le reçu pour le paiement ${payment.id} a été téléchargé.`,
         })
     }
 
     const handlePrintReceipt = (payment: any) => {
         toast({
-            title: "Printing Receipt",
-            description: `Sending receipt ${payment.id} to printer...`,
+            variant: "info",
+            title: "Impression en cours",
+            description: `Envoi du reçu ${payment.id} à l'imprimante...`,
         })
         // In a real app, this might trigger window.print() on a specific component
         console.log(`Printing ${payment.id}`)
