@@ -2,6 +2,7 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import axiosInstance from "./axios";
 
 type BackendUser = {
   id: number;
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .filter(Boolean)
           .join(" ")
           .trim()
-        : userData?.username || profile.username || "Utilisateur";
+        : userData?.username || profile.username || "User";
 
     const cleanUser: User = {
       id: profile.id || userData?.id || 0,
@@ -96,11 +97,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("user_data", JSON.stringify(cleanUser));
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user_data");
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refresh_token");
+      if (refreshToken) {
+        await axiosInstance.post("logout/", { refresh: refreshToken });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_data");
+      // Redirect to login page
+      window.location.href = "/login";
+    }
   };
 
   // Re-hydration logic

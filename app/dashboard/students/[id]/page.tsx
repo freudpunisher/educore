@@ -71,7 +71,7 @@ export default function StudentDetailPage() {
   /* ─── Main ─────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-8 space-y-8">
+      <div className="mx-auto  px-4 sm:px-6 py-8 space-y-8">
 
         {/* ── Top navigation bar ─────────────────────────── */}
         <div className="flex items-start justify-between gap-4">

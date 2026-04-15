@@ -116,7 +116,7 @@ export default function TakeAttendancePage() {
       <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
         <AlertCircle className="w-16 h-16 text-destructive mb-4" />
         <h2 className="text-2xl font-bold">Séance introuvable</h2>
-        <p className="text-muted-foreground mt-2">Nous ne parvenons pas à trouver les détails de cette séance.</p>
+        <p className="text-muted-foreground mt-2">We could not find the details for this session.</p>
         <Button onClick={() => window.history.back()} className="mt-6">Retour</Button>
       </div>
     );
@@ -291,7 +291,7 @@ export default function TakeAttendancePage() {
                           </Select>
                           <div className="flex justify-end gap-3">
                             <Button variant="outline" onClick={() => setJustification("")}>
-                              Annuler
+                              Cancel
                             </Button>
                             <Button
                               onClick={() => {

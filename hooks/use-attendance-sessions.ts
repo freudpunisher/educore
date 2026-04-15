@@ -38,7 +38,7 @@ export function useCreateAttendanceSession() {
       toast.success("Séance créée avec succès !");
     },
     onError: (error: any) => {
-      const message = error?.response?.data?.message || "Erreur lors de la création de la séance";
+      const message = error?.response?.data?.message || "Error creating the session";
       toast.error(message);
     },
   });

@@ -19,7 +19,7 @@ const enrollmentData = [
 ]
 
 function formatFbu(amount: number) {
-  return new Intl.NumberFormat("fr-BI").format(amount) + " Fbu";
+  return new Intl.NumberFormat("fr-BI").format(amount) + " BIF";
 }
 
 export default function DashboardPage() {
@@ -162,7 +162,7 @@ export default function DashboardPage() {
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
             <CardTitle>Finance Overview</CardTitle>
-            <CardDescription>Invoiced vs Collected vs Balance (Fbu)</CardDescription>
+            <CardDescription>Invoiced vs Collected vs Balance (BIF)</CardDescription>
           </CardHeader>
           <CardContent>
             {isDashboardLoading ? (

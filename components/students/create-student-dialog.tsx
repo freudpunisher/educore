@@ -39,6 +39,8 @@ export function CreateStudentDialog() {
   } = useForm<CreateStudentData>({
     resolver: zodResolver(createStudentSchema),
     defaultValues: {
+      parent_first_name: "",
+      parent_last_name: "",
       parent_contact: "",
       parent_email: "",
     },
@@ -62,11 +64,11 @@ export function CreateStudentDialog() {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Student</DialogTitle>
           <DialogDescription>
-            Fill in student information. Parent fields are optional.
+            Fill in student information. Parent fields are required.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,15 +89,6 @@ export function CreateStudentDialog() {
                 <p className="text-sm text-destructive">{errors.last_name.message}</p>
               )}
             </div>
-          </div>
-
-          {/* Niveau */}
-          <div className="space-y-2">
-            <Label>Level / Class *</Label>
-            <Input placeholder="Year 7 A" {...register("class_level")} />
-            {errors.class_level && (
-              <p className="text-sm text-destructive">{errors.class_level.message}</p>
-            )}
           </div>
 
           {/* Genre + Date */}
@@ -125,17 +118,52 @@ export function CreateStudentDialog() {
             </div>
           </div>
 
-          {/* Parent Contact Info */}
+          {/* Parent Info */}
           <div className="border-t pt-4 space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Parent/Guardian Contact (Optional)
+            <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Parent / Guardian Details *
             </h4>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Parent First Name *</Label>
+                <Input placeholder="John" {...register("parent_first_name")} />
+                {errors.parent_first_name && (
+                  <p className="text-sm text-destructive">{errors.parent_first_name.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Parent Last Name *</Label>
+                <Input placeholder="Doe" {...register("parent_last_name")} />
+                {errors.parent_last_name && (
+                  <p className="text-sm text-destructive">{errors.parent_last_name.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Relationship *</Label>
+              <Select onValueChange={(v) => setValue("parent_relationship", v as any)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Relationship" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mother">Mother</SelectItem>
+                  <SelectItem value="father">Father</SelectItem>
+                  <SelectItem value="guardian">Guardian</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.parent_relationship && (
+                <p className="text-sm text-destructive">{errors.parent_relationship.message}</p>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  Parent Phone
+                  Parent Phone *
                 </Label>
                 <Input
                   placeholder="+243812345678"
@@ -151,7 +179,7 @@ export function CreateStudentDialog() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  Parent Email
+                  Parent Email *
                 </Label>
                 <Input
                   type="email"
@@ -192,8 +220,8 @@ export function CreateStudentDialog() {
           </div>
 
           {createMutation.isError && (
-            <p className="text-center text-sm text-destructive">
-              Error occurred during creation
+            <p className="text-center text-sm text-destructive font-medium">
+              Failed to create student. Please try again.
             </p>
           )}
         </form>

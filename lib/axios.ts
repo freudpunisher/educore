@@ -67,26 +67,44 @@ axiosInstance.interceptors.response.use(
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_data");
-      
+
       if (!isServer) {
         window.location.href = "/login";
       }
       return Promise.reject(error);
     }
 
-    // Handle 401 globally (optional token refresh logic)
+    // Handle 401 globally with token refresh logic
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Example: refresh token flow
-      // try {
-      //   const { data } = await axios.post("/api/auth/refresh");
-      //   localStorage.setItem("access_token", data.accessToken);
-      //   return axiosInstance(originalRequest);
-      // } catch (refreshError) {
-      //   // Force logout, redirect to login, etc.
-      //   window.location.href = "/login";
-      // }
+      try {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) throw new Error("No refresh token");
+
+        // Use basic axios to avoid infinite loops if refresh fails
+        const { data } = await axios.post(`${baseURL}refresh/`, { refresh: refreshToken });
+
+        // Depending on your API, it might return data.access or data.data.access
+        // With standard response mixin, it might wrap it. Let's assume standard SimpleJWT:
+        const newAccessToken = data.access || (data.data && data.data.access);
+
+        if (newAccessToken) {
+          localStorage.setItem("access_token", newAccessToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return axiosInstance(originalRequest);
+        } else {
+          throw new Error("Invalid refresh response");
+        }
+      } catch (refreshError) {
+        // Force logout, redirect to login
+        console.warn("Auth: Refresh token failed or expired, redirecting to login.");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user_data");
+        if (!isServer) window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
     }
 
     // Optional: toast notifications

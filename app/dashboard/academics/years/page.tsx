@@ -155,8 +155,9 @@ export default function AcademicYearsPage() {
             }
 
             toast({
-                title: "Success",
-                description: "Academic year created successfully",
+                variant: "success",
+                title: "Succès",
+                description: "Année académique créée avec succès",
             })
             setShowCreateDialog(false)
             fetchAcademicYears()

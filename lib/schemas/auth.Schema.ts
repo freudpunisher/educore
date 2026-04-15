@@ -4,9 +4,9 @@ import { z } from "zod";
 export const loginSchema = z.object({
   username: z
     .string()
-    .min(1, "L'identifiant est requis")
-    .max(150, "Identifiant trop long"),
-  password: z.string().min(1, "Le mot de passe est requis"),
+    .min(1, "Username is required")
+    .max(150, "Username is too long"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

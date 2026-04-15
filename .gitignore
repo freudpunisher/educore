@@ -45,4 +45,4 @@ coverage/
 .pnpm-store/
 
 # Next.js specific files (if you're using TypeScript)
-next-env.d.ts
+next-env.d.tstsconfig.tsbuildinfo

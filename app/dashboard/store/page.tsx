@@ -191,15 +191,16 @@ export default function StorePage() {
   const [units, setUnits] = useState<Unit[]>([]);
   const [locations, setLocations] = useState<StoreLocation[]>([]);
 
-  // Modal states
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isEntryModalOpen, setIsEntryModalOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isStoreProductModalOpen, setIsStoreProductModalOpen] = useState(false);
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
+  const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
 
   // Edit states
+  const [adjustingInventory, setAdjustingInventory] = useState<Inventory | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
   const [editingDistribution, setEditingDistribution] = useState<Distribution | null>(null);
@@ -467,8 +468,8 @@ export default function StorePage() {
               <tr>
                 <td>${sale.product_name}</td>
                 <td>${sale.quantity} ${sale.unit_symbol}</td>
-                <td>${parseFloat(sale.unit_price).toLocaleString()} FCFA</td>
-                <td style="text-align: right; font-weight: 600;">${parseFloat(sale.total_price).toLocaleString()} FCFA</td>
+                <td>${parseFloat(sale.unit_price).toLocaleString()} BIF</td>
+                <td style="text-align: right; font-weight: 600;">${parseFloat(sale.total_price).toLocaleString()} BIF</td>
               </tr>
             </tbody>
           </table>
@@ -477,7 +478,7 @@ export default function StorePage() {
           
           <div class="row total">
             <span>Amount ${type === 'receipt' ? 'Paid' : 'Due'}:</span>
-            <span>${parseFloat(sale.total_price).toLocaleString()} FCFA</span>
+            <span>${parseFloat(sale.total_price).toLocaleString()} BIF</span>
           </div>
 
           <div class="footer">
@@ -491,6 +492,22 @@ export default function StorePage() {
     `;
     printWindow.document.write(html);
     printWindow.document.close();
+  };
+
+  const handleAdjustSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!adjustingInventory) return;
+    const formData = new FormData(e.currentTarget);
+    const quantity = parseFloat(formData.get("quantity") as string);
+    
+    try {
+      await api.patch(`store/stock/inventory/${adjustingInventory.id}/`, { quantity });
+      toast.success("Inventory adjusted successfully");
+      setIsAdjustModalOpen(false);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to adjust inventory");
+    }
   };
 
   // ─── Filters ──────────────────────────────────────────────────────────────
@@ -579,6 +596,22 @@ export default function StorePage() {
       label: "Status",
       sortable: true,
       render: (v: boolean) => <StatusBadge status={v ? "inactive" : "active"} />,
+    },
+    {
+      key: "id" as any,
+      label: "Actions",
+      render: (_: any, item: Inventory) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => { setAdjustingInventory(item); setIsAdjustModalOpen(true); }}>
+              <Pencil className="w-4 h-4 mr-2" /> Adjust Stock
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
@@ -787,7 +820,7 @@ export default function StorePage() {
   const storeProductColumns = [
     {
       key: "store_name" as const,
-      label: "Magasin",
+      label: "Location",
       sortable: true,
       render: (v: string) => <span className="font-semibold text-slate-800 dark:text-slate-200">{v}</span>,
     },
@@ -807,7 +840,7 @@ export default function StorePage() {
       key: "unit_price" as const,
       label: "Unit Price",
       sortable: true,
-      render: (v: string) => <span className="text-green-600 dark:text-green-400 font-medium">{parseFloat(v).toLocaleString()} FCFA</span>,
+      render: (v: string) => <span className="text-green-600 dark:text-green-400 font-medium">{parseFloat(v).toLocaleString()} BIF</span>,
     },
   ];
 
@@ -845,7 +878,7 @@ export default function StorePage() {
       key: "total_price" as const,
       label: "Total Amount",
       sortable: true,
-      render: (v: string) => <span className="font-bold text-green-600 dark:text-green-400">{parseFloat(v).toLocaleString()} FCFA</span>,
+      render: (v: string) => <span className="font-bold text-green-600 dark:text-green-400">{parseFloat(v).toLocaleString()} BIF</span>,
     },
     {
       key: "is_paid" as const,
@@ -947,7 +980,7 @@ export default function StorePage() {
           />
           <KpiCard
             title="Total Sales"
-            value={`${(dashboard?.total_sales_amount ?? 0).toLocaleString()} FCFA`}
+            value={`${(dashboard?.total_sales_amount ?? 0).toLocaleString()} BIF`}
             subtitle={`${dashboard?.total_sales_count ?? 0} transactions`}
             icon={<TrendingUp className="w-6 h-6 text-green-600" />}
           />
@@ -975,7 +1008,7 @@ export default function StorePage() {
               Liste des Stocks
             </TabsTrigger>
             <TabsTrigger value="sales" className="flex-1 data-[state=active]:bg-green-100 dark:data-[state=active]:bg-green-950 text-xs sm:text-sm min-w-[120px]">
-              Ventes
+              Sales
             </TabsTrigger>
           </TabsList>
 
@@ -1081,8 +1114,8 @@ export default function StorePage() {
           <TabsContent value="store-products" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Liste des Stocks (Par Magasin)</h2>
-                <p className="text-slate-600 dark:text-slate-400 mt-1">Gérer les stocks locaux par points de vente ou dépôts</p>
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock List (By Location)</h2>
+                <p className="text-slate-600 dark:text-slate-400 mt-1">Manage local stock by sales points or storage depots</p>
               </div>
               <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsStoreProductModalOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" /> Add Location Stock
@@ -1260,13 +1293,13 @@ export default function StorePage() {
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <p className="text-sm text-muted-foreground dark:text-slate-400">Total Value</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                  {filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0).toLocaleString()} FCFA
+                  {filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0).toLocaleString()} BIF
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <p className="text-sm text-muted-foreground dark:text-slate-400">Avg. Basket</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                  {filteredSales.length ? (filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0) / filteredSales.length).toFixed(0) : 0} FCFA
+                  {filteredSales.length ? (filteredSales.reduce((sum, s) => sum + parseFloat(s.total_price), 0) / filteredSales.length).toFixed(0) : 0} BIF
                 </p>
               </div>
             </div>
@@ -1547,7 +1580,7 @@ export default function StorePage() {
                 <Input name="quantity" type="number" defaultValue={1} min={1} required />
               </div>
               <div className="space-y-2">
-                <Label>Unit Sale Price (FCFA)</Label>
+                <Label>Unit Sale Price (BIF)</Label>
                 <Input name="unit_price" type="number" step="0.01" placeholder="Selling price" required />
               </div>
             </div>
@@ -1625,12 +1658,38 @@ export default function StorePage() {
                 <Input name="quantity" type="number" step="0.01" defaultValue={1} required />
               </div>
               <div className="space-y-2">
-                <Label>Unit Price (FCFA)</Label>
+                <Label>Unit Price (BIF)</Label>
                 <Input name="unit_price" type="number" step="0.01" placeholder="Selling price" required />
               </div>
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white w-full">Save Local Stock</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Inventory Modal */}
+      <Dialog open={isAdjustModalOpen} onOpenChange={setIsAdjustModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adjust Inventory: {adjustingInventory?.product_name}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAdjustSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">New Actual Quantity</Label>
+              <div className="flex gap-2 items-center">
+                  <Input id="quantity" name="quantity" type="number" step="0.01" defaultValue={adjustingInventory?.quantity} required />
+                  <span className="text-sm text-slate-500 whitespace-nowrap">{adjustingInventory?.unit_symbol}</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                The current quantity is <strong>{adjustingInventory?.quantity} {adjustingInventory?.unit_symbol}</strong>. <br/>
+                Enter a lower number to report a loss, or a higher number to correct an unjustified stock excess.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAdjustModalOpen(false)}>Cancel</Button>
+              <Button type="submit" className="bg-slate-900 text-white">Confirm Adjustment</Button>
             </DialogFooter>
           </form>
         </DialogContent>

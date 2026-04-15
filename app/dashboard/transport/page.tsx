@@ -550,7 +550,7 @@ export default function TransportDashboard() {
                     {
                       key: "fees",
                       label: "Cost",
-                      render: (f) => `${f}$`
+                      render: (f) => `BIF ${f}`
                     },
                     {
                       key: "state" as any,
