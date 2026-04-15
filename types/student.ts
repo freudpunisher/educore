@@ -13,7 +13,7 @@ export const studentListSchema = z.object({
   enrollment_number: z.string(),
   class_level: z.string().optional(),
   gender: z.number(),
-  enrollment_date: z.string().transform((str) => new Date(str)),
+  enrollment_date: z.string().optional().transform((str) => str ? new Date(str) : undefined),
   is_enrolled: z.boolean().optional(),
   account_active: z.boolean().optional(),
   enrollment_info: enrollmentInfoSchema,
