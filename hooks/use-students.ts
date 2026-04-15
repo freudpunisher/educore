@@ -152,3 +152,21 @@ export function useUploadStudentDocument(studentId: number) {
     },
   });
 }
+
+export function useValidateStudent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (studentId: number) => {
+      const { data } = await axiosInstance.post(`users/students/${studentId}/validate/`);
+      return data;
+    },
+    onSuccess: (_, studentId) => {
+      queryClient.invalidateQueries({ queryKey: ["students", "detail", studentId] });
+      toast.success("Élève validé avec succès");
+    },
+    onError: (err: any) => {
+      console.error("Student Validation Error:", err);
+      toast.error("Échec de la validation de l'élève");
+    },
+  });
+}

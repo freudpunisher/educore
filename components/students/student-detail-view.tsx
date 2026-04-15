@@ -4,8 +4,10 @@ import { StudentDetail } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
-    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen
+    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen, CheckCircle
 } from "lucide-react";
+import { useValidateStudent } from "@/hooks/use-students";
+import { Button } from "@/components/ui/button";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { AcademicsTab } from "./tabs/academics-tab";
@@ -25,6 +27,8 @@ interface StudentDetailViewProps {
 }
 
 export function StudentDetailView({ student }: StudentDetailViewProps) {
+    const validateMutation = useValidateStudent();
+
     const getEnrollmentDisplay = (info: any) => {
         if (!info) return "N/A";
         if (typeof info === "string") return info;
@@ -51,9 +55,23 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                     {/* Academic Info */}
                     <Card className="bg-background/50 backdrop-blur-sm border-primary/10">
                         <CardContent className="p-4 space-y-3">
-                            <h4 className="font-bold flex items-center gap-2 text-primary">
-                                <GraduationCap className="h-4 w-4" /> Academic Snapshot
-                            </h4>
+                            <div className="flex items-center justify-between">
+                                <h4 className="font-bold flex items-center gap-2 text-primary">
+                                    <GraduationCap className="h-4 w-4" /> Academic Snapshot
+                                </h4>
+                                {!student.is_enrolled && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 gap-2 border-green-500/30 text-green-600 hover:bg-green-500/10 hover:text-green-700 font-semibold"
+                                        onClick={() => validateMutation.mutate(student.id)}
+                                        disabled={validateMutation.isPending}
+                                    >
+                                        <CheckCircle className="h-4 w-4" />
+                                        {validateMutation.isPending ? "Validation..." : "Valider l'élève"}
+                                    </Button>
+                                )}
+                            </div>
                             <div className="grid grid-cols-2 gap-y-2">
                                 <span className="text-muted-foreground">Enrollment No:</span>
                                 <code className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] w-fit">{student.enrollment_number}</code>
