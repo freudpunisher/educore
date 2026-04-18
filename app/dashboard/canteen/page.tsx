@@ -508,7 +508,7 @@ export default function CanteenPage() {
           />
           <KpiCard
             title="Total Revenue"
-            value={`$${Number(dashboardKPI?.total_revenue || 0).toFixed(2)}`}
+            value={`BIF ${Number(dashboardKPI?.total_revenue || 0).toFixed(2)}`}
             subtitle={`${dashboardKPI?.subscriptions?.total || 0} subscriptions`}
             icon={<TrendingUp className="w-6 h-6" />}
           />
