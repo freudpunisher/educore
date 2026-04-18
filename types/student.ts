@@ -8,16 +8,16 @@ export const enrollmentInfoSchema = z.object({
 }).nullable();
 
 export const studentListSchema = z.object({
-  id: z.number(),
-  full_name: z.string(),
-  enrollment_number: z.string(),
-  class_level: z.string().optional(),
-  gender: z.number(),
-  enrollment_date: z.string().optional().transform((str) => str ? new Date(str) : undefined),
+  id: z.coerce.number(),
+  full_name: z.string().optional(),
+  enrollment_number: z.string().optional(),
+  class_level: z.string().optional().nullable(),
+  gender: z.coerce.number().optional(),
+  enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   is_enrolled: z.boolean().optional(),
   account_active: z.boolean().optional(),
-  enrollment_info: enrollmentInfoSchema,
-});
+  enrollment_info: z.union([enrollmentInfoSchema, z.record(z.any()), z.string()]).nullish(),
+}).passthrough();
 
 export const studentsListArraySchema = z.array(studentListSchema);
 export const paginatedStudentListSchema = createPaginatedSchema(studentListSchema);
