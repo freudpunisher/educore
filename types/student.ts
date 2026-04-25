@@ -17,6 +17,7 @@ export const studentListSchema = z.object({
   is_enrolled: z.boolean().optional(),
   account_active: z.boolean().optional(),
   enrollment_info: z.union([enrollmentInfoSchema, z.record(z.any()), z.string()]).nullish(),
+  image: z.string().nullable().optional(),
 }).passthrough();
 
 export const studentsListArraySchema = z.array(studentListSchema);

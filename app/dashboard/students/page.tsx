@@ -1,11 +1,12 @@
 "use client";
 import StudentsTable from "@/components/students/students-table";
-import { CreateStudentDialog } from "@/components/students/create-student-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, Plus } from "lucide-react";
 import { useStudents } from "@/hooks/use-students";
 import { useState } from "react";
 import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
+import Link from "next/link";
 
 export default function StudentsPage() {
   const [page, setPage] = useState(1);
@@ -34,7 +35,12 @@ export default function StudentsPage() {
             <Users className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl">Student List</CardTitle>
           </div>
-          <CreateStudentDialog />
+          <Link href="/dashboard/students/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              New Student
+            </Button>
+          </Link>
         </CardHeader>
 
         <CardContent>

@@ -10,6 +10,7 @@ import { useValidateStudent } from "@/hooks/use-students";
 import { Button } from "@/components/ui/button";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
+import { StudentPvcCardDialog } from "./student-pvc-card-dialog";
 import { AcademicsTab } from "./tabs/academics-tab";
 import { FinanceTab } from "./tabs/finance-tab";
 import { LifeTab } from "./tabs/life-tab";
@@ -51,6 +52,29 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
         <div className="h-full flex flex-col">
             {/* Persistent Overview Section at Top */}
             <div className="p-6 border-b bg-muted/5">
+                {/* Student Identity Header */}
+                <div className="flex items-center gap-5 mb-5">
+                    {(() => {
+                        const imgSrc = (student as any).image as string | null | undefined;
+                        const initials = student.full_name?.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
+                        return imgSrc ? (
+                            <img
+                                src={imgSrc}
+                                alt={student.full_name}
+                                className="w-20 h-20 rounded-full object-cover border-4 border-primary/20 shadow-md flex-shrink-0"
+                            />
+                        ) : (
+                            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold flex-shrink-0 border-4 border-primary/20 shadow-md">
+                                {initials}
+                            </div>
+                        );
+                    })()}
+                    <div className="flex-1">
+                        <h2 className="text-2xl font-bold tracking-tight">{student.full_name}</h2>
+                        <p className="text-muted-foreground text-sm mt-0.5">{student.enrollment_number}</p>
+                    </div>
+                    <StudentPvcCardDialog student={student as any} />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                     {/* Academic Info */}
                     <Card className="bg-background/50 backdrop-blur-sm border-primary/10">
