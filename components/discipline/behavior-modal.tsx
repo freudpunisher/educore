@@ -80,13 +80,14 @@ export function BehaviorModal({ record, isOpen, onClose }: BehaviorModalProps) {
                         </div>
 
                         <div className="space-y-6">
-                            <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
-                                <h4 className="flex items-center gap-2 text-sm font-bold text-rose-700 uppercase tracking-wider mb-2">
-                                    <ShieldAlert className="w-4 h-4 text-rose-600" /> Disciplinary Action
+                            <div className={parseFloat(record.points) > 0 ? "bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100" : "bg-rose-50/50 p-4 rounded-2xl border border-rose-100"}>
+                                <h4 className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-2 ${parseFloat(record.points) > 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                                    <ShieldAlert className={`w-4 h-4 ${parseFloat(record.points) > 0 ? "text-emerald-600" : "text-rose-600"}`} /> 
+                                    {parseFloat(record.points) > 0 ? "Positive Behavior" : "Disciplinary Action"}
                                 </h4>
-                                <p className="text-lg font-bold text-rose-900">{record.reason_name}</p>
-                                <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded bg-rose-600 text-white text-xs font-bold uppercase tracking-tight">
-                                    -{record.points_deducted} Points
+                                <p className={`text-lg font-bold ${parseFloat(record.points) > 0 ? "text-emerald-900" : "text-rose-900"}`}>{record.reason_name}</p>
+                                <div className={`mt-2 inline-flex items-center px-2 py-0.5 rounded text-white text-xs font-bold uppercase tracking-tight ${parseFloat(record.points) > 0 ? "bg-emerald-600" : "bg-rose-600"}`}>
+                                    {parseFloat(record.points) > 0 ? "+" : ""}{record.points} Points
                                 </div>
                             </div>
 

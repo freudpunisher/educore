@@ -20,7 +20,10 @@ export enum DisciplineRecordStatusEnum {
 export const disciplineReasonSchema = z.object({
     id: z.number(),
     name: z.string(),
-    penalty_points: z.string(),
+    code: z.string().optional(),
+    points_value: z.string(),
+    incident_type: z.string().optional(),
+    tier: z.number().optional(),
     description: z.string().optional().nullable(),
 });
 
@@ -30,7 +33,7 @@ export const disciplineRecordSchema = z.object({
     student_enrollment: z.string(),
     date_incident: z.string().transform((s) => new Date(s)),
     description: z.string().optional().nullable(),
-    points_deducted: z.string(),
+    points: z.string(),
     reason_name: z.string(),
     reason: z.number(),
     recorded_by_name: z.string().optional().nullable(),
@@ -45,7 +48,7 @@ export const disciplineRecordCreateSchema = z.object({
     date_incident: z.string().min(1, "Date is required"),
     reason: z.number().min(1, "Reason is required"),
     description: z.string().optional(),
-    points_deducted: z.string().optional(),
+    points: z.string().optional(),
     appeal_reason: z.string().optional(),
     status: z.nativeEnum(DisciplineRecordStatusEnum).default(DisciplineRecordStatusEnum.Recorded),
 });
