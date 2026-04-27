@@ -16,14 +16,32 @@ export function useAcademicYears() {
   });
 }
 
-export function useClassRooms() {
+export function useClassRooms(search?: string) {
   return useQuery({
-    queryKey: ["classrooms"],
+    queryKey: ["classrooms", search],
     queryFn: async () => {
-      const { data } = await axiosInstance.get("/config/classrooms/");
+      let url = "/config/classrooms/";
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
+      
+      const { data } = await axiosInstance.get(url);
       const parsed = paginatedClassRoomSchema.parse(data);
       return parsed.results;
     },
+  });
+}
+
+export function useClassRoom(id: string | number) {
+  return useQuery({
+    queryKey: ["classroom", id],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get(`/config/classrooms/${id}/`);
+      return data; // Individual object, not paginated
+    },
+    enabled: !!id,
   });
 }
 

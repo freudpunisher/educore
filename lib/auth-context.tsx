@@ -52,7 +52,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false); // Can be true if we add hydration logic
+  const [isLoading, setIsLoading] = useState(true); // Set to true for hydration
 
   const login = (data: any) => {
     console.log("AuthContext: Login called with data:", data);
@@ -60,34 +60,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Support both nested { user: profile } and flat { id, username, ... } response
     const profile = data.user || data;
 
-    // Check if we have at least some user info (id or username)
+    // Check if we have at least some user info (id or username), or if we have tokens
     const hasUserInfo = profile && (profile.id || profile.username || (profile.user && profile.user.username));
+    
+    let cleanUser: User;
 
     if (!hasUserInfo) {
-      console.warn("AuthContext: No user information found in response", data);
-      // If we're just ignoring it as per user request, we can stop here or proceed with empty user
-      return;
+      console.warn("AuthContext: No user information found in response, creating a fallback user from tokens", data);
+      
+      if (!data.access) {
+         return; // If no tokens either, fail
+      }
+      
+      cleanUser = {
+        id: 0,
+        username: "user",
+        email: "",
+        role: "none",
+        fullName: "Utilisateur",
+        isActive: true,
+        is: (role: string) => role === "none",
+      };
+    } else {
+      const userData = profile.user || (profile.id ? profile : null);
+
+      const fullName =
+        userData && (userData.first_name || userData.last_name)
+          ? [userData.first_name, userData.last_name]
+            .filter(Boolean)
+            .join(" ")
+            .trim()
+          : userData?.username || profile.username || "User";
+
+      cleanUser = {
+        id: profile.id || userData?.id || 0,
+        username: userData?.username || profile.username || "unknown",
+        email: userData?.email || profile.email || "",
+        role: (profile.role as User["role"]) || (userData?.role as User["role"]) || "none",
+        fullName,
+        isActive: profile.active !== undefined ? !!profile.active : true,
+        is: (role: string) => (profile.role === role || userData?.role === role),
+      };
     }
-
-    const userData = profile.user || (profile.id ? profile : null);
-
-    const fullName =
-      userData && (userData.first_name || userData.last_name)
-        ? [userData.first_name, userData.last_name]
-          .filter(Boolean)
-          .join(" ")
-          .trim()
-        : userData?.username || profile.username || "User";
-
-    const cleanUser: User = {
-      id: profile.id || userData?.id || 0,
-      username: userData?.username || profile.username || "unknown",
-      email: userData?.email || profile.email || "",
-      role: (profile.role as User["role"]) || (userData?.role as User["role"]) || "none",
-      fullName,
-      isActive: profile.active !== undefined ? !!profile.active : true,
-      is: (role: string) => (profile.role === role || userData?.role === role),
-    };
 
     setUser(cleanUser);
 
