@@ -61,12 +61,14 @@ export function useStudentDetail(id: number | null) {
   });
 }
 
-export function useStudentAcademics(id: number | null) {
+export function useStudentAcademics(id: number | null, academicYearId?: number) {
   return useQuery({
-    queryKey: ["students", "academics", id],
+    queryKey: ["students", "academics", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/academics/`);
+      const { data } = await axiosInstance.get(`users/students/${id}/academics/`, {
+        params: { academic_year: academicYearId }
+      });
       const payload = data.status === 'success' ? data.data : data;
       return studentAcademicsResponseSchema.parse(payload);
     },
@@ -75,12 +77,14 @@ export function useStudentAcademics(id: number | null) {
   });
 }
 
-export function useStudentFinance(id: number | null) {
+export function useStudentFinance(id: number | null, academicYearId?: number) {
   return useQuery({
-    queryKey: ["students", "finance", id],
+    queryKey: ["students", "finance", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/finance/`);
+      const { data } = await axiosInstance.get(`users/students/${id}/finance/`, {
+        params: { academic_year: academicYearId }
+      });
       const payload = data.status === 'success' ? data.data : data;
       return studentFinanceResponseSchema.parse(payload);
     },
@@ -89,12 +93,14 @@ export function useStudentFinance(id: number | null) {
   });
 }
 
-export function useStudentLife(id: number | null) {
+export function useStudentLife(id: number | null, academicYearId?: number) {
   return useQuery({
-    queryKey: ["students", "life", id],
+    queryKey: ["students", "life", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/life/`);
+      const { data } = await axiosInstance.get(`users/students/${id}/life/`, {
+        params: { academic_year: academicYearId }
+      });
       const payload = data.status === 'success' ? data.data : data;
       return studentLifeResponseSchema.parse(payload);
     },
@@ -103,12 +109,14 @@ export function useStudentLife(id: number | null) {
   });
 }
 
-export function useStudentServices(id: number | null) {
+export function useStudentServices(id: number | null, academicYearId?: number) {
   return useQuery({
-    queryKey: ["students", "services", id],
+    queryKey: ["students", "services", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/services/`);
+      const { data } = await axiosInstance.get(`users/students/${id}/services/`, {
+        params: { academic_year: academicYearId }
+      });
       const payload = data.status === 'success' ? data.data : data;
       return studentServicesResponseSchema.parse(payload);
     },
@@ -117,12 +125,14 @@ export function useStudentServices(id: number | null) {
   });
 }
 
-export function useStudentTransactions(id: number | null) {
+export function useStudentTransactions(id: number | null, academicYearId?: number) {
   return useQuery({
-    queryKey: ["students", "transactions", id],
+    queryKey: ["students", "transactions", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/transactions/`);
+      const { data } = await axiosInstance.get(`users/students/${id}/transactions/`, {
+        params: { academic_year: academicYearId }
+      });
       const payload = data.status === 'success' ? data.data : data;
       return studentTransactionsResponseSchema.parse(payload);
     },

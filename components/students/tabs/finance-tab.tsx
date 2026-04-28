@@ -7,8 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export function FinanceTab({ studentId }: { studentId: number }) {
-    const { data, isLoading } = useStudentFinance(studentId);
+export function FinanceTab({ studentId, academicYearId }: { studentId: number, academicYearId?: number }) {
+    const { data, isLoading } = useStudentFinance(studentId, academicYearId);
 
     if (isLoading) {
         return (
