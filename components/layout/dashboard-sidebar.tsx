@@ -68,7 +68,6 @@ const navigation: NavItem[] = [
   { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck },
 
 
-  { name: "Logistics", href: "/dashboard/logistics", icon: Truck },
   { name: "Transport", href: "/dashboard/transport", icon: Truck },
   { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed },
   { name: "Storage", href: "/dashboard/store", icon: Package },

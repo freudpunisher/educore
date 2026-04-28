@@ -84,7 +84,7 @@ export function CreateBehaviorDialog({
             description: record?.description || "",
             appeal_reason: record?.appeal_reason || "",
             status: record?.status || "recorded",
-            points_deducted: record?.points_deducted || "",
+            points: record?.points || "",
         },
     });
 
@@ -99,7 +99,7 @@ export function CreateBehaviorDialog({
                     description: record.description || "",
                     appeal_reason: record.appeal_reason || "",
                     status: record.status,
-                    points_deducted: record.points_deducted,
+                    points: record.points,
                 });
                 setStep("details");
             } else {
@@ -110,7 +110,7 @@ export function CreateBehaviorDialog({
                     description: "",
                     appeal_reason: "",
                     status: DisciplineRecordStatusEnum.Recorded,
-                    points_deducted: "",
+                    points: "",
                 });
                 setStep("class");
             }
@@ -121,12 +121,12 @@ export function CreateBehaviorDialog({
     const selectedStudent = form.watch("student");
     const selectedReason = form.watch("reason");
 
-    // Auto-populate points_deducted when reason is selected
+    // Auto-populate points when reason is selected
     useMemo(() => {
         if (selectedReason && reasons && !isEditing) {
             const reason = reasons.find((r: any) => r.id === selectedReason);
             if (reason) {
-                form.setValue("points_deducted", reason.penalty_points);
+                form.setValue("points", reason.points_value);
             }
         }
     }, [selectedReason, reasons, form, isEditing]);
@@ -402,8 +402,10 @@ export function CreateBehaviorDialog({
                                                                         key={reason.id}
                                                                         value={String(reason.id)}
                                                                     >
-                                                                        {reason.name} ({reason.penalty_points}{" "}
-                                                                        pts)
+                                                                        <span className={reason.incident_type === "positive" ? "text-emerald-600 font-medium" : "text-rose-600 font-medium"}>
+                                                                            {reason.incident_type === "positive" ? "+" : ""}{reason.points_value} pts
+                                                                        </span>
+                                                                        {" - "}{reason.name}
                                                                     </SelectItem>
                                                                 ))
                                                             ) : (
