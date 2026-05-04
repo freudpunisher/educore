@@ -83,7 +83,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 <h4 className="font-bold flex items-center gap-2 text-primary">
                                     <GraduationCap className="h-4 w-4" /> Academic Snapshot
                                 </h4>
-                                {!student.is_enrolled && (
+                                {!student.is_validated && (
                                     <Button
                                         size="sm"
                                         variant="outline"
@@ -107,9 +107,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 <span className="font-medium">{format(new Date(student.enrollment_date), "MMM dd, yyyy")}</span>
 
                                 <span className="text-muted-foreground">Status:</span>
-                                <Badge variant={student.is_enrolled ? "default" : "secondary"} className="w-fit scale-90 origin-left">
-                                    {student.is_enrolled ? "Currently Enrolled" : "Not Enrolled"}
-                                </Badge>
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant={student.is_validated ? "outline" : "secondary"} className={`w-fit scale-90 origin-left ${student.is_validated ? 'border-green-500 text-green-600' : ''}`}>
+                                        {student.is_validated ? "Validated" : "Pending Validation"}
+                                    </Badge>
+                                    <Badge variant={student.is_enrolled ? "default" : "secondary"} className="w-fit scale-90 origin-left">
+                                        {student.is_enrolled ? "Enrolled" : "Not Enrolled"}
+                                    </Badge>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

@@ -15,6 +15,7 @@ export const studentListSchema = z.object({
   gender: z.coerce.number().optional(),
   enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   is_enrolled: z.boolean().optional(),
+  is_validated: z.boolean().optional(),
   account_active: z.boolean().optional(),
   enrollment_info: z.union([enrollmentInfoSchema, z.record(z.any()), z.string()]).nullish(),
   image: z.string().nullable().optional(),
@@ -116,7 +117,7 @@ export const studentParentSchema = z.object({
   // Real API keys (based on sample)
   full_name: z.string().optional(),
   relationship: z.union([z.nativeEnum(RelationshipEnum), z.string()]).optional(),
-  phone: z.string().optional(),
+  phone: z.string().nullable().optional(),
   is_primary: z.boolean().optional(),
 
   // Internal/Legacy keys
@@ -152,6 +153,7 @@ export const studentDetailSchema = z.object({
   enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   enrollment_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   is_enrolled: z.coerce.boolean().optional(),
+  is_validated: z.coerce.boolean().optional(),
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   account: z.any().optional(),
   parent_contact: z.string().nullish(),

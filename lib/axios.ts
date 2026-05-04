@@ -5,7 +5,7 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.140:8000/api/"; // Client-side → goes through Next.js proxy (recommended!)
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.68:10000/api/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,
