@@ -109,11 +109,11 @@ export function BehaviorTable({ records, onViewDetails, onEdit, onStatusChange }
                                 <TableCell className="py-4 text-center">
                                     <span className={cn(
                                         "text-sm font-bold px-2 py-0.5 rounded",
-                                        Math.abs(parseFloat(record.points_deducted)) > 5
-                                            ? "text-rose-600 bg-rose-50"
-                                            : "text-amber-600 bg-amber-50"
+                                        parseFloat(record.points) > 0
+                                            ? "text-emerald-600 bg-emerald-50"
+                                            : "text-rose-600 bg-rose-50"
                                     )}>
-                                        {parseFloat(record.points_deducted) > 0 ? "-" : ""}{record.points_deducted}
+                                        {parseFloat(record.points) > 0 ? "+" : ""}{record.points}
                                     </span>
                                 </TableCell>
                                 <TableCell className="py-4 text-sm text-muted-foreground font-medium">

@@ -38,7 +38,7 @@ type Product = {
 type Category = {
   id: number
   name: string
-  type: "vivre" | "non_vivre"
+  type: "vivre" | "non_vivre" | "consumable" | "non_consumable"
 }
 
 type Unit = {
@@ -66,12 +66,20 @@ type SchoolConfig = {
 }
 
 
-const staticUsers = [
-  { id: "1", name: "Marie Dubois", email: "marie.dubois@school.fr", role: "Admin", status: "active" },
-  { id: "2", name: "Jean Martin", email: "jean.martin@school.fr", role: "Teacher", status: "active" },
-  { id: "3", name: "Pierre Leroy", email: "pierre.leroy@school.fr", role: "Driver", status: "active" },
-  { id: "4", name: "Sophie Bernard", email: "sophie.bernard@school.fr", role: "Parent", status: "active" },
-]
+type Account = {
+  id: number
+  user: {
+    id: number
+    username: string
+    email: string
+    first_name: string
+    last_name: string
+  }
+  role: string
+  active: boolean
+  phone_number: string
+  address: string
+}
 
 export default function SettingsPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -79,6 +87,7 @@ export default function SettingsPage() {
   const [units, setUnits] = useState<Unit[]>([])
   const [locations, setLocations] = useState<StoreLocation[]>([])
   const [config, setConfig] = useState<SchoolConfig | null>(null)
+  const [users, setUsers] = useState<Account[]>([])
 
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
@@ -92,17 +101,19 @@ export default function SettingsPage() {
 
   const fetchData = async () => {
     try {
-      const [pRes, cRes, uRes, lRes, configRes] = await Promise.all([
+      const [pRes, cRes, uRes, lRes, configRes, usersRes] = await Promise.all([
         api.get<any>("store/stock/products/"),
         api.get<any>("store/stock/categories/"),
         api.get<any>("store/stock/units/"),
         api.get<any>("store/stock/locations/"),
         api.get<any>("config/school-config/"),
+        api.get<any>("users/accounts/"),
       ])
       setProducts(Array.isArray(pRes) ? pRes : pRes.results || [])
       setCategories(Array.isArray(cRes) ? cRes : cRes.results || [])
       setUnits(Array.isArray(uRes) ? uRes : uRes.results || [])
       setLocations(Array.isArray(lRes) ? lRes : lRes.results || [])
+      setUsers(Array.isArray(usersRes) ? usersRes : usersRes.results || [])
 
       // SchoolConfig is a list with one item
       const configData = Array.isArray(configRes) ? configRes[0] : configRes.results?.[0]
@@ -232,7 +243,7 @@ export default function SettingsPage() {
           <TabsTrigger value="security"><Shield className="w-4 h-4 mr-2" />Security</TabsTrigger>
           <TabsTrigger value="locations"><Store className="w-4 h-4 mr-2" />Locations</TabsTrigger>
           <TabsTrigger value="articles"><Package className="w-4 h-4 mr-2" />Articles</TabsTrigger>
-          <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Categories</TabsTrigger>
+          <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Category</TabsTrigger>
           <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>
         </TabsList>
 
@@ -309,12 +320,14 @@ export default function SettingsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {staticUsers.map(u => (
+                    {users.length === 0
+                      ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
+                      : users.map(u => (
                       <TableRow key={u.id}>
-                        <TableCell className="font-medium">{u.name}</TableCell>
-                        <TableCell>{u.email}</TableCell>
+                        <TableCell className="font-medium">{u.user?.first_name} {u.user?.last_name}</TableCell>
+                        <TableCell>{u.user?.email}</TableCell>
                         <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
-                        <TableCell><Badge variant={u.status === "active" ? "default" : "secondary"}>{u.status === "active" ? "Active" : "Inactive"}</Badge></TableCell>
+                        <TableCell><Badge variant={u.active ? "default" : "secondary"}>{u.active ? "Active" : "Inactive"}</Badge></TableCell>
                         <TableCell className="text-right"><Button variant="ghost" size="sm">Edit</Button></TableCell>
                       </TableRow>
                     ))}
@@ -441,8 +454,8 @@ export default function SettingsPage() {
                           <TableCell className="font-medium">{p.name}</TableCell>
                           <TableCell>{p.category_name || "—"}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={p.category_type === "vivre" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
-                              {p.category_type === "vivre" ? "Food" : "Equipment"}
+                            <Badge variant="outline" className={p.category_type === "vivre" || p.category_type === "consumable" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
+                              {p.category_type === "vivre" ? "Food" : p.category_type === "consumable" ? "Consumable" : p.category_type === "non_consumable" ? "Non-consumable" : "Equipment"}
                             </Badge>
                           </TableCell>
                           <TableCell>{p.unit_name} ({p.unit_symbol})</TableCell>
@@ -466,7 +479,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div><CardTitle>Categories</CardTitle><CardDescription>Product categories: food or equipment</CardDescription></div>
+                <div><CardTitle>Category</CardTitle><CardDescription>Product categories: consumable or non-consumable</CardDescription></div>
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingCategory(null); setIsCategoryModalOpen(true) }}>
                   <Plus className="w-4 h-4 mr-2" />New Category
                 </Button>
@@ -488,8 +501,8 @@ export default function SettingsPage() {
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{c.name}</TableCell>
                           <TableCell>
-                            <Badge variant="outline" className={c.type === "vivre" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
-                              {c.type === "vivre" ? "Food" : "Equipment"}
+                            <Badge variant="outline" className={c.type === "vivre" || c.type === "consumable" ? "border-green-500 text-green-700" : "border-purple-500 text-purple-700"}>
+                              {c.type === "vivre" ? "Food" : c.type === "consumable" ? "Consumable" : c.type === "non_consumable" ? "Non-consumable" : "Equipment"}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{products.filter(p => p.category === c.id).length} articles</TableCell>
@@ -617,11 +630,13 @@ export default function SettingsPage() {
             <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name ?? ""} required /></div>
             <div className="space-y-2">
               <Label>Type</Label>
-              <Select name="type" defaultValue={editingCategory?.type ?? "vivre"}>
+              <Select name="type" defaultValue={editingCategory?.type ?? "consumable"}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vivre">Food (Vivre)</SelectItem>
                   <SelectItem value="non_vivre">Equipment (Non-Vivre)</SelectItem>
+                  <SelectItem value="consumable">Consumable</SelectItem>
+                  <SelectItem value="non_consumable">Non-consumable</SelectItem>
                 </SelectContent>
               </Select>
             </div>
