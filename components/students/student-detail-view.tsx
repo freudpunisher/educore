@@ -4,24 +4,36 @@ import { StudentDetail } from "@/types/student";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
-    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen, CheckCircle
+    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen, CheckCircle,
+    DollarSign, ShieldAlert, Truck, UtensilsCrossed, Home, Baby, Package
 } from "lucide-react";
-import { useValidateStudent } from "@/hooks/use-students";
+import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
+import { useAcademicYears } from "@/hooks/use-academic-data";
 import { Button } from "@/components/ui/button";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { StudentPvcCardDialog } from "./student-pvc-card-dialog";
 import { AcademicsTab } from "./tabs/academics-tab";
 import { FinanceTab } from "./tabs/finance-tab";
-import { LifeTab } from "./tabs/life-tab";
-import { ServicesTab } from "./tabs/services-tab";
-import { TransactionsTab } from "./tabs/transactions-tab";
+import { BehaviorTab } from "./tabs/behavior-tab";
+import { AttendanceTab } from "./tabs/attendance-tab";
+import { TransportTab } from "./tabs/transport-tab";
+import { DiningTab } from "./tabs/dining-tab";
+import { BoardingTab } from "./tabs/boarding-tab";
+import { DaycareTab } from "./tabs/daycare-tab";
+import { InventoryTab } from "./tabs/inventory-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface StudentDetailViewProps {
     student: StudentDetail;
@@ -29,171 +41,277 @@ interface StudentDetailViewProps {
 
 export function StudentDetailView({ student }: StudentDetailViewProps) {
     const validateMutation = useValidateStudent();
+    const { data: academicYears } = useAcademicYears();
+    const [selectedYear, setSelectedYear] = useState<string>("current");
+
+    const activeYearId = selectedYear === "current"
+        ? academicYears?.find(y => y.is_current)?.id
+        : parseInt(selectedYear);
+
+    const { data: finance } = useStudentFinance(student.id, activeYearId);
+    const { data: life } = useStudentLife(student.id, activeYearId);
 
     const getEnrollmentDisplay = (info: any) => {
+        // Use pre-computed current_class if available from StudentBaseSerializer
+        const currentClass = student.current_class;
+        if (currentClass) {
+            return `${currentClass.class_name} (${currentClass.academic_year})`;
+        }
+
         if (!info) return "N/A";
         if (typeof info === "string") return info;
         if (typeof info === "object") {
-            return info.classroom || info.class_level || "Linked";
+            return (info as any).classroom || (info as any).class_level || "Linked";
         }
-        return "N/A";
+        return "Linked";
     };
 
-    const getAccountDisplay = (info: any) => {
-        if (!info) return "Inactive";
-        if (typeof info === "string") return info;
-        if (typeof info === "object") {
-            return info.active ? "Active" : "Inactive";
-        }
-        return "Inactive";
-    };
+    const attendanceRate = life?.attendance_stats
+        ? Math.round((life.attendance_stats.present_count / life.attendance_stats.total_count) * 100)
+        : 0;
+
+    const hasArrears = finance ? parseFloat(finance.outstanding_balance) > 0 : false;
 
     return (
-        <div className="h-full flex flex-col">
-            {/* Persistent Overview Section at Top */}
-            <div className="p-6 border-b bg-muted/5">
-                {/* Student Identity Header */}
-                <div className="flex items-center gap-5 mb-5">
-                    {(() => {
-                        const imgSrc = (student as any).image as string | null | undefined;
-                        const initials = student.full_name?.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
-                        return imgSrc ? (
-                            <img
-                                src={imgSrc}
-                                alt={student.full_name}
-                                className="w-20 h-20 rounded-full object-cover border-4 border-primary/20 shadow-md flex-shrink-0"
-                            />
-                        ) : (
-                            <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-bold flex-shrink-0 border-4 border-primary/20 shadow-md">
-                                {initials}
-                            </div>
-                        );
-                    })()}
-                    <div className="flex-1">
-                        <h2 className="text-2xl font-bold tracking-tight">{student.full_name}</h2>
-                        <p className="text-muted-foreground text-sm mt-0.5">{student.enrollment_number}</p>
-                    </div>
-                    <StudentPvcCardDialog student={student as any} />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                    {/* Academic Info */}
-                    <Card className="bg-background/50 backdrop-blur-sm border-primary/10">
-                        <CardContent className="p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="font-bold flex items-center gap-2 text-primary">
-                                    <GraduationCap className="h-4 w-4" /> Academic Snapshot
-                                </h4>
-                                {!student.is_validated && (
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="h-8 gap-2 border-green-500/30 text-green-600 hover:bg-green-500/10 hover:text-green-700 font-semibold"
-                                        onClick={() => validateMutation.mutate(student.id)}
-                                        disabled={validateMutation.isPending}
-                                    >
-                                        <CheckCircle className="h-4 w-4" />
-                                        {validateMutation.isPending ? "Validation..." : "Valider l'élève"}
-                                    </Button>
+        <div className="flex flex-col h-full bg-muted/30 overflow-hidden">
+            {/* Header / Overview */}
+            <div className="p-6 pb-0 space-y-6 flex-shrink-0">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                        <div className="relative group">
+                            <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-4 border-white shadow-xl group-hover:scale-105 transition-transform duration-300">
+                                {student.image ? (
+                                    <img src={student.image} alt={student.full_name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <Users className="h-10 w-10" />
                                 )}
                             </div>
-                            <div className="grid grid-cols-2 gap-y-2">
-                                <span className="text-muted-foreground">Enrollment No:</span>
-                                <code className="font-mono bg-muted px-2 py-0.5 rounded text-[11px] w-fit">{student.enrollment_number}</code>
-
-                                <span className="text-muted-foreground">Class/Level:</span>
-                                <span className="font-medium">{getEnrollmentDisplay(student.enrollment_info)}</span>
-
-                                <span className="text-muted-foreground">Enrollment Date:</span>
-                                <span className="font-medium">{format(new Date(student.enrollment_date), "MMM dd, yyyy")}</span>
-
-                                <span className="text-muted-foreground">Status:</span>
-                                <div className="flex flex-wrap gap-2">
-                                    <Badge variant={student.is_validated ? "outline" : "secondary"} className={`w-fit scale-90 origin-left ${student.is_validated ? 'border-green-500 text-green-600' : ''}`}>
-                                        {student.is_validated ? "Validated" : "Pending Validation"}
-                                    </Badge>
-                                    <Badge variant={student.is_enrolled ? "default" : "secondary"} className="w-fit scale-90 origin-left">
-                                        {student.is_enrolled ? "Enrolled" : "Not Enrolled"}
-                                    </Badge>
+                            <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-green-500 border-4 border-white rounded-full shadow-lg" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-3xl font-bold tracking-tight">{student.full_name}</h1>
+                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-mono text-xs font-bold">
+                                    ID: {student.enrollment_number || `STU-${student.id}`}
+                                </Badge>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                    <GraduationCap className="h-4 w-4 text-primary" />
+                                    <span>{getEnrollmentDisplay(student.enrollment_info)}</span>
                                 </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                    <Calendar className="h-4 w-4 text-orange-500" />
+                                    <span>Né le {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "Inconnu"}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                    <Activity className="h-4 w-4 text-green-500" />
+                                    <span className="capitalize">{student.gender === 1 ? "Girl" : "Boy"}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="flex flex-col gap-1.5 min-w-[200px]">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Academic Year Filter</p>
+                            <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <SelectTrigger className="h-11 rounded-xl bg-white border-white/50 shadow-sm hover:shadow-md transition-all">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-primary" />
+                                        <SelectValue placeholder="Select Year" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                    <SelectItem value="current" className="font-bold text-primary">Current Session (Default)</SelectItem>
+                                    {academicYears?.map((year) => (
+                                        <SelectItem key={year.id} value={year.id.toString()}>
+                                            {year.start_year}-{year.end_year} {year.is_current ? "(Current)" : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <StudentPvcCardDialog student={student as any} />
+                        {!student.validated_at && (
+                            <Button
+                                onClick={() => validateMutation.mutate(student.id)}
+                                disabled={validateMutation.isPending}
+                                className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 px-6 shadow-lg shadow-orange-500/20 gap-2 font-bold"
+                            >
+                                <Sparkles className="h-4 w-4" />
+                                Valider Dossier
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-6">
+                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
+                                <Users className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Enrollment</p>
+                                <p className="text-lg font-bold truncate">{student.current_class?.class_name || "Enrolled"}</p>
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Personal Stats */}
-                    <Card className="bg-background/50 backdrop-blur-sm border-primary/10">
-                        <CardContent className="p-4 space-y-3">
-                            <h4 className="font-bold flex items-center gap-2 text-primary">
-                                <Calendar className="h-4 w-4" /> Personal Details
-                            </h4>
-                            <div className="grid grid-cols-2 gap-y-2">
-                                <span className="text-muted-foreground">Gender:</span>
-                                <Badge variant="outline" className="w-fit scale-90 origin-left capitalize">{student.gender === 1 ? "Girl" : "Boy"}</Badge>
-
-                                <span className="text-muted-foreground">Birthday:</span>
-                                <span className="font-medium">
-                                    {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "N/A"}
-                                </span>
-
-                                <span className="text-muted-foreground">Account Status:</span>
-                                <span className="font-medium capitalize flex items-center gap-1.5">
-                                    <div className={`h-2 w-2 rounded-full ${(student.account_info && typeof student.account_info === 'object' && 'active' in student.account_info && student.account_info.active) ? 'bg-green-500' : 'bg-destructive'}`} />
-                                    {getAccountDisplay(student.account_info)}
-                                </span>
+                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${hasArrears ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
+                                <Wallet className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Financial Status</p>
+                                <p className="text-lg font-bold">{hasArrears ? "Arrears" : "Good Standing"}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <div className="p-2.5 bg-purple-500/10 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
+                                <CheckCircle className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Attendance Rate</p>
+                                <p className="text-lg font-bold">{attendanceRate}% Average</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                        <CardContent className="p-4 flex items-center gap-4">
+                            <div className="p-2.5 bg-orange-500/10 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
+                                <Award className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Discipline</p>
+                                <p className="text-lg font-bold">{life?.discipline_score || "10.0"}/10.0</p>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            <Tabs defaultValue="academics" className="flex-1 flex flex-col">
-                <div className="px-6 border-b bg-card">
-                    <TabsList className="w-full justify-start h-auto p-0 bg-transparent gap-6">
+            <Tabs defaultValue="academics" className="flex-1 flex flex-col min-h-0">
+                <div className="px-6 py-4 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10 overflow-x-auto no-scrollbar flex-shrink-0">
+                    <TabsList className="w-max justify-start h-auto p-0 bg-transparent gap-4">
                         <TabsTrigger
                             value="academics"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
+                            <GraduationCap className="h-4 w-4" />
                             Academics
                         </TabsTrigger>
                         <TabsTrigger
-                            value="finance"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            value="invoicing"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            Finance
+                            <DollarSign className="h-4 w-4" />
+                            Invoicing
                         </TabsTrigger>
                         <TabsTrigger
-                            value="family"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            value="behavior"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            Family
+                            <ShieldAlert className="h-4 w-4" />
+                            Behavior
                         </TabsTrigger>
                         <TabsTrigger
-                            value="life"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            value="attendance"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            Student Life
+                            <Activity className="h-4 w-4" />
+                            Attendance
                         </TabsTrigger>
                         <TabsTrigger
-                            value="services"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            value="transport"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            Services
+                            <Truck className="h-4 w-4" />
+                            Transport
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="dining"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
+                        >
+                            <UtensilsCrossed className="h-4 w-4" />
+                            Dining
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="boarding"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
+                        >
+                            <Home className="h-4 w-4" />
+                            Boarding
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="daycare"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
+                        >
+                            <Baby className="h-4 w-4" />
+                            Daycare
                         </TabsTrigger>
                         <TabsTrigger
                             value="inventory"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            Transactions
+                            <Package className="h-4 w-4" />
+                            Inventory
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="family"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
+                        >
+                            <Users className="h-4 w-4" />
+                            Family
                         </TabsTrigger>
                         <TabsTrigger
                             value="documents"
-                            className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none border-b-2 border-transparent rounded-none px-0 py-3 text-sm"
+                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
+                            <FileText className="h-4 w-4" />
                             Documents
                         </TabsTrigger>
                     </TabsList>
                 </div>
 
-                <ScrollArea className="flex-1">
+                <ScrollArea className="flex-1 min-h-0">
+                    <TabsContent value="academics" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <AcademicsTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="invoicing" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <FinanceTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="behavior" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <BehaviorTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="attendance" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <AttendanceTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="transport" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <TransportTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="dining" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <DiningTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="boarding" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <BoardingTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="daycare" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <DaycareTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
+
+                    <TabsContent value="inventory" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                        <InventoryTab studentId={student.id} academicYearId={activeYearId} />
+                    </TabsContent>
 
                     <TabsContent value="family" className="p-6 m-0 space-y-6">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -303,26 +421,6 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 })}
                             </div>
                         )}
-                    </TabsContent>
-
-                    <TabsContent value="academics" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <AcademicsTab studentId={student.id} />
-                    </TabsContent>
-
-                    <TabsContent value="finance" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <FinanceTab studentId={student.id} />
-                    </TabsContent>
-
-                    <TabsContent value="life" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <LifeTab studentId={student.id} />
-                    </TabsContent>
-
-                    <TabsContent value="services" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <ServicesTab studentId={student.id} />
-                    </TabsContent>
-
-                    <TabsContent value="inventory" className="p-6 m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <TransactionsTab studentId={student.id} />
                     </TabsContent>
                 </ScrollArea>
             </Tabs>

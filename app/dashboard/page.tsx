@@ -3,11 +3,14 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Users, DollarSign, BookOpen, TrendingUp, TrendingDown, AlertCircle, Truck, Loader2, Wallet, Receipt } from "lucide-react"
-import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
-import { useDashboard } from "@/hooks/use-dashboard"
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Users, DollarSign, BookOpen, TrendingUp, Truck, Receipt, Wallet, BarChart3, ClipboardList } from "lucide-react"
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { useDashboard, DashboardData } from "@/hooks/use-dashboard"
+import { KpiGrid, KpiCardData } from "@/components/dashboard/kpi-grid"
+import { DashboardChart } from "@/components/dashboard/dashboard-chart"
+import { RecentActivity, ActivityItem } from "@/components/dashboard/recent-activity"
+import { QuickActions } from "@/components/dashboard/quick-actions"
 
 const enrollmentData = [
   { month: "Jan", students: 1100 },
@@ -18,9 +21,137 @@ const enrollmentData = [
   { month: "Jun", students: 1234 },
 ]
 
-function formatFbu(amount: number) {
-  return new Intl.NumberFormat("fr-BI").format(amount) + " BIF";
+function formatFbu(amount: number | string): string {
+  if (typeof amount === 'string') return amount
+  return new Intl.NumberFormat("fr-BI").format(amount) + " BIF"
 }
+
+// Construire les KPIs dynamiquement selon le rôle
+function buildKpiCards(dashboardData: DashboardData | undefined, isDashboardLoading: boolean): KpiCardData[] {
+  if (!dashboardData) {
+    return []
+  }
+
+  const cards: KpiCardData[] = []
+
+  if (dashboardData.students) {
+    cards.push({
+      title: "Total Students",
+      value: isDashboardLoading ? null : String(dashboardData.students?.total ?? "—"),
+      sub: `${dashboardData.students?.enrolled ?? 0} enrolled · ${dashboardData.students?.inactive ?? 0} inactive`,
+      icon: <Users className="w-5 h-5 text-blue-600" />,
+      color: "text-blue-600",
+      bgColor: "bg-blue-500/10",
+    })
+  }
+
+  if (dashboardData.finance) {
+    cards.push(
+      {
+        title: "Total Invoiced",
+        value: isDashboardLoading ? null : formatFbu(dashboardData.finance?.total_invoiced ?? 0),
+        sub: "All pending & paid",
+        icon: <Receipt className="w-5 h-5 text-purple-600" />,
+        color: "text-purple-600",
+        bgColor: "bg-purple-500/10",
+      },
+      {
+        title: "Total Collected",
+        value: isDashboardLoading ? null : formatFbu(dashboardData.finance?.total_paid ?? 0),
+        sub: "Confirmed payments",
+        icon: <DollarSign className="w-5 h-5 text-green-600" />,
+        color: "text-green-600",
+        bgColor: "bg-green-500/10",
+      },
+      {
+        title: "Outstanding Balance",
+        value: isDashboardLoading ? null : formatFbu(dashboardData.finance?.balance ?? 0),
+        sub: "Remaining unpaid",
+        icon: <Wallet className="w-5 h-5 text-rose-600" />,
+        color: "text-rose-600",
+        bgColor: "bg-rose-500/10",
+      }
+    )
+  }
+
+  if (dashboardData.assessments) {
+    cards.push({
+      title: "Total Assessments",
+      value: isDashboardLoading ? null : dashboardData.assessments?.total ?? 0,
+      sub: "All assessments",
+      icon: <ClipboardList className="w-5 h-5 text-indigo-600" />,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-500/10",
+    })
+  }
+
+  if (dashboardData.attendance) {
+    cards.push({
+      title: "Attendance Records",
+      value: isDashboardLoading ? null : dashboardData.attendance?.total_records ?? 0,
+      sub: "Total recorded",
+      icon: <BarChart3 className="w-5 h-5 text-cyan-600" />,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-500/10",
+    })
+  }
+
+  if (dashboardData.staff) {
+    cards.push({
+      title: "Total Staff",
+      value: isDashboardLoading ? null : dashboardData.staff?.total ?? 0,
+      sub: "Active personnel",
+      icon: <Users className="w-5 h-5 text-amber-600" />,
+      color: "text-amber-600",
+      bgColor: "bg-amber-500/10",
+    })
+  }
+
+  if (dashboardData.users) {
+    cards.push({
+      title: "Total Users",
+      value: isDashboardLoading ? null : dashboardData.users?.total ?? 0,
+      sub: "System accounts",
+      icon: <Users className="w-5 h-5 text-teal-600" />,
+      color: "text-teal-600",
+      bgColor: "bg-teal-500/10",
+    })
+  }
+
+  return cards
+}
+
+// Données d'activité statiques (peuvent être remplacées par des données dynamiques)
+const defaultActivities: ActivityItem[] = [
+  { 
+    action: "New student enrolled", 
+    name: "Sophie Martin", 
+    time: "2 hours ago", 
+    color: "bg-emerald-500", 
+    icon: <Users className="w-5 h-5" /> 
+  },
+  { 
+    action: "Payment received", 
+    name: "Dubois Family", 
+    time: "4 hours ago", 
+    color: "bg-amber-500", 
+    icon: <DollarSign className="w-5 h-5" /> 
+  },
+  { 
+    action: "Grade added", 
+    name: "Class 5th A", 
+    time: "6 hours ago", 
+    color: "bg-indigo-500", 
+    icon: <BookOpen className="w-5 h-5" /> 
+  },
+  { 
+    action: "Transport scheduled", 
+    name: "North Route", 
+    time: "8 hours ago", 
+    color: "bg-primary", 
+    icon: <Truck className="w-5 h-5" /> 
+  },
+]
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
@@ -44,90 +175,44 @@ export default function DashboardPage() {
     )
   }
 
-  const studentStats = dashboardData?.students
+  const kpiCards = buildKpiCards(dashboardData, isDashboardLoading)
   const financeStats = dashboardData?.finance
-
-  const statsCards = [
-    {
-      title: "Total Students",
-      value: isDashboardLoading ? null : String(studentStats?.total ?? "—"),
-      sub: isDashboardLoading ? null : `${studentStats?.enrolled ?? 0} enrolled · ${studentStats?.inactive ?? 0} inactive`,
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-500/10",
-    },
-    {
-      title: "Total Invoiced",
-      value: isDashboardLoading ? null : formatFbu(financeStats?.total_invoiced ?? 0),
-      sub: "All pending & paid",
-      icon: Receipt,
-      color: "text-purple-600",
-      bgColor: "bg-purple-500/10",
-    },
-    {
-      title: "Total Collected",
-      value: isDashboardLoading ? null : formatFbu(financeStats?.total_paid ?? 0),
-      sub: "Confirmed payments",
-      icon: DollarSign,
-      color: "text-green-600",
-      bgColor: "bg-green-500/10",
-    },
-    {
-      title: "Outstanding Balance",
-      value: isDashboardLoading ? null : formatFbu(financeStats?.balance ?? 0),
-      sub: "Remaining unpaid",
-      icon: Wallet,
-      color: "text-rose-600",
-      bgColor: "bg-rose-500/10",
-    },
-  ]
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Header with quick actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-heading font-bold text-foreground tracking-tight">Main Dashboard</h1>
+          <h1 className="text-4xl font-heading font-bold text-foreground tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-2 font-medium">
-            Welcome back, <span className="text-primary font-bold">{user.fullName}</span>. Here is your institutional overview.
+            Welcome back, <span className="text-primary font-bold">{user.fullName}</span>. Here is your overview.
           </p>
+          {dashboardData?.role && (
+            <p className="text-xs font-medium text-primary/70 mt-1 uppercase tracking-widest">
+              Role: {dashboardData.role}
+            </p>
+          )}
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" className="rounded-xl border-primary/20 text-primary font-bold">
-            <BookOpen className="w-4 h-4 mr-2" />
-            Academic Report
-          </Button>
-          <Button className="rounded-xl font-bold shadow-lg shadow-primary/20">
-            <TrendingUp className="w-4 h-4 mr-2" />
-            Financial Summary
-          </Button>
-        </div>
+        <QuickActions
+          actions={[
+            {
+              label: "Academic Report",
+              icon: <BookOpen className="w-4 h-4" />,
+              variant: "outline",
+            },
+            {
+              label: "Financial Summary",
+              icon: <TrendingUp className="w-4 h-4" />,
+              variant: "default",
+            },
+          ]}
+        />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {statsCards.map((stat) => (
-          <Card key={stat.title} className="group hover:scale-[1.02] transition-all duration-300 border-none bg-gradient-to-br from-background to-muted/30">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground/80">{stat.title}</CardTitle>
-              <div className={`p-3 rounded-2xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {stat.value === null ? (
-                <div className="flex items-center gap-2 h-9">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="text-2xl font-heading font-bold text-foreground/90 leading-tight">{stat.value}</div>
-              )}
-              {stat.sub && (
-                <p className="text-[11px] text-muted-foreground font-medium mt-2">{stat.sub}</p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* KPI Grid - Dynamic */}
+      {kpiCards.length > 0 && (
+        <KpiGrid cards={kpiCards} isLoading={isDashboardLoading} />
+      )}
 
       {/* Charts */}
       <div className="grid gap-8 md:grid-cols-2">
@@ -136,7 +221,7 @@ export default function DashboardPage() {
             <CardTitle>Enrollment Trends</CardTitle>
             <CardDescription>Student population growth over the last term</CardDescription>
           </CardHeader>
-          <CardContent>
+          <div className="p-6">
             <ResponsiveContainer width="100%" height={320}>
               <LineChart data={enrollmentData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
@@ -156,78 +241,26 @@ export default function DashboardPage() {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
+          </div>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-primary/5">
-          <CardHeader>
-            <CardTitle>Finance Overview</CardTitle>
-            <CardDescription>Invoiced vs Collected vs Balance (BIF)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isDashboardLoading ? (
-              <div className="flex items-center justify-center h-[320px]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={[
-                  { name: "Invoiced", amount: financeStats?.total_invoiced ?? 0 },
-                  { name: "Collected", amount: financeStats?.total_paid ?? 0 },
-                  { name: "Balance", amount: financeStats?.balance ?? 0 },
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
-                  <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => new Intl.NumberFormat("fr-BI", { notation: "compact" }).format(v)} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ fontWeight: 'bold' }}
-                    formatter={(v: number) => [formatFbu(v), "Amount"]}
-                  />
-                  <Bar dataKey="amount" fill="oklch(var(--primary))" radius={[8, 8, 4, 4]} barSize={60} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        {financeStats && (
+          <DashboardChart
+            title="Finance Overview"
+            description="Invoiced vs Collected vs Balance (BIF)"
+            data={[
+              { name: "Invoiced", amount: financeStats?.total_invoiced ?? 0 },
+              { name: "Collected", amount: financeStats?.total_paid ?? 0 },
+              { name: "Balance", amount: financeStats?.balance ?? 0 },
+            ]}
+            isLoading={isDashboardLoading}
+            formatter={formatFbu}
+          />
+        )}
       </div>
 
       {/* Recent Activity */}
-      <Card className="border-none shadow-xl shadow-primary/5 last-section mt-4 mb-8">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Institutional Activity</CardTitle>
-            <CardDescription>Real-time updates from all school departments</CardDescription>
-          </div>
-          <Button variant="ghost" size="sm" className="font-bold text-primary rounded-lg">View All Logs</Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2">
-            {[
-              { action: "New student enrolled", name: "Sophie Martin", time: "2 hours ago", color: "bg-emerald-500", icon: Users },
-              { action: "Payment received", name: "Dubois Family", time: "4 hours ago", color: "bg-amber-500", icon: DollarSign },
-              { action: "Grade added", name: "Class 5th A", time: "6 hours ago", color: "bg-indigo-500", icon: BookOpen },
-              { action: "Transport scheduled", name: "North Route", time: "8 hours ago", color: "bg-primary", icon: Truck },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-4 rounded-2xl hover:bg-muted/50 transition-colors group">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 ${activity.color}/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <activity.icon className={`w-5 h-5 ${activity.color.replace('bg-', 'text-')}`} />
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground/90">{activity.action}</p>
-                    <p className="text-sm text-muted-foreground font-medium">{activity.name}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs font-bold text-muted-foreground/40 uppercase tracking-tighter">{activity.time}</span>
-                  <div className="mt-1 h-1 w-8 bg-muted rounded-full ml-auto group-hover:w-full group-hover:bg-primary/20 transition-all duration-500" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <RecentActivity activities={defaultActivities} />
     </div>
   )
 }

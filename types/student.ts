@@ -161,6 +161,12 @@ export const studentDetailSchema = z.object({
   documents: z.array(studentDocumentSchema).default([]),
   responsables: z.array(studentParentSchema).nullish(),
   parents_info: z.array(studentParentSchema).nullish(),
+  image: z.string().nullable().optional(),
+  validated_at: z.union([z.string(), z.date()]).nullable().optional(),
+  current_class: z.object({
+    class_name: z.string(),
+    academic_year: z.string(),
+  }).nullable().optional(),
 }).passthrough().transform((data) => ({
   ...data,
   parents_info: data.responsables || data.parents_info || [],

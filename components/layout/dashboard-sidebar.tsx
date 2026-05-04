@@ -63,6 +63,7 @@ const navigation: NavItem[] = [
     ]
   },
   { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
+  { name: "Rapports", href: "/dashboard/reports", icon: FileText, roles: ["global_control", "system_admin", "director"] },
 
   { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck },
 
@@ -72,6 +73,12 @@ const navigation: NavItem[] = [
   { name: "Storage", href: "/dashboard/store", icon: Package },
   { name: "Boarding", href: "/dashboard/boarding", icon: Home },
   { name: "Daycare", href: "/dashboard/daycare", icon: Baby },
+  { 
+    name: "Audit Logs", 
+    href: "/dashboard/audit-logs", 
+    icon: FileText,
+    roles: ["global_control", "system_admin"] 
+  },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
