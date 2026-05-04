@@ -116,7 +116,7 @@ export const studentParentSchema = z.object({
   // Real API keys (based on sample)
   full_name: z.string().optional(),
   relationship: z.union([z.nativeEnum(RelationshipEnum), z.string()]).optional(),
-  phone: z.string().optional(),
+  phone: z.string().nullable().optional(),
   is_primary: z.boolean().optional(),
 
   // Internal/Legacy keys

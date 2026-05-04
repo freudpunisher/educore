@@ -10,7 +10,7 @@ export const courseSchema = z.object({
   classroom: z.number(),
   teacher: z.number(),
   teacher_name: z.string().optional(),
-  credits: z.string(), // DecimalField is serialized as string
+  credits: z.string().optional(), // DecimalField is serialized as string
 });
 
 export const assessmentSchema = z.object({

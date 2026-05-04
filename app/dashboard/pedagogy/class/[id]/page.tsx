@@ -196,7 +196,11 @@ export default function ClassDetailPage() {
                           <TableCell>{course.name}</TableCell>
                           <TableCell>{course.teacher_name || "Unassigned"}</TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{course.credits} Credits</Badge>
+                            {course.credits ? (
+                              <Badge variant="secondary">{course.credits} Credits</Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">-</span>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))
