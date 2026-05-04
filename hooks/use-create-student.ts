@@ -1,15 +1,18 @@
 // src/hooks/use-create-student.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { createStudentSchema, CreateStudentData } from "@/lib/schemas/student.Schema";
-import toast from "react-hot-toast";
+import { CreateStudentData } from "@/lib/schemas/student.Schema";
+import { toast } from "@/hooks/use-toast";
 
 export function useCreateStudent() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateStudentData) => {
-      const response = await axiosInstance.post("users/students/", data);
+    mutationFn: async (data: CreateStudentData | FormData) => {
+      const isFormData = data instanceof FormData;
+      const response = await axiosInstance.post("users/students/", data, {
+        headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
+      });
       return response.data;
     },
     onSuccess: () => {

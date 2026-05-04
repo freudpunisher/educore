@@ -97,12 +97,27 @@ export default function StudentsTable({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="font-medium flex items-center gap-2">
-          <User className="w-4 h-4 text-muted-foreground" />
-          {row.original.full_name}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const name = row.original.full_name || "?";
+        const image = (row.original as any).image as string | null | undefined;
+        const initials = name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+        return (
+          <div className="font-medium flex items-center gap-3">
+            {image ? (
+              <img
+                src={image}
+                alt={name}
+                className="w-8 h-8 rounded-full object-cover border border-border flex-shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0 border border-primary/20">
+                {initials}
+              </div>
+            )}
+            <span>{name}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "enrollment_number",

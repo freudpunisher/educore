@@ -3,6 +3,8 @@
 
 import { Bell, Search, User, Moon, Sun, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -19,6 +21,34 @@ import { useTheme } from "@/lib/theme-provider";
 export function DashboardHeader() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const initialQuery = searchParams ? searchParams.get("q") || "" : "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
+
+  // Update local state if URL changes (e.g. going back)
+  useEffect(() => {
+    setSearchQuery(initialQuery);
+  }, [initialQuery]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    
+    if (value.trim()) {
+      router.push(`/dashboard/search?q=${encodeURIComponent(value.trim())}`);
+    } else if (pathname === "/dashboard/search") {
+      // If we empty the search and we are on the search page, clear query
+      router.push("/dashboard/search");
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
@@ -45,14 +75,16 @@ export function DashboardHeader() {
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
       {/* Search Bar */}
       <div className="flex-1 max-w-md">
-        <div className="relative">
+        <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Rechercher..."
             className="pl-10 bg-muted/50"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
           />
-        </div>
+        </form>
       </div>
 
       {/* Right Actions */}
