@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AttendancePage() {
   return (
-    <div className="container mx-auto py-10 px-4 max-w-7xl">
+    <div className="container mx-auto py-10 px-4">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">

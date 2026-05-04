@@ -79,14 +79,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                         <div className="relative group">
-                            <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-4 border-white shadow-xl group-hover:scale-105 transition-transform duration-300">
+                            <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-4 border-background shadow-xl group-hover:scale-105 transition-transform duration-300">
                                 {student.image ? (
                                     <img src={student.image} alt={student.full_name} className="h-full w-full object-cover" />
                                 ) : (
                                     <Users className="h-10 w-10" />
                                 )}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-green-500 border-4 border-white rounded-full shadow-lg" />
+                            <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-green-500 border-4 border-background rounded-full shadow-lg" />
                         </div>
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-3">
@@ -96,15 +96,15 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 </Badge>
                             </div>
                             <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
                                     <GraduationCap className="h-4 w-4 text-primary" />
                                     <span>{getEnrollmentDisplay(student.enrollment_info)}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
                                     <Calendar className="h-4 w-4 text-orange-500" />
                                     <span>Né le {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "Inconnu"}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-white/50 px-3 py-1 rounded-full border border-white/50 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
                                     <Activity className="h-4 w-4 text-green-500" />
                                     <span className="capitalize">{student.gender === 1 ? "Girl" : "Boy"}</span>
                                 </div>
@@ -115,7 +115,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <div className="flex flex-col gap-1.5 min-w-[200px]">
                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Academic Year Filter</p>
                             <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger className="h-11 rounded-xl bg-white border-white/50 shadow-sm hover:shadow-md transition-all">
+                                <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 shadow-sm hover:shadow-md transition-all">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-primary" />
                                         <SelectValue placeholder="Select Year" />
@@ -146,7 +146,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-6">
-                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
                                 <Users className="h-5 w-5" />
@@ -157,7 +157,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${hasArrears ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
                                 <Wallet className="h-5 w-5" />
@@ -168,7 +168,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-2.5 bg-purple-500/10 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
                                 <CheckCircle className="h-5 w-5" />
@@ -179,7 +179,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-white/40 backdrop-blur-sm border-white/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
+                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="p-2.5 bg-orange-500/10 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
                                 <Award className="h-5 w-5" />

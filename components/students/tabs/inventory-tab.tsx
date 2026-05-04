@@ -49,7 +49,7 @@ export function InventoryTab({ studentId, academicYearId }: { studentId: number,
                                     </div>
                                 </div>
                                 {item.status && (
-                                    <Badge variant="outline" className={`capitalize text-[9px] font-bold ${item.status === 'active' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-orange-50 text-orange-600 border-orange-200'}`}>
+                                    <Badge variant="outline" className={`capitalize text-[9px] font-bold ${item.status === 'active' ? 'bg-green-500/10 text-green-600 border-green-200/50' : 'bg-orange-500/10 text-orange-600 border-orange-200/50'}`}>
                                         {item.status}
                                     </Badge>
                                 )}
