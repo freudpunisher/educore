@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, Users, BookOpen, GraduationCap, Calendar, Loader2 } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useClassRooms, useAcademicYears } from "@/hooks/use-academic-data"
-import { useCourses, useGrades, useAssessments, useReportCards, useGenerateReportCards, useDownloadReportCardPDF } from "@/hooks/use-pedagogy"
+import { useCourses, useGrades, useAssessments, useReportCards, useGeneratePreschoolAnnualReportCards, useDownloadReportCardPDF, useTerms, useEnrollments } from "@/hooks/use-pedagogy"
 import { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -21,8 +21,11 @@ import toast from "react-hot-toast"
 export default function PedagogyPage() {
   const { data: yearsData, isLoading: yearsLoading } = useAcademicYears()
   const [selectedYearId, setSelectedYearId] = useState<number | undefined>(undefined)
+  const [selectedTermId, setSelectedTermId] = useState<number | undefined>(undefined)
+  const [selectedReportClassId, setSelectedReportClassId] = useState<number | undefined>(undefined)
+  const [selectedReportEnrollmentId, setSelectedReportEnrollmentId] = useState<number | undefined>(undefined)
 
-  const academicYears = yearsData?.results || yearsData || []
+  const academicYears = yearsData || []
 
   useEffect(() => {
     if (academicYears.length > 0 && selectedYearId === undefined) {
@@ -44,17 +47,22 @@ export default function PedagogyPage() {
   const [reportSearch, setReportSearch] = useState("")
 
   const { data: classData, isLoading: classLoading } = useClassRooms(classSearch)
+  const { data: reportClassData } = useClassRooms()
   const { data: courseData, isLoading: courseLoading } = useCourses(undefined, selectedYearId, coursePage, courseSearch)
-  const { data: gradeData, isLoading: gradeLoading } = useGrades(selectedYearId, gradePage, gradeSearch)
-  const { data: assessmentData, isLoading: assessmentLoading } = useAssessments(selectedYearId, assessmentPage, assessmentSearch)
+  const { data: gradeData, isLoading: gradeLoading } = useGrades(undefined, selectedYearId, gradePage, gradeSearch)
+  const { data: assessmentData, isLoading: assessmentLoading } = useAssessments(undefined, selectedYearId, assessmentPage, assessmentSearch)
   const { data: reportCardData, isLoading: reportCardLoading } = useReportCards(selectedYearId, reportPage, reportSearch)
-  const generateMutation = useGenerateReportCards()
+  const { data: terms = [] } = useTerms(selectedYearId)
+  const { data: reportEnrollmentData } = useEnrollments(selectedReportClassId, selectedYearId)
+  const generateMutation = useGeneratePreschoolAnnualReportCards()
   const downloadMutation = useDownloadReportCardPDF()
 
   const [isCreateGradeOpen, setIsCreateGradeOpen] = useState(false)
   const [isCreateAssessmentOpen, setIsCreateAssessmentOpen] = useState(false)
 
   const classes = classData || []
+  const reportClasses = reportClassData || classes
+  const reportEnrollments = reportEnrollmentData?.results || []
   const courses = courseData?.results || []
   const grades = gradeData?.results || []
   const assessments = assessmentData?.results || []
@@ -81,13 +89,25 @@ export default function PedagogyPage() {
   }, [grades])
 
   const handleGenerateReportCards = async () => {
-    // For demo/simplicity, we'll assume there's a term 1. In a real app, we'd have a term selector.
-    // We'll generate for all enrollments in the current academic year.
+    if (!selectedYearId) {
+      toast.error("Select an academic year first.")
+      return
+    }
+
     try {
-        await generateMutation.mutateAsync({ term: 1 })
-        toast.success("Report cards generated successfully!")
+        const payload: { academic_year: number; term?: number; classroom?: number; enrollment?: number } = {
+          academic_year: selectedYearId,
+        }
+        if (selectedTermId) payload.term = selectedTermId
+        if (selectedReportClassId) payload.classroom = selectedReportClassId
+        if (selectedReportEnrollmentId) payload.enrollment = selectedReportEnrollmentId
+
+        const result = await generateMutation.mutateAsync(payload)
+        const count = result?.generated_count || 0
+        toast.success(`${count} preschool report card${count > 1 ? "s" : ""} generated.`)
     } catch (error: any) {
-        toast.error("Failed to generate report cards. Please ensure terms are created.")
+        const message = error?.response?.data?.message || "Failed to generate preschool report cards."
+        toast.error(message)
     }
   }
 
@@ -129,7 +149,12 @@ export default function PedagogyPage() {
           <Select
             disabled={yearsLoading}
             value={selectedYearId?.toString()}
-            onValueChange={(val) => setSelectedYearId(parseInt(val))}
+            onValueChange={(val) => {
+              setSelectedYearId(parseInt(val))
+              setSelectedTermId(undefined)
+              setSelectedReportClassId(undefined)
+              setSelectedReportEnrollmentId(undefined)
+            }}
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Academic Year" />
@@ -259,7 +284,7 @@ export default function PedagogyPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {classes.map((cls: any) => (
+                    {reportClasses.map((cls: any) => (
                       <TableRow key={cls.id}>
                         <TableCell className="font-medium">{cls.name}</TableCell>
                         <TableCell>
@@ -368,7 +393,7 @@ export default function PedagogyPage() {
                 <p className="text-sm text-muted-foreground mt-1">Create quizzes, tests and exams before recording grades</p>
               </div>
               <div className="flex items-center gap-4">
-                <div className="relative w-64">
+                <div className="relative w-full">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
@@ -546,13 +571,68 @@ export default function PedagogyPage() {
 
         <TabsContent value="reports">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="space-y-4">
               <div>
                 <CardTitle>Report Cards</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">GPA and academic transcripts</p>
+                <p className="text-sm text-muted-foreground mt-1">Preschool annual report cards based on course assessment grades</p>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="relative w-64">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <Select
+                  value={selectedTermId?.toString() || "auto"}
+                  onValueChange={(value) => setSelectedTermId(value === "auto" ? undefined : parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Final term" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Latest term automatically</SelectItem>
+                    {terms.map((term: any) => (
+                      <SelectItem key={term.id} value={term.id.toString()}>
+                        {term.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={selectedReportClassId?.toString() || "all"}
+                  onValueChange={(value) => {
+                    setSelectedReportClassId(value === "all" ? undefined : parseInt(value))
+                    setSelectedReportEnrollmentId(undefined)
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All classes</SelectItem>
+                    {reportClasses.map((cls: any) => (
+                      <SelectItem key={cls.id} value={cls.id.toString()}>
+                        {cls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  disabled={!selectedReportClassId}
+                  value={selectedReportEnrollmentId?.toString() || "all"}
+                  onValueChange={(value) => setSelectedReportEnrollmentId(value === "all" ? undefined : parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Student" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All students</SelectItem>
+                    {reportEnrollments.map((enrollment: any) => (
+                      <SelectItem key={enrollment.id} value={enrollment.id.toString()}>
+                        {enrollment.student_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="relative w-full">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="search"
@@ -567,7 +647,7 @@ export default function PedagogyPage() {
                 </div>
                 <Button size="sm" onClick={handleGenerateReportCards} disabled={generateMutation.isPending}>
                   {generateMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-                  Generate for Term 1
+                  Generate preschool annual
                 </Button>
               </div>
             </CardHeader>
@@ -575,12 +655,12 @@ export default function PedagogyPage() {
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Student</TableHead>
-                      <TableHead>Term</TableHead>
-                      <TableHead>Term GPA</TableHead>
-                      <TableHead>Cumulative GPA</TableHead>
-                      <TableHead>Attendance</TableHead>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead>Average Score</TableHead>
+                      <TableHead>Matched Courses</TableHead>
+                      <TableHead>Class</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -597,21 +677,28 @@ export default function PedagogyPage() {
                           <TableCell className="font-medium">
                             {report.enrollment_detail?.student_name || "Student"}
                           </TableCell>
-                          <TableCell>{report.term_display}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span>{report.report_type === "preschool_annual" ? "Annual preschool" : report.term_display}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {report.data?.academic_year?.label || report.academic_year_display || report.term_display}
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                {report.data?.gpa?.term?.toFixed(2) || "0.00"}
+                                {report.report_type === "preschool_annual"
+                                  ? report.data?.annual_preschool_score || "—"
+                                  : report.data?.gpa?.term?.toFixed?.(2) || "0.00"}
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                {report.data?.gpa?.cumulative?.toFixed(2) || "0.00"}
-                            </Badge>
+                            {report.report_type === "preschool_annual"
+                              ? `${(report.data?.course_summaries?.length || 0) - (report.data?.unmatched_courses?.length || 0)} / ${report.data?.course_summaries?.length || 0}`
+                              : `${Object.keys(report.data?.subjects || {}).length} subject(s)`}
                           </TableCell>
                           <TableCell className="text-sm">
-                            <span className="text-red-600 font-medium">{report.data?.attendance?.absences || 0} Abs</span>
-                            <span className="mx-2 text-muted-foreground">|</span>
-                            <span className="text-orange-600 font-medium">{report.data?.attendance?.lates || 0} Late</span>
+                            {report.enrollment_detail?.class_room_detail?.name || report.data?.student?.classroom || "—"}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button variant="ghost" size="sm" onClick={() => handleDownloadPdf(report.id)} disabled={downloadMutation.isPending}>

@@ -42,6 +42,8 @@ export const reportCardSchema = z.object({
   enrollment_detail: z.any(),
   term: z.number(),
   term_display: z.string(),
+  academic_year_display: z.string().optional(),
+  report_type: z.string().optional(),
   generated_at: z.string(),
   data: z.any(),
 });
@@ -52,6 +54,9 @@ export const gradeSchema = z.object({
   student_name: z.string(),
   assessment: z.number(),
   assessment_display: z.string(),
+  course: z.number().optional(),
+  course_name: z.string().optional(),
+  term: z.number().optional(),
   score: z.string(),
   percentage: z.number().nullable().optional(),
   letter_grade: z.string().nullable().optional(),
