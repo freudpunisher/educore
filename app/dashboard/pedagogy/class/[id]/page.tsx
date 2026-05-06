@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Users, BookOpen, ChevronLeft, Calendar } from "lucide-react"
+import { Loader2, Users, BookOpen, ChevronLeft, Calendar, GraduationCap, ClipboardList } from "lucide-react"
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
@@ -123,20 +123,22 @@ export default function ClassDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Student</TableHead>
+                      <TableHead>N° Inscr.</TableHead>
                       <TableHead>Enrollment Date</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Grades</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loadingEnrollments ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8">
+                        <TableCell colSpan={5} className="text-center py-8">
                           <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                         </TableCell>
                       </TableRow>
                     ) : enrollments.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           No students enrolled in this class.
                         </TableCell>
                       </TableRow>
@@ -144,11 +146,22 @@ export default function ClassDetailPage() {
                       enrollments.map((enr: any) => (
                         <TableRow key={enr.id}>
                           <TableCell className="font-medium">{enr.student_name}</TableCell>
-                          <TableCell>{new Date(enr.date_enrolled).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell>
+                            <span className="font-mono text-sm text-muted-foreground">{enr.enrollment_number || "-"}</span>
+                          </TableCell>
+                          <TableCell>{enr.date_enrolled ? new Date(enr.date_enrolled).toLocaleDateString() : "-"}</TableCell>
+                          <TableCell>
                             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                               Active
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link href={`/dashboard/pedagogy/class/${id}/student/${enr.id}`}>
+                              <Button variant="outline" size="sm" className="gap-1.5">
+                                <GraduationCap className="w-3.5 h-3.5" />
+                                Notes
+                              </Button>
+                            </Link>
                           </TableCell>
                         </TableRow>
                       ))
@@ -174,18 +187,19 @@ export default function ClassDetailPage() {
                       <TableHead>Subject</TableHead>
                       <TableHead>Teacher</TableHead>
                       <TableHead>Credits</TableHead>
+                      <TableHead className="text-right">Evaluations</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loadingCourses ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8">
+                        <TableCell colSpan={5} className="text-center py-8">
                           <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
                         </TableCell>
                       </TableRow>
                     ) : courses.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                           No courses assigned to this class.
                         </TableCell>
                       </TableRow>
@@ -201,6 +215,14 @@ export default function ClassDetailPage() {
                             ) : (
                               <span className="text-muted-foreground text-sm">-</span>
                             )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Link href={`/dashboard/pedagogy/class/${id}/course/${course.id}`}>
+                              <Button variant="outline" size="sm" className="gap-1.5">
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                Evaluations
+                              </Button>
+                            </Link>
                           </TableCell>
                         </TableRow>
                       ))
