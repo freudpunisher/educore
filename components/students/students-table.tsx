@@ -189,15 +189,17 @@ export default function StudentsTable({
               View
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={alreadyEnrolled}
-              onClick={() => setOpenEnroll(true)}
-              className="h-8"
-            >
-              {alreadyEnrolled ? "Already Enrolled" : "Enroll"}
-            </Button>
+            {student.is_validated && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={alreadyEnrolled}
+                onClick={() => setOpenEnroll(true)}
+                className="h-8"
+              >
+                {alreadyEnrolled ? "Already Enrolled" : "Enroll"}
+              </Button>
+            )}
 
             <EnrollStudentDialog
               studentId={student.id}
