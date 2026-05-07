@@ -13,6 +13,14 @@ export const courseSchema = z.object({
   credits: z.string().optional(), // DecimalField is serialized as string
 });
 
+export const assessmentTypeSchema = z.object({
+  id: z.number(),
+  code: z.string(),
+  label: z.string(),
+  weight: z.string(),
+  level: z.string().optional(),
+});
+
 export const assessmentSchema = z.object({
   id: z.number(),
   title: z.string(),
@@ -22,6 +30,7 @@ export const assessmentSchema = z.object({
   term_display: z.string().optional(),
   assessment_type: z.number(),
   assessment_type_label: z.string().optional(),
+  assessment_type_detail: assessmentTypeSchema.optional(),
   max_score: z.string(),
   date: z.string().nullable().optional(),
   published: z.boolean(),
@@ -81,4 +90,13 @@ export type Assessment = z.infer<typeof assessmentSchema>;
 export type Grade = z.infer<typeof gradeSchema>;
 export type ReportCard = z.infer<typeof reportCardSchema>;
 export type GradeCreate = z.infer<typeof gradeCreateSchema>;
+export const assessmentTypeCreateSchema = z.object({
+  code: z.string().min(1, "Code is required"),
+  label: z.string().min(1, "Label is required"),
+  weight: z.string().min(1, "Weight is required"),
+  level: z.string().default("all"),
+});
+
+export type AssessmentTypeCreate = z.infer<typeof assessmentTypeCreateSchema>;
+
 export type AssessmentCreate = z.infer<typeof assessmentCreateSchema>;

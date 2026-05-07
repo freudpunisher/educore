@@ -103,6 +103,20 @@ export function useCreateAssessment() {
   });
 }
 
+export function useCreateAssessmentType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await axiosInstance.post("/academics/assessment-types/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assessment-types"] });
+    },
+  });
+}
+
 export function useEnrollments(classId?: number, academicYearId?: number) {
   return useQuery({
     queryKey: ["enrollments", classId, academicYearId],

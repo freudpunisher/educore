@@ -30,11 +30,14 @@ import {
   Clock,
   AlertCircle,
   BookOpen,
+  GraduationCap,
 } from "lucide-react"
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import axiosInstance from "@/lib/axios"
 import { useQuery } from "@tanstack/react-query"
+import { CreateAssessmentDialog } from "@/components/pedagogy/create-assessment-dialog"
+import { GradingDialog } from "@/components/pedagogy/grading-dialog"
 
 function useCourseDetail(courseId: number) {
   return useQuery({
@@ -65,6 +68,8 @@ export default function CourseAssessmentsPage() {
   const courseId = params.courseId as string
 
   const [selectedTerm, setSelectedTerm] = useState<string>("")
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [selectedAssessmentToGrade, setSelectedAssessmentToGrade] = useState<any>(null)
 
   const { data: classItem } = useClassRoom(classId)
   const { data: courseDetail, isLoading: loadingCourse } = useCourseDetail(parseInt(courseId))
@@ -135,9 +140,9 @@ export default function CourseAssessmentsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Terms" />
             </SelectTrigger>
             <SelectContent>
@@ -149,8 +154,20 @@ export default function CourseAssessmentsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <ClipboardList className="w-4 h-4 mr-2" />
+            New Assessment
+          </Button>
         </div>
       </div>
+
+      <CreateAssessmentDialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        initialCourseId={parseInt(courseId)}
+        initialTermId={termId}
+        classLevel={classItem?.level}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -226,6 +243,7 @@ export default function CourseAssessmentsPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Max Score</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -267,6 +285,17 @@ export default function CourseAssessmentsPage() {
                             </Badge>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className="bg-primary/10 text-primary hover:bg-primary/20"
+                            onClick={() => setSelectedAssessmentToGrade(assessment)}
+                          >
+                            <GraduationCap className="w-3.5 h-3.5 mr-1" />
+                            Grade
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     )
                   })}
@@ -276,6 +305,13 @@ export default function CourseAssessmentsPage() {
           )}
         </CardContent>
       </Card>
+
+      <GradingDialog 
+        isOpen={!!selectedAssessmentToGrade}
+        onClose={() => setSelectedAssessmentToGrade(null)}
+        assessment={selectedAssessmentToGrade}
+        classId={parseInt(classId)}
+      />
     </div>
   )
 }
