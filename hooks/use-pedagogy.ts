@@ -10,7 +10,6 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
       let url = "/config/courses/";
       const params = new URLSearchParams();
       if (classId) params.append("classroom", classId.toString());
-      if (academicYearId) params.append("academic_year", academicYearId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
       
@@ -24,12 +23,13 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
   });
 }
 
-export function useGrades(academicYearId?: number, page: number = 1, search?: string) {
+export function useGrades(enrollmentId?: number, academicYearId?: number, page: number = 1, search?: string) {
   return useQuery({
-    queryKey: ["grades", academicYearId, page, search],
+    queryKey: ["grades", enrollmentId, academicYearId, page, search],
     queryFn: async () => {
       let url = "/academics/grades/";
       const params = new URLSearchParams();
+      if (enrollmentId) params.append("enrollment", enrollmentId.toString());
       if (academicYearId) params.append("enrollment__academic_year", academicYearId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
@@ -43,12 +43,13 @@ export function useGrades(academicYearId?: number, page: number = 1, search?: st
   });
 }
 
-export function useAssessments(academicYearId?: number, page: number = 1, search?: string) {
+export function useAssessments(courseId?: number, academicYearId?: number, page: number = 1, search?: string) {
   return useQuery({
-    queryKey: ["assessments", academicYearId, page, search],
+    queryKey: ["assessments", courseId, academicYearId, page, search],
     queryFn: async () => {
       let url = "/academics/assessments/";
       const params = new URLSearchParams();
+      if (courseId) params.append("course", courseId.toString());
       if (academicYearId) params.append("term__academic_year", academicYearId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
@@ -59,6 +60,7 @@ export function useAssessments(academicYearId?: number, page: number = 1, search
       const parsed = paginatedAssessmentSchema.parse(data);
       return parsed;
     },
+    enabled: courseId !== undefined ? !!courseId : true,
   });
 }
 
@@ -72,11 +74,16 @@ export function useAssessmentTypes() {
   });
 }
 
-export function useTerms() {
+export function useTerms(academicYearId?: number) {
   return useQuery({
-    queryKey: ["terms"],
+    queryKey: ["terms", academicYearId],
     queryFn: async () => {
-      const { data } = await axiosInstance.get("/academics/terms/");
+      let url = "/academics/terms/";
+      const params = new URLSearchParams();
+      if (academicYearId) params.append("academic_year", academicYearId.toString());
+      const queryString = params.toString();
+      if (queryString) url += `?${queryString}`;
+      const { data } = await axiosInstance.get(url);
       return data?.results || data || [];
     },
   });
@@ -92,6 +99,20 @@ export function useCreateAssessment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assessments"] });
+    },
+  });
+}
+
+export function useCreateAssessmentType() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await axiosInstance.post("/academics/assessment-types/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assessment-types"] });
     },
   });
 }
@@ -140,6 +161,20 @@ export function useGenerateReportCards() {
   return useMutation({
     mutationFn: async (data: { term: number; enrollment?: number; classroom?: number }) => {
       const response = await axiosInstance.post("/academics/report-cards/generate/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report-cards"] });
+    },
+  });
+}
+
+export function useGeneratePreschoolAnnualReportCards() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { academic_year: number; term?: number; enrollment?: number; classroom?: number }) => {
+      const response = await axiosInstance.post("/academics/report-cards/generate-preschool-annual/", data);
       return response.data;
     },
     onSuccess: () => {

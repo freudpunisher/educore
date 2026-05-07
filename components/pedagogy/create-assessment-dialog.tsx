@@ -7,23 +7,35 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { useMemo, useState, useEffect } from "react"
 import { useCreateAssessment, useAssessmentTypes, useTerms, useCourses } from "@/hooks/use-pedagogy"
 import { assessmentCreateSchema, AssessmentCreate } from "@/types/pedagogy"
 import toast from "react-hot-toast"
-import { Loader2, ClipboardList } from "lucide-react"
+import { Loader2, ClipboardList, Plus } from "lucide-react"
+import { CreateAssessmentTypeDialog } from "./create-assessment-type-dialog"
 
 interface CreateAssessmentDialogProps {
   isOpen: boolean
   onClose: () => void
+  initialCourseId?: number
+  initialTermId?: number
+  classLevel?: string
 }
 
-export function CreateAssessmentDialog({ isOpen, onClose }: CreateAssessmentDialogProps) {
+export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initialTermId, classLevel }: CreateAssessmentDialogProps) {
   const { data: coursesData, isLoading: loadingCourses } = useCourses()
   const { data: terms, isLoading: loadingTerms } = useTerms()
-  const { data: types, isLoading: loadingTypes } = useAssessmentTypes()
+  const { data: types = [], isLoading: loadingTypes } = useAssessmentTypes()
   const createMutation = useCreateAssessment()
+  const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false)
 
   const courses = coursesData?.results || []
+
+  // Filter types based on class level
+  const filteredTypes = useMemo(() => {
+    if (!classLevel || types.length === 0) return types
+    return types.filter((t: any) => !t.level || t.level === "all" || t.level === classLevel)
+  }, [types, classLevel])
 
   const form = useForm<AssessmentCreate>({
     resolver: zodResolver(assessmentCreateSchema),
@@ -31,8 +43,23 @@ export function CreateAssessmentDialog({ isOpen, onClose }: CreateAssessmentDial
       title: "",
       max_score: "100",
       date: "",
+      course: initialCourseId,
+      term: initialTermId,
     },
   })
+
+  // Reset form when initial values change
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        title: "",
+        max_score: "100",
+        date: "",
+        course: initialCourseId,
+        term: initialTermId,
+      })
+    }
+  }, [isOpen, initialCourseId, initialTermId, form])
 
   const onSubmit = async (values: AssessmentCreate) => {
     try {
@@ -46,6 +73,7 @@ export function CreateAssessmentDialog({ isOpen, onClose }: CreateAssessmentDial
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
@@ -120,28 +148,62 @@ export function CreateAssessmentDialog({ isOpen, onClose }: CreateAssessmentDial
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="assessment_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select disabled={loadingTypes} onValueChange={(val) => field.onChange(parseInt(val))} value={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {(types || []).map((t: any) => (
-                          <SelectItem key={t.id} value={t.id.toString()}>
-                            {t.label} ({t.weight}%)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="assessment_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Type</FormLabel>
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-1.5 text-[10px] text-primary"
+                          onClick={() => setIsTypeDialogOpen(true)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" /> New Type
+                        </Button>
+                      </div>
+                      <Select 
+                        disabled={loadingTypes} 
+                        onValueChange={(val) => field.onChange(parseInt(val))} 
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            {loadingTypes ? (
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span>Loading types...</span>
+                              </div>
+                            ) : (
+                              <SelectValue placeholder={filteredTypes.length === 0 ? "No types for this level" : "Select type"} />
+                            )}
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredTypes.length > 0 ? (
+                            filteredTypes.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id.toString()}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{t.label} ({t.weight}%)</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono">{t.code}</span>
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="py-6 px-2 text-center">
+                              <p className="text-sm text-muted-foreground">No assessment types found for {classLevel || 'this level'}.</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">Please ensure types are configured in the system.</p>
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
               <FormField
                 control={form.control}
@@ -183,5 +245,12 @@ export function CreateAssessmentDialog({ isOpen, onClose }: CreateAssessmentDial
         </Form>
       </DialogContent>
     </Dialog>
+
+    <CreateAssessmentTypeDialog 
+      isOpen={isTypeDialogOpen}
+      onClose={() => setIsTypeDialogOpen(false)}
+      initialLevel={classLevel}
+    />
+    </>
   )
 }

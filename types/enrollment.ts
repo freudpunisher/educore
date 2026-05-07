@@ -13,18 +13,23 @@ export const classRoomSchema = z.object({
   id: z.number(),
   name: z.string(),
   code: z.string(),
+  level: z.string().optional(),
+  grade_label: z.string().optional(),
 });
 
 export const classRoomDetailSchema = z.object({
   id: z.number(),
   code: z.string(),
   name: z.string(),
+  level: z.string().optional(),
+  grade_label: z.string().optional(),
 });
 
 export const enrollmentListSchema = z.object({
   id: z.number(),
   student: z.number(),
   student_name: z.string(),
+  enrollment_number: z.string().optional().nullable(),
   class_room: z.number(),
   class_room_detail: classRoomDetailSchema.optional(),
   academic_year: z.number(),
