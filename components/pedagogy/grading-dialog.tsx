@@ -57,7 +57,7 @@ export function GradingDialog({ isOpen, onClose, assessment, classId }: GradingD
 
   const handleSave = async () => {
     const promises = Object.entries(scores).map(([enrollmentId, score]) => {
-      if (!score) return null
+      if (score === "" || score === null || score === undefined) return null
       return createGradeMutation.mutateAsync({
         enrollment: parseInt(enrollmentId),
         assessment: assessment.id,
@@ -65,6 +65,11 @@ export function GradingDialog({ isOpen, onClose, assessment, classId }: GradingD
         comment: comments[parseInt(enrollmentId)] || ""
       })
     }).filter(Boolean)
+
+    if (promises.length === 0) {
+      toast.error("Please enter at least one score.")
+      return
+    }
 
     try {
       await Promise.all(promises)

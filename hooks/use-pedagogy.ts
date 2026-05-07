@@ -23,14 +23,15 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
   });
 }
 
-export function useGrades(enrollmentId?: number, academicYearId?: number, page: number = 1, search?: string) {
+export function useGrades(enrollmentId?: number, academicYearId?: number, termId?: number, page: number = 1, search?: string) {
   return useQuery({
-    queryKey: ["grades", enrollmentId, academicYearId, page, search],
+    queryKey: ["grades", enrollmentId, academicYearId, termId, page, search],
     queryFn: async () => {
       let url = "/academics/grades/";
       const params = new URLSearchParams();
       if (enrollmentId) params.append("enrollment", enrollmentId.toString());
       if (academicYearId) params.append("enrollment__academic_year", academicYearId.toString());
+      if (termId) params.append("assessment__term", termId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
       
@@ -103,6 +104,20 @@ export function useCreateAssessment() {
   });
 }
 
+export function useUpdateAssessment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<AssessmentCreate> }) => {
+      const response = await axiosInstance.patch(`/academics/assessments/${id}/`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assessments"] });
+    },
+  });
+}
+
 export function useCreateAssessmentType() {
   const queryClient = useQueryClient();
 
@@ -136,15 +151,19 @@ export function useEnrollments(classId?: number, academicYearId?: number) {
   });
 }
 
-export function useReportCards(academicYearId?: number, page: number = 1, search?: string) {
+export function useReportCards(academicYearId?: number, classId?: number, termId?: number, page: number = 1, search?: string) {
   return useQuery({
-    queryKey: ["report-cards", academicYearId, page, search],
+    queryKey: ["report-cards", academicYearId, classId, termId, page, search],
     queryFn: async () => {
       let url = "/academics/report-cards/";
       const params = new URLSearchParams();
       if (academicYearId) params.append("enrollment__academic_year", academicYearId.toString());
+      if (classId) params.append("enrollment__class_room", classId.toString());
+      if (termId) params.append("term", termId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
+      // Increase limit to avoid missing report cards in the dashboard list
+      params.append("page_size", "100");
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
@@ -152,6 +171,7 @@ export function useReportCards(academicYearId?: number, page: number = 1, search
       const parsed = paginatedReportCardSchema.parse(data);
       return parsed;
     },
+    enabled: !!academicYearId || !!classId,
   });
 }
 
@@ -193,6 +213,7 @@ export function useCreateGrade() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["grades"] });
+      queryClient.invalidateQueries({ queryKey: ["assessments"] });
     },
   });
 }

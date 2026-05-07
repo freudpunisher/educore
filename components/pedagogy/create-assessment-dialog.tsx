@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { useMemo, useState, useEffect } from "react"
-import { useCreateAssessment, useAssessmentTypes, useTerms, useCourses } from "@/hooks/use-pedagogy"
+import { useCreateAssessment, useUpdateAssessment, useAssessmentTypes, useTerms, useCourses } from "@/hooks/use-pedagogy"
 import { assessmentCreateSchema, AssessmentCreate } from "@/types/pedagogy"
 import toast from "react-hot-toast"
 import { Loader2, ClipboardList, Plus } from "lucide-react"
@@ -20,13 +20,15 @@ interface CreateAssessmentDialogProps {
   initialCourseId?: number
   initialTermId?: number
   classLevel?: string
+  assessment?: any // For editing
 }
 
-export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initialTermId, classLevel }: CreateAssessmentDialogProps) {
+export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initialTermId, classLevel, assessment }: CreateAssessmentDialogProps) {
   const { data: coursesData, isLoading: loadingCourses } = useCourses()
   const { data: terms, isLoading: loadingTerms } = useTerms()
   const { data: types = [], isLoading: loadingTypes } = useAssessmentTypes()
   const createMutation = useCreateAssessment()
+  const updateMutation = useUpdateAssessment()
   const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false)
 
   const courses = coursesData?.results || []
@@ -48,39 +50,57 @@ export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initi
     },
   })
 
-  // Reset form when initial values change
+  // Reset form when assessment changes (for editing)
   useEffect(() => {
     if (isOpen) {
-      form.reset({
-        title: "",
-        max_score: "100",
-        date: "",
-        course: initialCourseId,
-        term: initialTermId,
-      })
+      if (assessment) {
+        form.reset({
+          title: assessment.title,
+          max_score: assessment.max_score?.toString() || "100",
+          date: assessment.date || "",
+          course: assessment.course,
+          term: assessment.term,
+          assessment_type: assessment.assessment_type,
+        })
+      } else {
+        form.reset({
+          title: "",
+          max_score: "100",
+          date: "",
+          course: initialCourseId,
+          term: initialTermId,
+        })
+      }
     }
-  }, [isOpen, initialCourseId, initialTermId, form])
+  }, [isOpen, assessment, initialCourseId, initialTermId, form])
 
-  const onSubmit = async (values: AssessmentCreate) => {
+  const onSubmit = async (data: AssessmentCreate) => {
     try {
-      await createMutation.mutateAsync(values)
-      toast.success("Assessment created successfully!")
+      if (assessment?.id) {
+        await updateMutation.mutateAsync({ id: assessment.id, data })
+        toast.success("Assessment updated successfully")
+      } else {
+        await createMutation.mutateAsync(data)
+        toast.success("Assessment created successfully")
+      }
       form.reset()
       onClose()
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || "Failed to create assessment")
+      toast.error(error.message || "Something went wrong")
     }
   }
 
+  const isPending = createMutation.isPending || updateMutation.isPending
+
   return (
     <>
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <div className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
-            <DialogTitle>Create Assessment</DialogTitle>
-          </div>
+            {assessment ? "Edit Assessment" : "Create New Assessment"}
+          </DialogTitle>
           <DialogDescription>
             Create an assessment (quiz, test, exam…) for a course and term. Students can then be graded on this assessment.
           </DialogDescription>
