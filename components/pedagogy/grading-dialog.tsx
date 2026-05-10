@@ -9,15 +9,17 @@ import { useEnrollments, useGrades, useCreateGrade } from "@/hooks/use-pedagogy"
 import { Loader2, Save, GraduationCap } from "lucide-react"
 import toast from "react-hot-toast"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface GradingDialogProps {
   isOpen: boolean
   onClose: () => void
   assessment: any
   classId: number
+  classLevel?: string
 }
 
-export function GradingDialog({ isOpen, onClose, assessment, classId }: GradingDialogProps) {
+export function GradingDialog({ isOpen, onClose, assessment, classId, classLevel }: GradingDialogProps) {
   const { data: enrollmentsData, isLoading: loadingEnrollments } = useEnrollments(classId)
   const { data: existingGradesData, isLoading: loadingGrades } = useGrades(undefined, undefined, 1, undefined)
   const createGradeMutation = useCreateGrade()
@@ -125,14 +127,39 @@ export function GradingDialog({ isOpen, onClose, assessment, classId }: GradingD
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Input 
-                      type="number" 
-                      step="0.1" 
-                      placeholder="0.0"
-                      value={scores[enr.id] || ""}
-                      onChange={(e) => handleScoreChange(enr.id, e.target.value)}
-                      className="w-24 font-mono font-bold"
-                    />
+                    {classLevel === 'preschool' ? (
+                      <Select
+                        value={scores[enr.id] || ""}
+                        onValueChange={(val) => handleScoreChange(enr.id, val)}
+                      >
+                        <SelectTrigger className="w-32 h-10 font-medium">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={(parseFloat(assessment.max_score) * 0.95).toString()}>
+                            <span className="flex items-center gap-1">🌟 Expert</span>
+                          </SelectItem>
+                          <SelectItem value={(parseFloat(assessment.max_score) * 0.80).toString()}>
+                            <span className="flex items-center gap-1">✅ Mastered</span>
+                          </SelectItem>
+                          <SelectItem value={(parseFloat(assessment.max_score) * 0.65).toString()}>
+                            <span className="flex items-center gap-1">🚧 Developing</span>
+                          </SelectItem>
+                          <SelectItem value={(parseFloat(assessment.max_score) * 0.40).toString()}>
+                            <span className="flex items-center gap-1">❌ Emerging</span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input 
+                        type="number" 
+                        step="0.1" 
+                        placeholder="0.0"
+                        value={scores[enr.id] || ""}
+                        onChange={(e) => handleScoreChange(enr.id, e.target.value)}
+                        className="w-24 font-mono font-bold"
+                      />
+                    )}
                   </TableCell>
                   <TableCell>
                     <Input 

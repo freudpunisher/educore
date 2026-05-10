@@ -56,7 +56,10 @@ export default function StudentAcademicDetailsPage() {
     return courses.map(course => {
       const courseGrades = gradesByCourse[course.id] || []
       const sumScores = courseGrades.reduce((acc, g) => acc + parseFloat(g.score), 0)
-      const maxPointsTotal = parseFloat(course.max_points_dw || "10") + parseFloat(course.max_points_exam || "10")
+      const dw = parseFloat(String(course.max_points_dw || "0")) || 0
+      const exam = parseFloat(String(course.max_points_exam || "0")) || 0
+      const total = parseFloat(String(course.max_points_total || "0")) || 0
+      const maxPointsTotal = total || (dw + exam) || 20
       
       const avg = maxPointsTotal > 0 ? (sumScores / maxPointsTotal) * 100 : 0
       return { ...course, average: avg, grades: courseGrades, maxPointsTotal }

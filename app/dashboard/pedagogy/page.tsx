@@ -69,10 +69,18 @@ export default function PedagogyPage() {
   // Data fetching
   const { data: classrooms = [], isLoading: classroomsLoading } = useClassRooms(classSearch)
   const { data: selectedClass, isLoading: selectedClassLoading } = useClassRoom(selectedClassId || "")
+  const isHighSchool = selectedClass?.level === 'high'
   
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useEnrollments(selectedClassId, selectedYearId)
   const { data: coursesData, isLoading: coursesLoading } = useCourses(selectedClassId, selectedYearId)
-  const { data: gradesData, isLoading: gradesLoading } = useGrades(undefined, selectedYearId) // We fetch grades for the year, we'll filter by enrollment
+  const { data: gradesData, isLoading: gradesLoading } = useGrades(
+    undefined, 
+    selectedYearId, 
+    selectedTermId, 
+    1, 
+    undefined, 
+    selectedClassId
+  )
   const { data: terms = [] } = useTerms(selectedYearId)
   const generateMutation = useGenerateReportCards()
   const downloadMutation = useDownloadReportCardPDF()
@@ -110,49 +118,124 @@ export default function PedagogyPage() {
       gradesByEnrollment[g.enrollment][g.course!].push(g)
     })
 
+    const isHighSchool = selectedClass?.level === 'high'
+    const isPrimary = selectedClass?.level === 'primary' || selectedClass?.level === 'preschool'
+
     const studentAverages = enrollments.map(enr => {
       const studentCoursesGrades = gradesByEnrollment[enr.id] || {}
-      
-      // Calculate individual course percentages
+      const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
+      const hwCodes = ['HOMEWORK']
+      // Everything else is Classwork (CW)
+
       const coursePercentages = Object.entries(studentCoursesGrades).map(([courseId, courseGrades]) => {
         const course = courses.find(c => c.id === parseInt(courseId))
         if (!course) return null
 
-        const sumScores = courseGrades.reduce((acc, g) => acc + parseFloat(g.score), 0)
-        // Use course max points (dw + exam)
-        const maxPointsTotal = parseFloat(course.max_points_dw || "10") + parseFloat(course.max_points_exam || "10")
-        
+        const dwMax = parseFloat(String(course.max_points_dw || "35")) || 35
+        const examMax = parseFloat(String(course.max_points_exam || "35")) || 35
+        const totalMax = parseFloat(String(course.max_points_total || "0")) || (dwMax + examMax)
+
+        let rawSum = 0
+        let percentage = 0
+
+        if (isHighSchool) {
+          // Weighted Logic for High School
+          const hwGrades = (courseGrades as any[]).filter(g => hwCodes.includes(g.assessment_type_code))
+          const examGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
+          const cwGrades = (courseGrades as any[]).filter(g => !hwCodes.includes(g.assessment_type_code) && !examCodes.includes(g.assessment_type_code))
+
+          const hwAvg = hwGrades.length > 0 ? hwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / hwGrades.length : 100 // Default to 100 if no HW yet? No, 0.
+          const cwAvg = cwGrades.length > 0 ? cwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cwGrades.length : 0
+          const exAvg = examGrades.length > 0 ? examGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / examGrades.length : 0
+
+          // Weights: HW 15%, CW 35%, EX 50%
+          const weightedPct = (hwGrades.length > 0 ? (hwAvg * 0.15) : 0) + 
+                              (cwGrades.length > 0 ? (cwAvg * 0.35) : 0) + 
+                              (examGrades.length > 0 ? (exAvg * 0.50) : 0)
+          
+          // Re-normalize weights if some categories are missing
+          const totalWeight = (hwGrades.length > 0 ? 0.15 : 0) + 
+                             (cwGrades.length > 0 ? 0.35 : 0) + 
+                             (examGrades.length > 0 ? 0.50 : 0)
+          
+          percentage = totalWeight > 0 ? (weightedPct / totalWeight) : 0
+          rawSum = (percentage / 100) * totalMax
+        } else {
+          // Standard Logic for Primary/Middle
+          const cDwGrades = (courseGrades as any[]).filter(g => !examCodes.includes(g.assessment_type_code))
+          const cExGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
+
+          const dwAvgPct = cDwGrades.length > 0 
+            ? cDwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cDwGrades.length 
+            : 0
+          const exAvgPct = cExGrades.length > 0 
+            ? cExGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cExGrades.length 
+            : 0
+
+          const dwScore = (dwAvgPct / 100) * dwMax
+          const exScore = (exAvgPct / 100) * examMax
+          rawSum = dwScore + exScore
+          percentage = totalMax > 0 ? (rawSum / totalMax) * 100 : 0
+        }
+
         return {
           courseId: parseInt(courseId),
-          percentage: maxPointsTotal > 0 ? (sumScores / maxPointsTotal) * 100 : 0
+          percentage,
+          rawSum,
+          totalMax
         }
-      }).filter(Boolean) as { courseId: number, percentage: number }[]
+      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number }[]
 
       const avg = coursePercentages.length > 0 
         ? coursePercentages.reduce((acc, cp) => acc + cp.percentage, 0) / coursePercentages.length 
         : 0
       
-      // Map back to the course-id -> grade object format expected by the UI
-      // For the UI cards/table, we'll use the calculated percentage as the "score"
       const uiGrades: Record<number, any> = {}
       coursePercentages.forEach(cp => {
-        uiGrades[cp.courseId] = { score: cp.percentage.toFixed(1) }
+        uiGrades[cp.courseId] = { 
+          score: cp.percentage.toFixed(1),
+          rawSum: cp.rawSum,
+          totalMax: cp.totalMax
+        }
       })
 
-      // Calculate GPA and Letter based on avg if High School
+      const isKindergarten = selectedClass?.level === 'preschool'
+      
+      // Calculate GPA and Letter based on avg
       let letter = "F"
       let gpa = 0
-      if (avg >= 90) { letter = "A"; gpa = 4.0 }
-      else if (avg >= 80) { letter = "B"; gpa = 3.0 }
-      else if (avg >= 70) { letter = "C"; gpa = 2.0 }
-      else if (avg >= 60) { letter = "D"; gpa = 1.0 }
+      
+      if (isKindergarten) {
+        // Kindergarten Scale: Qualitative acquisition levels
+        if (avg >= 90) letter = "Expert";
+        else if (avg >= 75) letter = "Mastered";
+        else if (avg >= 50) letter = "Developing";
+        else letter = "Emerging";
+        gpa = 0
+      } else if (isPrimary) {
+        // Elementary School Scale: A (>80), B (60-80), C (40-60), D (<40)
+        if (avg >= 80) letter = "A";
+        else if (avg >= 60) letter = "B";
+        else if (avg >= 40) letter = "C";
+        else letter = "D";
+        gpa = 0
+      } else {
+        // High School / Middle Scale (requested)
+        if (avg >= 90) { letter = "A"; gpa = 4.0 }
+        else if (avg >= 80) { letter = "B"; gpa = 3.0 }
+        else if (avg >= 70) { letter = "C"; gpa = 2.0 }
+        else if (avg >= 60) { letter = "D"; gpa = 1.0 }
+        else { letter = "F"; gpa = 0.0 }
+      }
 
       return {
         ...enr,
         average: avg,
         letter,
         gpa,
-        grades: uiGrades
+        grades: uiGrades,
+        level: selectedClass?.level,
+        isKindergarten
       }
     })
 
@@ -167,7 +250,7 @@ export default function PedagogyPage() {
       totalCourses: courses.length,
       gradesByEnrollment
     }
-  }, [selectedClassId, enrollments, courses, allGrades])
+  }, [selectedClassId, selectedClass, enrollments, courses, allGrades])
 
   // Grade distribution for chart
   const distribution = useMemo(() => {
@@ -339,7 +422,6 @@ export default function PedagogyPage() {
   }
 
   // --- CLASS DETAIL VIEW ---
-  const isHighSchool = selectedClass?.level === "high"
 
   return (
     <div className="space-y-6">
@@ -467,13 +549,19 @@ export default function PedagogyPage() {
                         </TableHead>
                       ))}
                       <TableHead className="text-center font-bold bg-primary/5">Overall Avg</TableHead>
+                      {isHighSchool && (
+                        <>
+                          <TableHead className="text-center font-bold">Grade</TableHead>
+                          <TableHead className="text-center font-bold">GPA</TableHead>
+                        </>
+                      )}
                       <TableHead className="text-right font-bold pr-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {classStats?.studentAverages.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={courses.length + 4} className="text-center py-20 text-muted-foreground">
+                        <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="text-center py-20 text-muted-foreground">
                           No student academic records found for this classroom and year.
                         </TableCell>
                       </TableRow>
@@ -481,7 +569,7 @@ export default function PedagogyPage() {
                       <>
                         {reportCards.length === 0 && (
                           <TableRow className="bg-amber-50/50">
-                            <TableCell colSpan={courses.length + 4} className="py-2 text-center text-xs font-medium text-amber-700 border-b border-amber-100">
+                            <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="py-2 text-center text-xs font-medium text-amber-700 border-b border-amber-100">
                               <AlertCircle className="w-3 h-3 inline mr-1" />
                               Report cards haven't been generated for this term yet. Click "Generate Report Cards" above to enable PDF exports.
                             </TableCell>
@@ -506,26 +594,48 @@ export default function PedagogyPage() {
                           </code>
                         </TableCell>
                         {courses.map((course) => {
-                          const grade = student.grades[course.id]
-                          const maxPoints = parseFloat(course.max_points_dw || "10") + parseFloat(course.max_points_exam || "10")
-                          
-                          // Find the raw sum of scores for this student/course from the gradesByEnrollment map
-                          const courseGrades = classStats.gradesByEnrollment?.[student.id]?.[course.id] || []
-                          const rawSum = courseGrades.reduce((acc: number, g: any) => acc + parseFloat(g.score), 0)
+                          const gradeInfo = student.grades[course.id]
+                          const percentage = gradeInfo?.score || '0.0'
+                          const rawSum = gradeInfo?.rawSum || 0
+                          const maxPoints = gradeInfo?.totalMax || (parseFloat(String(course.max_points_dw || "35")) + parseFloat(String(course.max_points_exam || "35"))) || 70
 
                           return (
                             <TableCell key={course.id} className="text-center">
-                              {grade ? (
+                              {gradeInfo ? (
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className={cn(
-                                    "font-bold",
-                                    parseFloat(grade.score) < 50 ? "text-red-500" : parseFloat(grade.score) >= 80 ? "text-emerald-500" : "text-primary"
-                                  )}>
-                                    {grade.score}%
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                    {rawSum.toFixed(1)} / {maxPoints}
-                                  </span>
+                                  {student.isKindergarten ? (
+                                    <div className="flex flex-col items-center">
+                                      {parseFloat(percentage) >= 90 ? (
+                                        <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-none gap-1">
+                                          <span className="text-xs">🌟</span> Expert
+                                        </Badge>
+                                      ) : parseFloat(percentage) >= 75 ? (
+                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none gap-1">
+                                          <span className="text-xs">✅</span> Mastered
+                                        </Badge>
+                                      ) : parseFloat(percentage) >= 50 ? (
+                                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-none gap-1">
+                                          <span className="text-xs">🚧</span> Developing
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none gap-1">
+                                          <span className="text-xs">❌</span> Emerging
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <span className={cn(
+                                        "font-bold",
+                                        parseFloat(percentage) < 50 ? "text-red-500" : parseFloat(percentage) >= 80 ? "text-emerald-500" : "text-primary"
+                                      )}>
+                                        {percentage}%
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                        {Math.round(rawSum)} / {maxPoints}
+                                      </span>
+                                    </>
+                                  )}
                                 </div>
                               ) : (
                                 <span className="text-muted-foreground text-xs italic">-</span>
@@ -534,14 +644,29 @@ export default function PedagogyPage() {
                           )
                         })}
                         <TableCell className="text-center bg-muted/10 font-bold">
-                          <div className={cn(
-                            "inline-flex items-center justify-center w-12 h-12 rounded-full border-2",
-                            student.average < 50 ? "border-red-200 text-red-600 bg-red-50" : 
-                            student.average >= 80 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : 
-                            "border-blue-200 text-blue-600 bg-blue-50"
-                          )}>
-                            {student.average.toFixed(0)}%
-                          </div>
+                          {student.isKindergarten ? (
+                            <div className={cn(
+                              "inline-flex flex-col items-center justify-center min-w-[80px] p-2 rounded-xl border-2",
+                              student.average >= 90 ? "border-purple-200 text-purple-700 bg-purple-50" : 
+                              student.average >= 75 ? "border-green-200 text-green-700 bg-green-50" : 
+                              student.average >= 50 ? "border-amber-200 text-amber-700 bg-amber-50" : 
+                              "border-red-200 text-red-700 bg-red-50"
+                            )}>
+                              <span className="text-[10px] uppercase font-black opacity-60">Status</span>
+                              <span className="text-xs font-bold leading-tight">
+                                {student.letter}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className={cn(
+                              "inline-flex items-center justify-center w-12 h-12 rounded-full border-2",
+                              student.average < 50 ? "border-red-200 text-red-600 bg-red-50" : 
+                              student.average >= 80 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : 
+                              "border-blue-200 text-blue-600 bg-blue-50"
+                            )}>
+                              {student.average.toFixed(0)}%
+                            </div>
+                          )}
                         </TableCell>
                         {isHighSchool && (
                           <>
@@ -623,7 +748,10 @@ export default function PedagogyPage() {
                       ? studentGrades.reduce((acc: number, g: any) => acc + parseFloat(g.score), 0) / studentGrades.length 
                       : 0
 
-                    const maxPointsTotal = parseFloat(course.max_points_dw || "10") + parseFloat(course.max_points_exam || "10")
+                    const dw = parseFloat(String(course.max_points_dw || "0")) || 0
+                    const exam = parseFloat(String(course.max_points_exam || "0")) || 0
+                    const total = parseFloat(String(course.max_points_total || "0")) || 0
+                    const maxPointsTotal = total || (dw + exam) || 20
 
                     return (
                       <TableRow key={course.id} className="hover:bg-muted/5 group">

@@ -12,28 +12,30 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
       if (classId) params.append("classroom", classId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
+      params.append("page_size", "1000");
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
       
       const { data } = await axiosInstance.get(url);
-      const parsed = paginatedCourseSchema.parse(data);
-      return parsed;
+      return data;
     },
   });
 }
 
-export function useGrades(enrollmentId?: number, academicYearId?: number, termId?: number, page: number = 1, search?: string) {
+export function useGrades(enrollmentId?: number, academicYearId?: number, termId?: number, page: number = 1, search?: string, classId?: number) {
   return useQuery({
-    queryKey: ["grades", enrollmentId, academicYearId, termId, page, search],
+    queryKey: ["grades", enrollmentId, academicYearId, termId, page, search, classId],
     queryFn: async () => {
       let url = "/academics/grades/";
       const params = new URLSearchParams();
       if (enrollmentId) params.append("enrollment", enrollmentId.toString());
       if (academicYearId) params.append("enrollment__academic_year", academicYearId.toString());
       if (termId) params.append("assessment__term", termId.toString());
+      if (classId) params.append("assessment__course__classroom", classId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
+      params.append("page_size", "5000");
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
@@ -54,6 +56,7 @@ export function useAssessments(courseId?: number, academicYearId?: number, page:
       if (academicYearId) params.append("term__academic_year", academicYearId.toString());
       if (search) params.append("search", search);
       params.append("page", page.toString());
+      params.append("page_size", "100");
       
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
@@ -110,6 +113,20 @@ export function useUpdateAssessment() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<AssessmentCreate> }) => {
       const response = await axiosInstance.patch(`/academics/assessments/${id}/`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assessments"] });
+    },
+  });
+}
+
+export function useDeleteAssessment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await axiosInstance.delete(`/academics/assessments/${id}/`);
       return response.data;
     },
     onSuccess: () => {

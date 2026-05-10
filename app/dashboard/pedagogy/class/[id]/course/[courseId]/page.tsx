@@ -1,9 +1,20 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useAssessments } from "@/hooks/use-pedagogy"
+import { useAssessments, useDeleteAssessment } from "@/hooks/use-pedagogy"
 import { useAcademicYears, useTerms as useAcademicTerms } from "@/hooks/use-academic-data"
 import { useClassRoom } from "@/hooks/use-academic-data"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,6 +42,7 @@ import {
   AlertCircle,
   BookOpen,
   GraduationCap,
+  Trash2,
 } from "lucide-react"
 import { useState, useMemo } from "react"
 import Link from "next/link"
@@ -72,10 +84,13 @@ export default function CourseAssessmentsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedAssessmentToGrade, setSelectedAssessmentToGrade] = useState<any>(null)
   const [selectedAssessmentToEdit, setSelectedAssessmentToEdit] = useState<any>(null)
+  const [assessmentToDelete, setAssessmentToDelete] = useState<any>(null)
 
   const { data: classItem } = useClassRoom(classId)
   const { data: courseDetail, isLoading: loadingCourse } = useCourseDetail(parseInt(courseId))
   const { data: terms } = useTermsList()
+
+  const { mutate: deleteAssessment, isPending: isDeleting } = useDeleteAssessment()
 
   const termId = selectedTerm && selectedTerm !== "all" ? parseInt(selectedTerm) : undefined
 
@@ -306,6 +321,17 @@ export default function CourseAssessmentsPage() {
                                 Edit
                               </Button>
                             )}
+                            {!assessment.has_grades && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssessmentToDelete(assessment)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 border-destructive/20"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
@@ -335,6 +361,7 @@ export default function CourseAssessmentsPage() {
         }}
         assessment={selectedAssessmentToGrade}
         classId={parseInt(classId)}
+        classLevel={classItem?.level}
       />
 
       <CreateAssessmentDialog
@@ -348,6 +375,40 @@ export default function CourseAssessmentsPage() {
         initialTermId={termId}
         classLevel={classItem?.level}
       />
+
+      <AlertDialog open={!!assessmentToDelete} onOpenChange={(open) => !open && setAssessmentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the assessment "{assessmentToDelete?.title}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (assessmentToDelete) {
+                  deleteAssessment(assessmentToDelete.id, {
+                    onSuccess: () => {
+                      toast.success("Assessment deleted successfully")
+                      setAssessmentToDelete(null)
+                      refetchAssessments()
+                    },
+                    onError: () => {
+                      toast.error("Failed to delete assessment")
+                    }
+                  })
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
