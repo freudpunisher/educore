@@ -8,9 +8,12 @@ export const courseSchema = z.object({
   subject: z.number().nullable().optional(),
   description: z.string().nullable().optional(),
   classroom: z.number(),
-  teacher: z.number(),
-  teacher_name: z.string().optional(),
-  credits: z.string().optional(), // DecimalField is serialized as string
+  teacher: z.number().nullable().optional(),
+  teacher_name: z.string().nullable().optional(),
+  credits: z.any().optional(),
+  max_points_dw: z.any().optional(),
+  max_points_exam: z.any().optional(),
+  max_points_total: z.any().optional(),
 });
 
 export const assessmentTypeSchema = z.object({
@@ -34,6 +37,8 @@ export const assessmentSchema = z.object({
   max_score: z.string(),
   date: z.string().nullable().optional(),
   published: z.boolean(),
+  is_finalized: z.boolean().optional(),
+  has_grades: z.boolean().optional(),
 });
 
 export const assessmentCreateSchema = z.object({
@@ -65,6 +70,7 @@ export const gradeSchema = z.object({
   assessment_display: z.string(),
   course: z.number().optional(),
   course_name: z.string().optional(),
+  assessment_type_code: z.string().optional(),
   term: z.number().optional(),
   score: z.string(),
   percentage: z.number().nullable().optional(),

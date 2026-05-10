@@ -20,7 +20,9 @@ import {
   LayoutDashboard,
   Filter,
   MoreVertical,
-  Play
+  Play,
+  ClipboardList,
+  AlertCircle
 } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useClassRooms, useAcademicYears, useClassRoom } from "@/hooks/use-academic-data"
@@ -67,10 +69,18 @@ export default function PedagogyPage() {
   // Data fetching
   const { data: classrooms = [], isLoading: classroomsLoading } = useClassRooms(classSearch)
   const { data: selectedClass, isLoading: selectedClassLoading } = useClassRoom(selectedClassId || "")
+  const isHighSchool = selectedClass?.level === 'high'
   
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useEnrollments(selectedClassId, selectedYearId)
   const { data: coursesData, isLoading: coursesLoading } = useCourses(selectedClassId, selectedYearId)
-  const { data: gradesData, isLoading: gradesLoading } = useGrades(undefined, selectedYearId) // We fetch grades for the year, we'll filter by enrollment
+  const { data: gradesData, isLoading: gradesLoading } = useGrades(
+    undefined, 
+    selectedYearId, 
+    selectedTermId, 
+    1, 
+    undefined, 
+    selectedClassId
+  )
   const { data: terms = [] } = useTerms(selectedYearId)
   const generateMutation = useGenerateReportCards()
   const downloadMutation = useDownloadReportCardPDF()
@@ -90,39 +100,142 @@ export default function PedagogyPage() {
   }, [user, classrooms, selectedClassId])
 
   // Compute Stats for the selected class
+  // Auto-select first term when terms are loaded
+  useEffect(() => {
+    if (terms.length > 0 && !selectedTermId) {
+      setSelectedTermId(terms[0].id)
+    }
+  }, [terms, selectedTermId])
+
   const classStats = useMemo(() => {
     if (!selectedClassId || enrollments.length === 0) return null
 
     // Map grades by enrollment and course
-    const gradesByEnrollment: Record<number, Record<number, any>> = {}
+    const gradesByEnrollment: Record<number, Record<number, any[]>> = {}
     allGrades.forEach(g => {
       if (!gradesByEnrollment[g.enrollment]) gradesByEnrollment[g.enrollment] = {}
-      // We assume one grade per course/enrollment for simplicity in this dashboard view 
-      // (usually it would be the average of assessments in that course)
-      // Actually, if we have multiple grades for same course, we take average
-      gradesByEnrollment[g.enrollment][g.course!] = g
+      if (!gradesByEnrollment[g.enrollment][g.course!]) gradesByEnrollment[g.enrollment][g.course!] = []
+      gradesByEnrollment[g.enrollment][g.course!].push(g)
     })
 
+    const isHighSchool = selectedClass?.level === 'high'
+    const isPrimary = selectedClass?.level === 'primary' || selectedClass?.level === 'preschool'
+
     const studentAverages = enrollments.map(enr => {
-      const studentGrades = Object.values(gradesByEnrollment[enr.id] || {})
-      const sum = studentGrades.reduce((acc, g) => acc + parseFloat(g.score), 0)
-      const count = studentGrades.length
-      const avg = count > 0 ? sum / count : 0
+      const studentCoursesGrades = gradesByEnrollment[enr.id] || {}
+      const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
+      const hwCodes = ['HOMEWORK']
+      // Everything else is Classwork (CW)
+
+      const coursePercentages = Object.entries(studentCoursesGrades).map(([courseId, courseGrades]) => {
+        const course = courses.find(c => c.id === parseInt(courseId))
+        if (!course) return null
+
+        const dwMax = parseFloat(String(course.max_points_dw || "35")) || 35
+        const examMax = parseFloat(String(course.max_points_exam || "35")) || 35
+        const totalMax = parseFloat(String(course.max_points_total || "0")) || (dwMax + examMax)
+
+        let rawSum = 0
+        let percentage = 0
+
+        if (isHighSchool) {
+          // Weighted Logic for High School
+          const hwGrades = (courseGrades as any[]).filter(g => hwCodes.includes(g.assessment_type_code))
+          const examGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
+          const cwGrades = (courseGrades as any[]).filter(g => !hwCodes.includes(g.assessment_type_code) && !examCodes.includes(g.assessment_type_code))
+
+          const hwAvg = hwGrades.length > 0 ? hwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / hwGrades.length : 100 // Default to 100 if no HW yet? No, 0.
+          const cwAvg = cwGrades.length > 0 ? cwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cwGrades.length : 0
+          const exAvg = examGrades.length > 0 ? examGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / examGrades.length : 0
+
+          // Weights: HW 15%, CW 35%, EX 50%
+          const weightedPct = (hwGrades.length > 0 ? (hwAvg * 0.15) : 0) + 
+                              (cwGrades.length > 0 ? (cwAvg * 0.35) : 0) + 
+                              (examGrades.length > 0 ? (exAvg * 0.50) : 0)
+          
+          // Re-normalize weights if some categories are missing
+          const totalWeight = (hwGrades.length > 0 ? 0.15 : 0) + 
+                             (cwGrades.length > 0 ? 0.35 : 0) + 
+                             (examGrades.length > 0 ? 0.50 : 0)
+          
+          percentage = totalWeight > 0 ? (weightedPct / totalWeight) : 0
+          rawSum = (percentage / 100) * totalMax
+        } else {
+          // Standard Logic for Primary/Middle
+          const cDwGrades = (courseGrades as any[]).filter(g => !examCodes.includes(g.assessment_type_code))
+          const cExGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
+
+          const dwAvgPct = cDwGrades.length > 0 
+            ? cDwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cDwGrades.length 
+            : 0
+          const exAvgPct = cExGrades.length > 0 
+            ? cExGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cExGrades.length 
+            : 0
+
+          const dwScore = (dwAvgPct / 100) * dwMax
+          const exScore = (exAvgPct / 100) * examMax
+          rawSum = dwScore + exScore
+          percentage = totalMax > 0 ? (rawSum / totalMax) * 100 : 0
+        }
+
+        return {
+          courseId: parseInt(courseId),
+          percentage,
+          rawSum,
+          totalMax
+        }
+      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number }[]
+
+      const avg = coursePercentages.length > 0 
+        ? coursePercentages.reduce((acc, cp) => acc + cp.percentage, 0) / coursePercentages.length 
+        : 0
       
-      // Calculate GPA and Letter based on avg if High School
+      const uiGrades: Record<number, any> = {}
+      coursePercentages.forEach(cp => {
+        uiGrades[cp.courseId] = { 
+          score: cp.percentage.toFixed(1),
+          rawSum: cp.rawSum,
+          totalMax: cp.totalMax
+        }
+      })
+
+      const isKindergarten = selectedClass?.level === 'preschool'
+      
+      // Calculate GPA and Letter based on avg
       let letter = "F"
       let gpa = 0
-      if (avg >= 90) { letter = "A"; gpa = 4.0 }
-      else if (avg >= 80) { letter = "B"; gpa = 3.0 }
-      else if (avg >= 70) { letter = "C"; gpa = 2.0 }
-      else if (avg >= 60) { letter = "D"; gpa = 1.0 }
+      
+      if (isKindergarten) {
+        // Kindergarten Scale: Qualitative acquisition levels
+        if (avg >= 90) letter = "Expert";
+        else if (avg >= 75) letter = "Mastered";
+        else if (avg >= 50) letter = "Developing";
+        else letter = "Emerging";
+        gpa = 0
+      } else if (isPrimary) {
+        // Elementary School Scale: A (>80), B (60-80), C (40-60), D (<40)
+        if (avg >= 80) letter = "A";
+        else if (avg >= 60) letter = "B";
+        else if (avg >= 40) letter = "C";
+        else letter = "D";
+        gpa = 0
+      } else {
+        // High School / Middle Scale (requested)
+        if (avg >= 90) { letter = "A"; gpa = 4.0 }
+        else if (avg >= 80) { letter = "B"; gpa = 3.0 }
+        else if (avg >= 70) { letter = "C"; gpa = 2.0 }
+        else if (avg >= 60) { letter = "D"; gpa = 1.0 }
+        else { letter = "F"; gpa = 0.0 }
+      }
 
       return {
         ...enr,
         average: avg,
         letter,
         gpa,
-        grades: gradesByEnrollment[enr.id] || {}
+        grades: uiGrades,
+        level: selectedClass?.level,
+        isKindergarten
       }
     })
 
@@ -134,9 +247,10 @@ export default function PedagogyPage() {
       studentAverages,
       classAverage: classAverage.toFixed(1),
       totalStudents: enrollments.length,
-      totalCourses: courses.length
+      totalCourses: courses.length,
+      gradesByEnrollment
     }
-  }, [selectedClassId, enrollments, courses, allGrades])
+  }, [selectedClassId, selectedClass, enrollments, courses, allGrades])
 
   // Grade distribution for chart
   const distribution = useMemo(() => {
@@ -164,35 +278,49 @@ export default function PedagogyPage() {
     }
   }
 
-  const { data: reportCardsData } = useReportCards(selectedYearId)
+  const { data: reportCardsData } = useReportCards(selectedYearId, selectedClassId, selectedTermId)
   const reportCards = reportCardsData?.results || []
 
   const handleDownloadPdf = async (enrollmentId: number) => {
+    console.log("Downloading PDF for enrollment:", enrollmentId, "Term:", selectedTermId)
     if (!selectedTermId) {
-       toast.error("Select a term first to export the bulletin.")
+       toast.error("Please select a term first.")
        return
     }
     
-    // Find the report card for this enrollment and term
-    const report = reportCards.find(r => r.enrollment === enrollmentId && r.term === selectedTermId)
+    // Robust matching for enrollment and term (handles both IDs and objects)
+    const report = reportCards.find(r => {
+      const rEnrollmentId = typeof r.enrollment === 'object' ? r.enrollment.id : r.enrollment
+      const rTermId = typeof r.term === 'object' ? r.term.id : r.term
+      return rEnrollmentId === enrollmentId && rTermId === selectedTermId
+    })
     
     if (!report) {
+      console.warn("Report card not found in the loaded list.", { enrollmentId, selectedTermId, availableReports: reportCards })
       toast.error("Report card not found for this term. Please generate it first.")
       return
     }
 
     try {
-      const blob = await downloadMutation.mutateAsync(report.id)
-      const url = window.URL.createObjectURL(new Blob([blob]))
+      toast.loading("Generating PDF...", { id: "downloading" })
+      const data = await downloadMutation.mutateAsync(report.id)
+      
+      // Axios with responseType: 'blob' returns the blob in response.data
+      // If the hook returns response.data, then 'data' is the Blob.
+      const blob = data instanceof Blob ? data : new Blob([data], { type: 'application/pdf' })
+      
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
-      link.setAttribute("download", `report_card_${report.id}.pdf`)
+      link.setAttribute("download", `bulletin_${enrollmentId}_term_${selectedTermId}.pdf`)
       document.body.appendChild(link)
       link.click()
       link.parentNode?.removeChild(link)
       window.URL.revokeObjectURL(url)
-    } catch (error) {
-      toast.error("Failed to download PDF")
+      toast.success("Download started", { id: "downloading" })
+    } catch (error: any) {
+      console.error("PDF Download Error:", error)
+      toast.error(error.message || "Failed to download PDF", { id: "downloading" })
     }
   }
 
@@ -294,7 +422,6 @@ export default function PedagogyPage() {
   }
 
   // --- CLASS DETAIL VIEW ---
-  const isHighSchool = selectedClass?.level === "high"
 
   return (
     <div className="space-y-6">
@@ -333,9 +460,17 @@ export default function PedagogyPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleGenerateGroupReportCards} disabled={!selectedTermId || generateMutation.isPending}>
-            {generateMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Play className="w-4 h-4 mr-2" />}
-            Export Group Bulletins
+          <Button 
+            onClick={handleGenerateGroupReportCards} 
+            disabled={!selectedTermId || generateMutation.isPending}
+            className="bg-emerald-600 hover:bg-emerald-700"
+          >
+            {generateMutation.isPending ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <ClipboardList className="w-4 h-4 mr-2" />
+            )}
+            Generate Report Cards
           </Button>
         </div>
       </div>
@@ -406,32 +541,42 @@ export default function PedagogyPage() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/20 hover:bg-muted/20">
-                      <TableHead className="w-[200px] font-bold">Student</TableHead>
-                      <TableHead className="font-bold">ID / Number</TableHead>
+                      <TableHead className="w-[200px] font-bold">Student Name</TableHead>
+                      <TableHead className="w-[120px] font-bold">ID Number</TableHead>
                       {courses.map(course => (
-                        <TableHead key={course.id} className="text-center font-bold min-w-[100px]">
-                          {course.name || course.code}
+                        <TableHead key={course.id} className="text-center font-bold">
+                          {course.code}
                         </TableHead>
                       ))}
-                      <TableHead className="text-center font-bold bg-muted/30">Average</TableHead>
+                      <TableHead className="text-center font-bold bg-primary/5">Overall Avg</TableHead>
                       {isHighSchool && (
                         <>
-                          <TableHead className="text-center font-bold">Letter</TableHead>
+                          <TableHead className="text-center font-bold">Grade</TableHead>
                           <TableHead className="text-center font-bold">GPA</TableHead>
                         </>
                       )}
-                      <TableHead className="text-right font-bold pr-6">Report</TableHead>
+                      <TableHead className="text-right font-bold pr-6">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {enrollmentsLoading ? (
+                    {classStats?.studentAverages.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={courses.length + 5} className="text-center py-20">
-                          <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" />
+                        <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="text-center py-20 text-muted-foreground">
+                          No student academic records found for this classroom and year.
                         </TableCell>
                       </TableRow>
-                    ) : classStats?.studentAverages.map((student) => (
-                      <TableRow key={student.id} className="hover:bg-muted/5 group">
+                    ) : (
+                      <>
+                        {reportCards.length === 0 && (
+                          <TableRow className="bg-amber-50/50">
+                            <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="py-2 text-center text-xs font-medium text-amber-700 border-b border-amber-100">
+                              <AlertCircle className="w-3 h-3 inline mr-1" />
+                              Report cards haven't been generated for this term yet. Click "Generate Report Cards" above to enable PDF exports.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {classStats?.studentAverages.map((student) => (
+                          <TableRow key={student.id} className="hover:bg-muted/5 group">
                         <TableCell className="font-medium">
                           <Link 
                             href={`/dashboard/pedagogy/class/${selectedClassId}/student/${student.id}`}
@@ -448,28 +593,80 @@ export default function PedagogyPage() {
                             {student.enrollment_number || 'N/A'}
                           </code>
                         </TableCell>
-                        {courses.map(course => {
-                          const grade = student.grades[course.id]
-                          const score = grade ? parseFloat(grade.score).toFixed(1) : '-'
+                        {courses.map((course) => {
+                          const gradeInfo = student.grades[course.id]
+                          const percentage = gradeInfo?.score || '0.0'
+                          const rawSum = gradeInfo?.rawSum || 0
+                          const maxPoints = gradeInfo?.totalMax || (parseFloat(String(course.max_points_dw || "35")) + parseFloat(String(course.max_points_exam || "35"))) || 70
+
                           return (
-                            <TableCell key={course.id} className="text-center font-medium">
-                              <span className={cn(
-                                grade ? (parseFloat(grade.score) < 50 ? "text-red-500" : "text-foreground") : "text-muted-foreground"
-                              )}>
-                                {score}
-                              </span>
+                            <TableCell key={course.id} className="text-center">
+                              {gradeInfo ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  {student.isKindergarten ? (
+                                    <div className="flex flex-col items-center">
+                                      {parseFloat(percentage) >= 90 ? (
+                                        <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-none gap-1">
+                                          <span className="text-xs">🌟</span> Expert
+                                        </Badge>
+                                      ) : parseFloat(percentage) >= 75 ? (
+                                        <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-none gap-1">
+                                          <span className="text-xs">✅</span> Mastered
+                                        </Badge>
+                                      ) : parseFloat(percentage) >= 50 ? (
+                                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 border-none gap-1">
+                                          <span className="text-xs">🚧</span> Developing
+                                        </Badge>
+                                      ) : (
+                                        <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-none gap-1">
+                                          <span className="text-xs">❌</span> Emerging
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <>
+                                      <span className={cn(
+                                        "font-bold",
+                                        parseFloat(percentage) < 50 ? "text-red-500" : parseFloat(percentage) >= 80 ? "text-emerald-500" : "text-primary"
+                                      )}>
+                                        {percentage}%
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground font-medium bg-muted/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                        {Math.round(rawSum)} / {maxPoints}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-xs italic">-</span>
+                              )}
                             </TableCell>
                           )
                         })}
                         <TableCell className="text-center bg-muted/10 font-bold">
-                          <div className={cn(
-                            "inline-flex items-center justify-center w-12 h-12 rounded-full border-2",
-                            student.average < 50 ? "border-red-200 text-red-600 bg-red-50" : 
-                            student.average >= 80 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : 
-                            "border-blue-200 text-blue-600 bg-blue-50"
-                          )}>
-                            {student.average.toFixed(0)}%
-                          </div>
+                          {student.isKindergarten ? (
+                            <div className={cn(
+                              "inline-flex flex-col items-center justify-center min-w-[80px] p-2 rounded-xl border-2",
+                              student.average >= 90 ? "border-purple-200 text-purple-700 bg-purple-50" : 
+                              student.average >= 75 ? "border-green-200 text-green-700 bg-green-50" : 
+                              student.average >= 50 ? "border-amber-200 text-amber-700 bg-amber-50" : 
+                              "border-red-200 text-red-700 bg-red-50"
+                            )}>
+                              <span className="text-[10px] uppercase font-black opacity-60">Status</span>
+                              <span className="text-xs font-bold leading-tight">
+                                {student.letter}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className={cn(
+                              "inline-flex items-center justify-center w-12 h-12 rounded-full border-2",
+                              student.average < 50 ? "border-red-200 text-red-600 bg-red-50" : 
+                              student.average >= 80 ? "border-emerald-200 text-emerald-600 bg-emerald-50" : 
+                              "border-blue-200 text-blue-600 bg-blue-50"
+                            )}>
+                              {student.average.toFixed(0)}%
+                            </div>
+                          )}
                         </TableCell>
                         {isHighSchool && (
                           <>
@@ -495,7 +692,9 @@ export default function PedagogyPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                  </TableBody>
+                  </>
+                )}
+              </TableBody>
                 </Table>
               </div>
             </CardContent>
@@ -504,77 +703,135 @@ export default function PedagogyPage() {
 
         {/* --- COURSES TAB --- */}
         <TabsContent value="courses" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {courses.map((course) => {
-              // Get class avg for this course
-              const studentGrades = classStats?.studentAverages.map(s => s.grades[course.id]).filter(Boolean) || []
-              const courseAvg = studentGrades.length > 0 
-                ? studentGrades.reduce((acc, g) => acc + parseFloat(g.score), 0) / studentGrades.length 
-                : 0
+          <Card className="shadow-sm overflow-hidden border-muted/60">
+            <CardHeader className="bg-muted/10 border-b border-muted/60">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">Assigned Courses</CardTitle>
+                <Badge variant="outline" className="bg-white">{courses.length} Courses</Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {coursesLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : !coursesData ? (
+                <div className="flex flex-col items-center justify-center py-20 text-destructive gap-2">
+                  <AlertCircle className="w-8 h-8" />
+                  <p className="font-medium">Failed to load courses</p>
+                  <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                  <TableRow className="bg-muted/20 hover:bg-muted/20">
+                    <TableHead className="w-[120px] font-bold">Code</TableHead>
+                    <TableHead className="font-bold">Course Name</TableHead>
+                    <TableHead className="font-bold">Teacher</TableHead>
+                    <TableHead className="text-center font-bold">Credits</TableHead>
+                    <TableHead className="text-center font-bold">Max Points</TableHead>
+                    <TableHead className="text-center font-bold">Class Average</TableHead>
+                    <TableHead className="text-right font-bold pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {courses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-20 text-muted-foreground">
+                        No courses assigned to this classroom.
+                      </TableCell>
+                    </TableRow>
+                  ) : courses.map((course) => {
+                    // Get class avg for this course
+                    const studentGrades = classStats?.studentAverages?.map((s: any) => s.grades[course.id]).filter(Boolean) || []
+                    const courseAvg = studentGrades.length > 0 
+                      ? studentGrades.reduce((acc: number, g: any) => acc + parseFloat(g.score), 0) / studentGrades.length 
+                      : 0
 
-              return (
-                <Card key={course.id} className="border-muted/60 hover:shadow-md transition-shadow">
-                  <CardHeader className="flex flex-row items-start justify-between pb-2">
-                    <div className="cursor-pointer" onClick={() => router.push(`/dashboard/pedagogy/class/${selectedClassId}/course/${course.id}`)}>
-                      <Badge variant="outline" className="mb-2">{course.code}</Badge>
-                      <CardTitle className="text-lg hover:text-primary transition-colors">{course.name}</CardTitle>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => router.push(`/dashboard/pedagogy/class/${selectedClassId}/course/${course.id}`)}
-                      >
-                        <LayoutDashboard className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="icon" 
-                        className="h-8 w-8"
-                        onClick={() => {
-                          setActiveCourseForAssessment(course.id)
-                          setIsCreateAssessmentOpen(true)
-                        }}
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Teacher</span>
-                        <span className="font-medium">{course.teacher_name || 'Unassigned'}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">Credits</span>
-                        <Badge variant="secondary" className="font-mono">{course.credits} Cr.</Badge>
-                      </div>
-                      <div className="pt-4 border-t">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold uppercase text-muted-foreground tracking-tighter">Class Average</span>
-                          <span className={cn(
-                            "text-lg font-bold",
-                            courseAvg < 50 ? "text-red-500" : courseAvg >= 80 ? "text-emerald-500" : "text-primary"
-                          )}>{courseAvg.toFixed(1)}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    const dw = parseFloat(String(course.max_points_dw || "0")) || 0
+                    const exam = parseFloat(String(course.max_points_exam || "0")) || 0
+                    const total = parseFloat(String(course.max_points_total || "0")) || 0
+                    const maxPointsTotal = total || (dw + exam) || 20
+
+                    return (
+                      <TableRow key={course.id} className="hover:bg-muted/5 group">
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">{course.code}</Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">
                           <div 
-                            className={cn(
-                              "h-full rounded-full transition-all duration-500",
-                              courseAvg < 50 ? "bg-red-500" : courseAvg >= 80 ? "bg-emerald-500" : "bg-primary"
-                            )}
-                            style={{ width: `${courseAvg}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                            className="cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => router.push(`/dashboard/pedagogy/class/${selectedClassId}/course/${course.id}`)}
+                          >
+                            {course.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold">
+                              {course.teacher_name?.charAt(0) || '?'}
+                            </div>
+                            <span className="text-sm">{course.teacher_name || 'Unassigned'}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-mono text-sm">{course.credits}</span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="secondary" className="font-mono bg-blue-50 text-blue-700 border-blue-100">
+                            {maxPointsTotal} pts
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <span className={cn(
+                              "font-bold",
+                              courseAvg < 50 ? "text-red-500" : courseAvg >= 80 ? "text-emerald-500" : "text-primary"
+                            )}>
+                              {courseAvg.toFixed(1)}%
+                            </span>
+                            <div className="h-1 w-16 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  courseAvg < 50 ? "bg-red-500" : courseAvg >= 80 ? "bg-emerald-500" : "bg-primary"
+                                )}
+                                style={{ width: `${courseAvg}%` }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right pr-6">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={() => router.push(`/dashboard/pedagogy/class/${selectedClassId}/course/${course.id}`)}
+                            >
+                              <LayoutDashboard className="w-4 h-4 mr-1" /> View
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-8 px-2 text-primary hover:text-primary hover:bg-primary/10"
+                              onClick={() => {
+                                setActiveCourseForAssessment(course.id)
+                                setIsCreateAssessmentOpen(true)
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-1" /> Assessment
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* --- STATISTICS TAB --- */}

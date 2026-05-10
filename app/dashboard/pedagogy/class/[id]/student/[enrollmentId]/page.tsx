@@ -51,14 +51,18 @@ export default function StudentAcademicDetailsPage() {
     return grouped
   }, [grades])
 
-  // Calculate course averages
+  // Calculate course averages based on max_points_total (dw + exam)
   const courseAverages = useMemo(() => {
     return courses.map(course => {
       const courseGrades = gradesByCourse[course.id] || []
-      const avg = courseGrades.length > 0 
-        ? courseGrades.reduce((acc, g) => acc + parseFloat(g.score), 0) / courseGrades.length 
-        : 0
-      return { ...course, average: avg, grades: courseGrades }
+      const sumScores = courseGrades.reduce((acc, g) => acc + parseFloat(g.score), 0)
+      const dw = parseFloat(String(course.max_points_dw || "0")) || 0
+      const exam = parseFloat(String(course.max_points_exam || "0")) || 0
+      const total = parseFloat(String(course.max_points_total || "0")) || 0
+      const maxPointsTotal = total || (dw + exam) || 20
+      
+      const avg = maxPointsTotal > 0 ? (sumScores / maxPointsTotal) * 100 : 0
+      return { ...course, average: avg, grades: courseGrades, maxPointsTotal }
     })
   }, [courses, gradesByCourse])
 
@@ -192,6 +196,7 @@ export default function StudentAcademicDetailsPage() {
                     )}>
                       {course.average.toFixed(1)}%
                     </div>
+                    <div className="text-[10px] text-muted-foreground">/ {course.maxPointsTotal} pts</div>
                   </div>
                 </div>
               </CardHeader>
@@ -203,7 +208,7 @@ export default function StudentAcademicDetailsPage() {
                       <TableHead>Date</TableHead>
                       <TableHead className="text-center">Score</TableHead>
                       <TableHead className="text-center">Max</TableHead>
-                      <TableHead className="text-center">%</TableHead>
+                      <TableHead className="text-center">% (Total)</TableHead>
                       <TableHead>Comment</TableHead>
                     </TableRow>
                   </TableHeader>

@@ -1,9 +1,20 @@
 "use client"
 
 import { useParams, useRouter } from "next/navigation"
-import { useAssessments } from "@/hooks/use-pedagogy"
+import { useAssessments, useDeleteAssessment } from "@/hooks/use-pedagogy"
 import { useAcademicYears, useTerms as useAcademicTerms } from "@/hooks/use-academic-data"
 import { useClassRoom } from "@/hooks/use-academic-data"
+import { toast } from "sonner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,6 +42,7 @@ import {
   AlertCircle,
   BookOpen,
   GraduationCap,
+  Trash2,
 } from "lucide-react"
 import { useState, useMemo } from "react"
 import Link from "next/link"
@@ -69,15 +81,20 @@ export default function CourseAssessmentsPage() {
 
   const [selectedTerm, setSelectedTerm] = useState<string>("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isEditOpen, setIsEditOpen] = useState(false)
   const [selectedAssessmentToGrade, setSelectedAssessmentToGrade] = useState<any>(null)
+  const [selectedAssessmentToEdit, setSelectedAssessmentToEdit] = useState<any>(null)
+  const [assessmentToDelete, setAssessmentToDelete] = useState<any>(null)
 
   const { data: classItem } = useClassRoom(classId)
   const { data: courseDetail, isLoading: loadingCourse } = useCourseDetail(parseInt(courseId))
   const { data: terms } = useTermsList()
 
+  const { mutate: deleteAssessment, isPending: isDeleting } = useDeleteAssessment()
+
   const termId = selectedTerm && selectedTerm !== "all" ? parseInt(selectedTerm) : undefined
 
-  const { data: assessmentData, isLoading: loadingAssessments } = useAssessments(parseInt(courseId), undefined, 1, undefined)
+  const { data: assessmentData, isLoading: loadingAssessments, refetch: refetchAssessments } = useAssessments(parseInt(courseId), undefined, 1, undefined)
 
   // Filter by term client-side if selected (term filter on API requires academic_year, not term directly)
   const allAssessments = assessmentData?.results || []
@@ -274,27 +291,57 @@ export default function CourseAssessmentsPage() {
                           <span className="font-mono">{assessment.max_score}</span>
                         </TableCell>
                         <TableCell>
-                          {assessment.published ? (
-                            <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100">
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              Published
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">
-                              Draft
-                            </Badge>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            {assessment.has_grades ? (
+                              <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 w-fit">
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                Graded
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-amber-700 border-amber-200 bg-amber-50 hover:bg-amber-50 w-fit">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Pending
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className="bg-primary/10 text-primary hover:bg-primary/20"
-                            onClick={() => setSelectedAssessmentToGrade(assessment)}
-                          >
-                            <GraduationCap className="w-3.5 h-3.5 mr-1" />
-                            Grade
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {!assessment.has_grades && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedAssessmentToEdit(assessment)
+                                  setIsEditOpen(true)
+                                }}
+                                className="text-muted-foreground hover:text-primary h-8"
+                              >
+                                <ClipboardList className="w-4 h-4 mr-1" />
+                                Edit
+                              </Button>
+                            )}
+                            {!assessment.has_grades && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssessmentToDelete(assessment)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 border-destructive/20"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedAssessmentToGrade(assessment)}
+                              className="bg-primary/5 text-primary hover:bg-primary/10 h-8 border-primary/20"
+                            >
+                              <GraduationCap className="w-4 h-4 mr-1" />
+                              Grade
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     )
@@ -308,10 +355,60 @@ export default function CourseAssessmentsPage() {
 
       <GradingDialog 
         isOpen={!!selectedAssessmentToGrade}
-        onClose={() => setSelectedAssessmentToGrade(null)}
+        onClose={() => {
+          setSelectedAssessmentToGrade(null)
+          refetchAssessments()
+        }}
         assessment={selectedAssessmentToGrade}
         classId={parseInt(classId)}
+        classLevel={classItem?.level}
       />
+
+      <CreateAssessmentDialog
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false)
+          setSelectedAssessmentToEdit(null)
+        }}
+        assessment={selectedAssessmentToEdit}
+        initialCourseId={parseInt(courseId)}
+        initialTermId={termId}
+        classLevel={classItem?.level}
+      />
+
+      <AlertDialog open={!!assessmentToDelete} onOpenChange={(open) => !open && setAssessmentToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the assessment "{assessmentToDelete?.title}".
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (assessmentToDelete) {
+                  deleteAssessment(assessmentToDelete.id, {
+                    onSuccess: () => {
+                      toast.success("Assessment deleted successfully")
+                      setAssessmentToDelete(null)
+                      refetchAssessments()
+                    },
+                    onError: () => {
+                      toast.error("Failed to delete assessment")
+                    }
+                  })
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
