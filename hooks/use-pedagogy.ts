@@ -220,6 +220,48 @@ export function useGeneratePreschoolAnnualReportCards() {
   });
 }
 
+export function useGenerateElementaryAnnualReportCards() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { academic_year: number; classroom?: number; enrollment?: number }) => {
+      const response = await axiosInstance.post("/academics/report-cards/generate-elementary-annual/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report-cards"] });
+    },
+  });
+}
+
+export function useGenerateMiddleSchoolAnnualReportCards() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { classroom?: number; enrollment?: number }) => {
+      const response = await axiosInstance.post("/academics/report-cards/generate_middle_school_annual/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report-cards"] });
+    },
+  });
+}
+
+export function useGenerateHighSchoolAnnualReportCards() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { classroom?: number; enrollment?: number }) => {
+      const response = await axiosInstance.post("/academics/report-cards/generate_high_school_annual/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["report-cards"] });
+    },
+  });
+}
+
 export function useCreateGrade() {
   const queryClient = useQueryClient();
 
