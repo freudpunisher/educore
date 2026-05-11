@@ -11,23 +11,26 @@ export const feesDetailSchema = z.object({
     fee_category_name: z.string(),
     priority: z.number(),
     priority_name: z.string(),
-    period: z.number(),
-    period_name: z.string(),
+    period: z.number().nullable().optional(),
+    period_name: z.string().nullable().optional(),
 });
 
 export const invoiceSchema = z.object({
     id: z.number(),
-    reference: z.string(),
-    fees: z.number(),
-    fees_detail: feesDetailSchema,
+    reference: z.string().nullable().optional().default(""),
+    fees: z.number().nullable().optional(),
+    fees_detail: feesDetailSchema.nullable().optional(),
     entity: z.number(),
     entity_name: z.string(),
     entity_id: z.number(),
-    student_name: z.string().nullable(),
+    student_id: z.number().nullable().optional(),
+    student_name: z.string().nullable().optional(),
     status: z.number(),
     status_name: z.string(),
     amount: z.string(),
     date: z.string(), // "2026-03-18 13:26"
+    period: z.number().nullable().optional(),
+    period_name: z.string().nullable().optional(),
 });
 
 export const paginatedInvoiceSchema = createPaginatedSchema(invoiceSchema);

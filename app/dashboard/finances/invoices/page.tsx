@@ -44,7 +44,11 @@ export default function InvoicesPage() {
         search: searchQuery || undefined,
     });
 
-    const invoices = data?.results || [];
+    const invoices = [...(data?.results || [])].sort((a, b) => {
+        const priorityA = a.fees_detail?.priority ?? 999;
+        const priorityB = b.fees_detail?.priority ?? 999;
+        return priorityA - priorityB;
+    });
     const totalCount = data?.count || 0;
 
     const resetFilters = () => {

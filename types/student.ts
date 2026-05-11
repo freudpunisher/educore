@@ -143,17 +143,17 @@ export const studentAccountInfoSchema = z.object({
 }).passthrough();
 
 export const studentDetailSchema = z.object({
-  id: z.coerce.number(),
-  enrollment_number: z.string(),
-  first_name: z.string().nullable(),
-  last_name: z.string().nullable(),
-  full_name: z.string(),
-  gender: z.coerce.number(),
-  date_of_birth: z.union([z.string(), z.date()]).nullable().transform((val) => (val ? new Date(val) : null)),
+  id: z.coerce.number().optional().default(0),
+  enrollment_number: z.string().optional().default("N/A"),
+  first_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(),
+  full_name: z.string().optional().default("Unknown Student"),
+  gender: z.coerce.number().optional().default(0),
+  date_of_birth: z.union([z.string(), z.date()]).nullable().optional().transform((val) => (val ? new Date(val) : null)),
   enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   enrollment_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   is_enrolled: z.coerce.boolean().optional(),
-  is_validated: z.coerce.boolean().optional(),
+  is_validate: z.coerce.boolean().optional(),
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   account: z.any().optional(),
   parent_contact: z.string().nullish(),
@@ -167,8 +167,9 @@ export const studentDetailSchema = z.object({
     class_name: z.string(),
     academic_year: z.string(),
   }).nullable().optional(),
-}).passthrough().transform((data) => ({
+}).passthrough().transform((data: any) => ({
   ...data,
+  is_validate: data.is_validate ?? data.is_validated ?? false,
   parents_info: data.responsables || data.parents_info || [],
   account_info: data.account || data.account_info,
 }));

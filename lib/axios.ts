@@ -47,7 +47,8 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     // If the response follows the standard format, we return 'data' directly
-    if (response.data && response.data.status === "success") {
+    const isSuccess = response.data && (response.data.status === "success" || response.data.success === true);
+    if (isSuccess && response.data.data) {
       return {
         ...response,
         data: response.data.data,

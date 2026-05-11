@@ -208,82 +208,115 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {invoices.map((invoice) => (
-                        <TableRow key={invoice.id} className="group hover:bg-muted/30 transition-colors">
-                            <TableCell>
-                                <div className="flex flex-col">
-                                    <span className="font-mono text-xs font-bold text-primary">{invoice.reference}</span>
-                                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{invoice.fees_detail.code}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors">
-                                        <User className="h-4 w-4 text-primary" />
-                                    </div>
+                    {invoices.map((invoice) => {
+                        const blockingInvoice = invoices.find(other =>
+                            other.student_id === invoice.student_id &&
+                            other.status === 0 &&
+                            (other.fees_detail?.priority ?? 999) < (invoice.fees_detail?.priority ?? 999)
+                        );
+                        const isBlocked = !!blockingInvoice;
+
+                        return (
+                            <TableRow key={invoice.id} className={cn("group hover:bg-muted/30 transition-colors", isBlocked && "opacity-80")}>
+                                <TableCell>
                                     <div className="flex flex-col">
-                                        <span className="font-medium">{invoice.student_name || "Institutional Fee"}</span>
-                                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">{invoice.fees_detail.label}</span>
+                                        <span className="font-mono text-xs font-bold text-primary">{invoice.reference}</span>
+                                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{invoice.fees_detail?.code}</span>
                                     </div>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className="bg-background font-medium">
-                                    {invoice.fees_detail.fee_category_name}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex flex-col">
-                                    <span className="text-base font-bold">
-                                        {Number(invoice.amount).toLocaleString("en-US")} FBU
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground">Incl. {invoice.fees_detail.period_name}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{invoice.date}</span>
-                                </div>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={invoice.status === 1 ? "default" : "destructive"}>
-                                    {invoice.status_name}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
-                                {invoice.status === 0 && (
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors">
+                                            <User className="h-4 w-4 text-primary" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{invoice.student_name || "Institutional Fee"}</span>
+                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">{invoice.fees_detail?.label}</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                        <Badge variant="outline" className="bg-background font-medium w-fit">
+                                            {invoice.fees_detail?.fee_category_name}
+                                        </Badge>
+                                        <div className="flex items-center gap-1">
+                                            <div className={cn(
+                                                "w-1.5 h-1.5 rounded-full",
+                                                (invoice.fees_detail?.priority ?? 999) <= 1 ? "bg-red-500" :
+                                                    (invoice.fees_detail?.priority ?? 999) <= 3 ? "bg-amber-500" : "bg-blue-500"
+                                            )} />
+                                            <span className="text-[10px] font-bold text-muted-foreground uppercase">Priority {invoice.fees_detail?.priority}</span>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <span className="text-base font-bold">
+                                            {Number(invoice.amount).toLocaleString("en-US")} FBU
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground">Incl. {invoice.fees_detail?.period_name}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{invoice.date}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={invoice.status === 1 ? "default" : "destructive"}>
+                                        {invoice.status_name}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right pr-6 space-x-2 whitespace-nowrap">
+                                    {invoice.status === 0 && (
+                                        <div className="inline-flex flex-col items-end gap-1">
+                                            <Button
+                                                variant={isBlocked ? "outline" : "default"}
+                                                size="sm"
+                                                className={cn(
+                                                    !isBlocked && "bg-primary text-primary-foreground hover:bg-primary/90",
+                                                    isBlocked && "cursor-not-allowed grayscale"
+                                                )}
+                                                onClick={() => {
+                                                    if (isBlocked) {
+                                                        toast.error(`Please pay high-priority invoice (${blockingInvoice.fees_detail?.label}) first.`);
+                                                        return;
+                                                    }
+                                                    setSelectedInvoice(invoice);
+                                                    setPaymentAmount(invoice.amount.toString());
+                                                    setPaymentMode("1");
+                                                    setSelectedFile(null);
+                                                    setIsDialogOpen(true);
+                                                }}
+                                            >
+                                                <DollarSign className="h-3 w-3 mr-1" />
+                                                Pay
+                                            </Button>
+                                            {isBlocked && (
+                                                <span className="text-[9px] font-bold text-destructive uppercase tracking-tighter">
+                                                    Priority Required
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
                                     <Button
-                                        variant="default"
+                                        variant="outline"
                                         size="sm"
-                                        className="bg-primary text-primary-foreground hover:bg-primary/90"
-                                        onClick={() => {
-                                            setSelectedInvoice(invoice);
-                                            setPaymentAmount(invoice.amount.toString());
-                                            setPaymentMode("1");
-                                            setSelectedFile(null);
-                                            setIsDialogOpen(true);
-                                        }}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                                        onClick={() => handlePrint(invoice)}
+                                        title="Print Invoice"
                                     >
-                                        <DollarSign className="h-3 w-3 mr-1" />
-                                        Pay
+                                        <Printer className="h-4 w-4" />
                                     </Button>
-                                )}
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                                    onClick={() => handlePrint(invoice)}
-                                    title="Print Invoice"
-                                >
-                                    <Printer className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" title="View Details">
-                                    <ArrowRight className="h-4 w-4" />
-                                </Button>
-                            </TableCell>
-                        </TableRow>
-                    ))}
+                                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity" title="View Details">
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })}
                 </TableBody>
             </Table>
 
