@@ -18,7 +18,7 @@ export default function StudentsPage() {
     page,
     search: search || undefined,
     academic_year: academicYear,
-    class_room: classroom,
+    classroom: classroom,
   });
 
   const { data: years = [] } = useAcademicYears();

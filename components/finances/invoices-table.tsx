@@ -67,7 +67,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
               <div class="receipt">
                  <div class="header">
                      <div>
-                         <div class="logo">EduCore</div>
+                         <img src="/logo.png" style="height: 60px; margin-bottom: 10px;" alt="Institutional Logo" />
                          <div class="subtitle">123 Education Boulevard<br/>Bujumbura, Burundi<br/>Email: info@educore.edu</div>
                      </div>
                      <div class="invoice-details">
@@ -105,12 +105,12 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                          </thead>
                          <tbody>
                              <tr>
-                                 <td>
-                                     <div style="font-weight: 600; color: #0f172a;">${invoice.fees_detail.label}</div>
-                                     <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Code: ${invoice.fees_detail.code}</div>
-                                 </td>
-                                 <td>${invoice.fees_detail.fee_category_name}</td>
-                                 <td>${invoice.fees_detail.period_name}</td>
+                                  <td>
+                                      <div style="font-weight: 600; color: #0f172a;">${invoice.fees_detail?.label || 'General Fee'}</div>
+                                      <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Code: ${invoice.fees_detail?.code || 'N/A'}</div>
+                                  </td>
+                                  <td>${invoice.fees_detail?.fee_category_name || 'Uncategorized'}</td>
+                                 <td>${invoice.period_name || invoice.fees_detail?.period_name || 'N/A'}</td>
                                  <td style="text-align: right; font-weight: 600; color: #0f172a;">${Number(invoice.amount).toLocaleString('en-US')} FBU</td>
                              </tr>
                              <tr class="total-row">
@@ -121,10 +121,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                      </table>
                  </div>
 
-                 <div class="footer">
-                     <p style="font-weight: 600; color: #333; margin-bottom: 5px;">Thank you for your prompt payment!</p>
-                     <p style="margin-top: 0;">If you have any questions concerning this invoice, contact the finance department at finance@educore.edu.</p>
-                 </div>
+            
               </div>
               <script>
                 // We add a tiny delay to ensure CSS renders before triggering print dialog
@@ -148,7 +145,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
         const formData = new FormData();
         formData.append("invoice", selectedInvoice.id.toString());
         formData.append("amount", paymentAmount);
-        formData.append("invoice_reference", selectedInvoice.reference);
+        formData.append("invoice_reference", selectedInvoice.reference || "");
         formData.append("payment_mode", paymentMode);
         if (selectedFile) {
             formData.append("document", selectedFile);
@@ -201,6 +198,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         <TableHead className="w-[180px] font-bold">Reference</TableHead>
                         <TableHead className="font-bold">Student / Description</TableHead>
                         <TableHead className="font-bold">Category</TableHead>
+                        <TableHead className="font-bold">Period</TableHead>
                         <TableHead className="font-bold">Amount</TableHead>
                         <TableHead className="font-bold">Date</TableHead>
                         <TableHead className="font-bold">Status</TableHead>
@@ -251,11 +249,16 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                                        <span className="font-medium text-muted-foreground">{invoice.period_name || "N/A"}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
                                     <div className="flex flex-col">
                                         <span className="text-base font-bold">
                                             {Number(invoice.amount).toLocaleString("en-US")} FBU
                                         </span>
-                                        <span className="text-[10px] text-muted-foreground">Incl. {invoice.fees_detail?.period_name}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -438,6 +441,6 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     );
 }

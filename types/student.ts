@@ -29,7 +29,7 @@ export type EnrollmentInfo = z.infer<typeof enrollmentInfoSchema>;
 
 export type AcademicsEnrollmentsListRequest = {
   academic_year?: number;
-  class_room?: number;
+  classroom?: number;
   /**
    * A search term.
    */

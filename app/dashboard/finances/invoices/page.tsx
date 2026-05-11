@@ -66,11 +66,12 @@ export default function InvoicesPage() {
 
         const tableBody = invoices.map((inv: any) => `
             <tr>
-                <td><strong>${inv.reference}</strong><br/><small style="color: #64748b;">${inv.fees_detail.code}</small></td>
-                <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail.label}</small></td>
-                <td>${inv.fees_detail.fee_category_name}</td>
-                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong><br/><small style="color: #64748b;">${inv.fees_detail.fee_category_name || ''}</small></td>
-                <td>${inv.date}</td>
+                <td><strong>${inv.reference || "N/A"}</strong><br/><small style="color: #64748b;">${inv.fees_detail?.code || "N/A"}</small></td>
+                <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail?.label || "General Fee"}</small></td>
+                <td>${inv.fees_detail?.fee_category_name || "Uncategorized"}</td>
+                <td>${inv.period_name || 'N/A'}</td>
+                <td style="text-align: right;"><strong>${Number(inv.amount || 0).toLocaleString('en-US')} FBU</strong></td>
+                <td>${inv.date || "N/A"}</td>
                 <td>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${inv.status === 1 ? '#dcfce7' : '#fee2e2'}; color: ${inv.status === 1 ? '#166534' : '#991b1b'}; border: 1px solid ${inv.status === 1 ? '#bbf7d0' : '#fecaca'};">
                         ${inv.status_name}
@@ -109,7 +110,7 @@ export default function InvoicesPage() {
               <div class="container">
                  <div class="header">
                      <div>
-                         <div class="logo">EduCore</div>
+                         <img src="/logo.png" style="height: 60px; margin-bottom: 10px;" alt="Institutional Logo" />
                          <div class="subtitle">123 Education Boulevard<br/>Bujumbura, Burundi</div>
                      </div>
                      <div class="report-details">
@@ -121,14 +122,15 @@ export default function InvoicesPage() {
 
                  <table>
                      <thead>
-                         <tr>
-                             <th>Reference / Code</th>
-                             <th>Student / Description</th>
-                             <th>Category</th>
-                             <th style="text-align: right;">Amount / Period</th>
-                             <th>Date</th>
-                             <th>Status</th>
-                         </tr>
+                          <tr>
+                              <th>Reference / Code</th>
+                              <th>Student / Description</th>
+                              <th>Category</th>
+                              <th>Period</th>
+                              <th style="text-align: right;">Amount</th>
+                              <th>Date</th>
+                              <th>Status</th>
+                          </tr>
                      </thead>
                      <tbody>
                          ${tableBody}
