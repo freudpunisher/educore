@@ -60,6 +60,36 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return "Not set";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(date);
+};
+
+const getVehicleLabel = (driver: any) => {
+  const vehicle = driver.vehicle_detail;
+  if (!vehicle) return "Unassigned";
+
+  return [vehicle.registration, vehicle.model].filter(Boolean).join(" - ") || `Vehicle #${driver.vehicle}`;
+};
+
+const isLicenseExpiringSoon = (expirationDate?: string | null) => {
+  if (!expirationDate) return false;
+
+  const expiresAt = new Date(expirationDate).getTime();
+  if (Number.isNaN(expiresAt)) return false;
+
+  const daysUntilExpiration = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
+  return daysUntilExpiration >= 0 && daysUntilExpiration <= 30;
+};
+
 export default function TransportDashboard() {
   const [activeTab, setActiveTab] = useState("subscriptions");
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +101,6 @@ export default function TransportDashboard() {
   const [searchCheckIn, setSearchCheckIn] = useState("");
   const [checkInPage, setCheckInPage] = useState(1);
   const [searchDriver, setSearchDriver] = useState("");
-  const [filterDriverStatus, setFilterDriverStatus] = useState("all");
   const [driverPage, setDriverPage] = useState(1);
   const [searchVehicle, setSearchVehicle] = useState("");
   const [filterVehicleStatus, setFilterVehicleStatus] = useState("all");
@@ -800,21 +829,12 @@ export default function TransportDashboard() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
-                  placeholder="Search by name or license..."
+                  placeholder="Search by name, email, license, or vehicle..."
                   value={searchDriver}
                   onChange={(e) => setSearchDriver(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <select
-                value={filterDriverStatus}
-                onChange={(e) => setFilterDriverStatus(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
             </div>
 
             {isDriversLoading ? (
@@ -832,10 +852,23 @@ export default function TransportDashboard() {
                 <DataTable
                   columns={[
                     { key: "user_name", label: "Name", sortable: true },
-                    { key: "licenseNumber" as any, label: "License", sortable: true },
-                    { key: "vehicle_name" as any, label: "Assigned Vehicle", sortable: true },
-                    { key: "status" as any, label: "Status", render: (status) => <StatusBadge status={status as any} /> },
-                    { key: "phone" as any, label: "Contact", sortable: true },
+                    { key: "user_email" as any, label: "Email", render: (email) => email || "Not set" },
+                    {
+                      key: "vehicle_detail" as any,
+                      label: "Assigned Vehicle",
+                      render: (_vehicle, driver) => getVehicleLabel(driver),
+                    },
+                    { key: "driving_license_number" as any, label: "License Number", sortable: true },
+                    {
+                      key: "driving_license_expiration_date" as any,
+                      label: "License Expiration",
+                      sortable: true,
+                      render: (date) => (
+                        <span className={isLicenseExpiringSoon(date) ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+                          {formatDate(date)}
+                        </span>
+                      ),
+                    },
                   ]}
                   data={filteredDrivers}
                   itemsPerPage={10}
@@ -872,27 +905,21 @@ export default function TransportDashboard() {
               </>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Drivers</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{driverData?.count || 0}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Active</p>
+                <p className="text-sm text-muted-foreground">Assigned Vehicle</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {driverData?.results.filter(d => d.status === "active").length || 0}
+                  {driverData?.results.filter(d => Boolean(d.vehicle)).length || 0}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Inactive</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {driverData?.results.filter(d => d.status === "inactive").length || 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Utilization</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {driverData?.count ? Math.round((driverData.results.filter(d => d.status === "active").length / driverData.results.length) * 100) : 0}%
+                <p className="text-sm text-muted-foreground">Licenses Expiring Soon</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {driverData?.results.filter(d => isLicenseExpiringSoon(d.driving_license_expiration_date)).length || 0}
                 </p>
               </div>
             </div>

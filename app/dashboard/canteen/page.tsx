@@ -154,6 +154,10 @@ export default function CanteenPage() {
   const [preferenceSearchTerm, setPreferenceSearchTerm] = useState("");
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState("");
 
+  // Edit order state
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -337,6 +341,78 @@ export default function CanteenPage() {
           BIF {Number(value || 0).toFixed(0)}
         </span>
       ),
+    },
+    {
+      key: "id" as any,
+      label: "Actions",
+      sortable: false,
+      render: (_: any, row: any) => {
+        const isActive = row.status === "active";
+        return (
+          <div className="flex items-center gap-1">
+            {/* Edit */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedOrderId(row.id);
+                setIsEditOrderOpen(true);
+              }}
+              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            {/* Validate / Activate */}
+            {!isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubscriptionAction(row.id, "active");
+                }}
+                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                title="Validate / Activate"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Pause / Deactivate */}
+            {isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubscriptionAction(row.id, "paused");
+                }}
+                className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                title="Pause"
+              >
+                <PauseCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Cancel */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSubscriptionAction(row.id, "cancelled");
+              }}
+              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+              title="Cancel"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -608,28 +684,14 @@ export default function CanteenPage() {
 
         {/* Tabs Section */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Plans
-            </TabsTrigger>
-            <TabsTrigger value="items" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Items
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Subscriptions
-            </TabsTrigger>
-            <TabsTrigger value="preferences" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Preferences
-            </TabsTrigger>
-            <TabsTrigger value="meal-types" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Types
-            </TabsTrigger>
-            <TabsTrigger value="meals" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meals
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Attendance
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="overview">Meal Plans</TabsTrigger>
+            <TabsTrigger value="items">Meal Items</TabsTrigger>
+            <TabsTrigger value="orders">Subscriptions</TabsTrigger>
+            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="meal-types">Meal Types</TabsTrigger>
+            <TabsTrigger value="meals">Meals</TabsTrigger>
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
           </TabsList>
 
           {/* Meal Plans Tab */}
