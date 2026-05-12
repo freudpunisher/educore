@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema } from "@/types/finance";
+import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema, financeOverviewSchema } from "@/types/finance";
+
+export function useFinanceOverview() {
+    return useQuery({
+        queryKey: ["finances", "overview"],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get(`/finance/overview/`);
+            return financeOverviewSchema.parse(data?.data || data);
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+}
 
 export interface InvoiceQueryParams {
     page?: number;

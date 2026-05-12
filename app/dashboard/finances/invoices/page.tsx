@@ -70,7 +70,9 @@ export default function InvoicesPage() {
                 <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail?.label || "General Fee"}</small></td>
                 <td>${inv.fees_detail?.fee_category_name || "Uncategorized"}</td>
                 <td>${inv.period_name || 'N/A'}</td>
-                <td style="text-align: right;"><strong>${Number(inv.amount || 0).toLocaleString('en-US')} FBU</strong></td>
+                <td style="text-align: right;"><strong>${Number(inv.amount || 0).toLocaleString('en-US')}</strong></td>
+                <td style="text-align: right; color: #166534;"><strong>${Number(inv.amount_paid || 0).toLocaleString('en-US')}</strong></td>
+                <td style="text-align: right; color: #991b1b;"><strong>${Number(inv.balance || 0).toLocaleString('en-US')}</strong></td>
                 <td>${inv.date || "N/A"}</td>
                 <td>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${inv.status === 1 ? '#dcfce7' : '#fee2e2'}; color: ${inv.status === 1 ? '#166534' : '#991b1b'}; border: 1px solid ${inv.status === 1 ? '#bbf7d0' : '#fecaca'};">
@@ -80,7 +82,7 @@ export default function InvoicesPage() {
             </tr>
         `).join('');
 
-        const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
+        const totalBalance = invoices.reduce((sum: number, inv: any) => sum + Number(inv.balance || 0), 0);
         const printedDate = new Date().toLocaleString();
 
         const html = `
@@ -127,7 +129,9 @@ export default function InvoicesPage() {
                               <th>Student / Description</th>
                               <th>Category</th>
                               <th>Period</th>
-                              <th style="text-align: right;">Amount</th>
+                              <th style="text-align: right;">Total</th>
+                              <th style="text-align: right;">Paid</th>
+                              <th style="text-align: right;">Balance</th>
                               <th>Date</th>
                               <th>Status</th>
                           </tr>
@@ -136,11 +140,11 @@ export default function InvoicesPage() {
                          ${tableBody}
                          ${invoices.length > 0 ? (
                 '<tr class="total-row">' +
-                '<td colspan="3" style="text-align: right; padding-top: 20px;">Total Amount:</td>' +
-                '<td style="text-align: right; font-size: 18px; color: #2563eb; padding-top: 20px;">' + totalAmount.toLocaleString("en-US") + ' FBU</td>' +
+                '<td colspan="7" style="text-align: right; padding-top: 20px;">Total Outstanding Balance:</td>' +
+                '<td style="text-align: right; font-size: 18px; color: #2563eb; padding-top: 20px;">' + totalBalance.toLocaleString("en-US") + ' FBU</td>' +
                 '<td colspan="2"></td>' +
                 '</tr>'
-            ) : '<tr><td colspan="6" style="text-align: center;">No invoices found</td></tr>'}
+            ) : '<tr><td colspan="10" style="text-align: center;">No invoices found</td></tr>'}
                      </tbody>
                  </table>
               </div>

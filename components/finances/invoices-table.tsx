@@ -40,23 +40,23 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
             <head>
               <title>Invoice ${invoice.reference}</title>
               <style>
-                body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #333; }
-                .receipt { max-width: 800px; margin: 0 auto; border: 1px solid #eee; padding: 40px; border-radius: 8px; }
-                .header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
-                .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+                body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+                .receipt { max-width: 800px; margin: 0 auto; border: 1px solid #f1f5f9; padding: 40px; border-radius: 12px; }
+                .header { display: flex; justify-content: space-between; border-bottom: 3px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; }
+                .logo-box img { height: 60px; margin-bottom: 10px; }
                 .invoice-details { text-align: right; }
-                .subtitle { color: #666; font-size: 14px; margin-top: 5px; }
+                .subtitle { color: #64748b; font-size: 14px; margin-top: 5px; }
                 .section { margin-bottom: 30px; }
                 .grid { display: flex; justify-content: space-between; gap: 20px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-                th { background: #f8fafc; font-weight: 600; color: #475569; }
+                th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+                th { background: #0f172a; color: white; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
                 .total-row { font-weight: bold; font-size: 18px; }
-                .total-row td { border-top: 2px solid #333; }
+                .total-row td { border-top: 2px solid #0f172a; }
                 .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
                 .status.paid { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
                 .status.unpaid { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
-                .footer { margin-top: 50px; text-align: center; color: #666; font-size: 14px; border-top: 1px solid #eee; padding-top: 20px; }
+                .footer { margin-top: 50px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #f1f5f9; padding-top: 20px; }
                 @media print {
                     body { padding: 0; }
                     .receipt { border: none; padding: 0; }
@@ -68,23 +68,28 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                  <div class="header">
                      <div>
                          <img src="/logo.png" style="height: 60px; margin-bottom: 10px;" alt="Institutional Logo" />
-                         <div class="subtitle">123 Education Boulevard<br/>Bujumbura, Burundi<br/>Email: info@educore.edu</div>
+                         <div class="school-info">
+                            <strong>ACADEMIC EXCELLENCE INSTITUTE</strong><br/>
+                            123 Education Boulevard, Bujumbura<br/>
+                            contact@school.bi | +257 22 00 00 00
+                        </div>
                      </div>
                      <div class="invoice-details">
-                         <h1 style="margin: 0; color: #1e293b; font-size: 28px; font-weight: 800; letter-spacing: 1px;">INVOICE</h1>
-                         <div class="subtitle">Reference: <strong style="color: #333;">${invoice.reference}</strong></div>
+                         <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: 800; letter-spacing: 1px;">INVOICE</h1>
+                         <div class="subtitle">Reference: <strong style="color: #0f172a;">${invoice.reference}</strong></div>
                          <div class="subtitle">Date: ${invoice.date}</div>
+                         <div class="subtitle" style="font-weight: 600;">Period: ${invoice.period_name || 'N/A'}</div>
                      </div>
                  </div>
                  
                  <div class="grid section">
                      <div>
-                         <div style="color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase;">Billed To:</div>
+                         <div style="color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Billed To:</div>
                          <div style="font-size: 18px; font-weight: bold; margin-top: 5px; color: #0f172a;">${invoice.student_name || 'Institutional Entity'}</div>
-                         <div class="subtitle">Client Account</div>
+                         <div class="subtitle">ID: STU-${invoice.student_id}</div>
                      </div>
                      <div style="text-align: right;">
-                         <div style="color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase;">Status:</div>
+                         <div style="color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Status:</div>
                          <div style="margin-top: 5px;">
                              <span class="status ${invoice.status === 1 ? 'paid' : 'unpaid'}">
                                  ${invoice.status_name.toUpperCase()}
@@ -99,32 +104,36 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                              <tr>
                                  <th>Description</th>
                                  <th>Category</th>
-                                 <th>Period</th>
-                                 <th style="text-align: right;">Amount</th>
+                                 <th style="text-align: right;">Total Amount</th>
+                                 <th style="text-align: right;">Paid</th>
+                                 <th style="text-align: right;">Balance</th>
                              </tr>
                          </thead>
                          <tbody>
                              <tr>
-                                  <td>
-                                      <div style="font-weight: 600; color: #0f172a;">${invoice.fees_detail?.label || 'General Fee'}</div>
-                                      <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Code: ${invoice.fees_detail?.code || 'N/A'}</div>
-                                  </td>
-                                  <td>${invoice.fees_detail?.fee_category_name || 'Uncategorized'}</td>
-                                 <td>${invoice.period_name || invoice.fees_detail?.period_name || 'N/A'}</td>
+                                 <td>
+                                     <div style="font-weight: 600; color: #0f172a;">${invoice.fees_detail?.label || 'General Fee'}</div>
+                                     <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Code: ${invoice.fees_detail?.code || 'N/A'}</div>
+                                 </td>
+                                 <td>${invoice.fees_detail?.fee_category_name || 'Uncategorized'}</td>
                                  <td style="text-align: right; font-weight: 600; color: #0f172a;">${Number(invoice.amount).toLocaleString('en-US')} FBU</td>
+                                 <td style="text-align: right; font-weight: 600; color: #166534;">${Number(invoice.amount_paid || 0).toLocaleString('en-US')} FBU</td>
+                                 <td style="text-align: right; font-weight: 600; color: #b91c1c;">${Number(invoice.balance || 0).toLocaleString('en-US')} FBU</td>
                              </tr>
                              <tr class="total-row">
-                                 <td colspan="3" style="text-align: right; padding-top: 20px;">Total Due:</td>
-                                 <td style="text-align: right; font-size: 20px; color: #2563eb; padding-top: 20px;">${Number(invoice.amount).toLocaleString('en-US')} FBU</td>
+                                 <td colspan="4" style="text-align: right; padding-top: 20px;">Remaining Balance:</td>
+                                 <td style="text-align: right; font-size: 20px; color: #b91c1c; padding-top: 20px;">${Number(invoice.balance || 0).toLocaleString('en-US')} FBU</td>
                              </tr>
                          </tbody>
                      </table>
                  </div>
 
-            
+                 <div class="footer">
+                    This is a computer-generated document. No signature required.<br/>
+                    &copy; ${new Date().getFullYear()} School Management System. All rights reserved.
+                 </div>
               </div>
               <script>
-                // We add a tiny delay to ensure CSS renders before triggering print dialog
                 window.onload = function() { 
                     setTimeout(function() {
                         window.print(); 
@@ -199,7 +208,9 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         <TableHead className="font-bold">Student / Description</TableHead>
                         <TableHead className="font-bold">Category</TableHead>
                         <TableHead className="font-bold">Period</TableHead>
-                        <TableHead className="font-bold">Amount</TableHead>
+                        <TableHead className="font-bold">Total</TableHead>
+                        <TableHead className="font-bold">Paid</TableHead>
+                        <TableHead className="font-bold">Balance</TableHead>
                         <TableHead className="font-bold">Date</TableHead>
                         <TableHead className="font-bold">Status</TableHead>
                         <TableHead className="w-[100px] text-right font-bold pr-6">Action</TableHead>
@@ -215,8 +226,8 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         const isBlocked = !!blockingInvoice;
 
                         return (
-                            <TableRow key={invoice.id} className={cn("group hover:bg-muted/30 transition-colors", isBlocked && "opacity-80")}>
-                                <TableCell>
+                            <TableRow key={invoice.id} className={cn("group hover:bg-muted/30 transition-colors border-border", isBlocked && "opacity-80")}>
+                                <TableCell className="py-4">
                                     <div className="flex flex-col">
                                         <span className="font-mono text-xs font-bold text-primary">{invoice.reference}</span>
                                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{invoice.fees_detail?.code}</span>
@@ -254,10 +265,24 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                         <span className="font-medium text-muted-foreground">{invoice.period_name || "N/A"}</span>
                                     </div>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="py-4">
                                     <div className="flex flex-col">
-                                        <span className="text-base font-bold">
+                                        <span className="text-sm font-bold text-foreground">
                                             {Number(invoice.amount).toLocaleString("en-US")} FBU
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-4">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-emerald-600">
+                                            {Number(invoice.amount_paid || 0).toLocaleString("en-US")} FBU
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="py-4">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-destructive">
+                                            {Number(invoice.balance || 0).toLocaleString("en-US")} FBU
                                         </span>
                                     </div>
                                 </TableCell>
