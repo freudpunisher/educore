@@ -22,6 +22,10 @@ import {
   ShoppingCart,
   Plus,
   Download,
+  Pencil,
+  CheckCircle,
+  PauseCircle,
+  XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { CreateMealPlanDialog } from "@/components/canteen/create-meal-plan-dialog";
@@ -110,6 +114,12 @@ type Meal = {
   availability_status: { available: number; total: number; served: number };
 };
 
+type AcademicYear = {
+  id: number;
+  name: string;
+  is_current: boolean;
+};
+
 type Attendance = {
   id: number;
   student_name: string;
@@ -135,6 +145,8 @@ export default function CanteenPage() {
   const [mealTypes, setMealTypes] = useState<MealType[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("");
 
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
@@ -145,15 +157,16 @@ export default function CanteenPage() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const params = selectedYear ? { academic_year: selectedYear } : {};
       const [kpiRes, plansRes, itemsRes, ordersRes, prefsRes, typesRes, mealsRes, attendanceRes] = await Promise.all([
-        api.get<CanteenDashboardKPI>("food/dashboard-meal/"),
+        api.get<CanteenDashboardKPI>("food/dashboard-meal/", { params }),
         api.get<any>("food/meal-plans/"),
         api.get<any>("food/food-items/"),
-        api.get<any>("food/subscriptions/"),
-        api.get<any>("food/student-preferences/"),
+        api.get<any>("food/subscriptions/", { params }),
+        api.get<any>("food/student-preferences/", { params }),
         api.get<any>("food/meal-types/"),
-        api.get<any>("food/meals/"),
-        api.get<any>("food/attendance/"),
+        api.get<any>("food/meals/", { params }),
+        api.get<any>("food/attendance/", { params }),
       ]);
 
       setDashboardKPI(kpiRes);
@@ -172,8 +185,40 @@ export default function CanteenPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    api.get<any>("academics/years/").then((res) => {
+      const years = Array.isArray(res) ? res : res.results || [];
+      setAcademicYears(years);
+      const current = years.find((y: any) => y.is_current);
+      if (current) {
+        setSelectedYear(current.id.toString());
+      } else if (years.length > 0) {
+        setSelectedYear(years[0].id.toString());
+      }
+    });
   }, []);
+
+  useEffect(() => {
+    if (selectedYear) {
+      fetchData();
+    }
+  }, [selectedYear]);
+
+  const PERIOD_CATEGORY_LABELS: Record<number, string> = {
+    1: "Monthly",
+    2: "Quarterly",
+    3: "Semiannually",
+    4: "Annually",
+  };
+
+  const handleSubscriptionAction = async (id: number, status: string) => {
+    try {
+      await api.patch(`food/subscriptions/${id}/`, { status });
+      toast.success(`Subscription ${status} successfully`);
+      fetchData();
+    } catch {
+      toast.error("Failed to update subscription");
+    }
+  };
 
   // Filter meal orders
   const filteredOrders = useMemo(() => {
@@ -196,8 +241,10 @@ export default function CanteenPage() {
         mealPlan: order.meal_plan_detail?.name || "N/A",
         servingDate: order.start_date,
         totalPrice: order.total_amount_due,
+        amountPaid: order.amount_paid,
         status: order.status,
-        paymentStatus: order.is_paid ? "paid" : "pending",
+        isPaid: order.is_paid,
+        periodCategory: PERIOD_CATEGORY_LABELS[(order as any).period_category] || "—",
       }));
   }, [orders, orderStatusFilter, orderSearchTerm]);
 
@@ -226,9 +273,9 @@ export default function CanteenPage() {
     },
     {
       key: "class" as const,
-      label: "Class",
+      label: "Enrollment #",
       sortable: true,
-      render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
+      render: (value: string) => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{value || "—"}</span>,
     },
     {
       key: "mealPlan" as const,
@@ -237,8 +284,18 @@ export default function CanteenPage() {
       render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
     },
     {
+      key: "periodCategory" as const,
+      label: "Period",
+      sortable: true,
+      render: (value: string) => (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          {value}
+        </span>
+      ),
+    },
+    {
       key: "servingDate" as const,
-      label: "Serving Date",
+      label: "Start Date",
       sortable: true,
       render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
     },
@@ -248,24 +305,36 @@ export default function CanteenPage() {
       sortable: true,
       render: (value: string) => {
         const statusMap: Record<string, "active" | "inactive"> = {
-          pending: "inactive",
-          confirmed: "active",
-          served: "active",
-          cancelled: "inactive",
           active: "active",
-          inactive: "inactive",
+          paused: "inactive",
+          expired: "inactive",
+          cancelled: "inactive",
         };
-        const status = statusMap[value?.toLowerCase()] || (value as any);
-        return <StatusBadge status={status} />;
+        const mapped = statusMap[value?.toLowerCase()] ?? "inactive";
+        return <StatusBadge status={mapped} label={value} />;
       },
     },
     {
+      key: "isPaid" as const,
+      label: "Payment",
+      sortable: true,
+      render: (value: boolean) => (
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+          value
+            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+        }`}>
+          {value ? "Paid" : "Pending"}
+        </span>
+      ),
+    },
+    {
       key: "totalPrice" as const,
-      label: "Amount",
+      label: "Total Due",
       sortable: true,
       render: (value: number) => (
         <span className="font-semibold text-slate-900 dark:text-white">
-          ${Number(value || 0).toFixed(2)}
+          BIF {Number(value || 0).toFixed(0)}
         </span>
       ),
     },
@@ -306,7 +375,7 @@ export default function CanteenPage() {
       sortable: true,
       render: (value: number) => (
         <span className="font-semibold text-slate-900 dark:text-white">
-          ${Number(value || 0).toFixed(2)}
+          BIF {Number(value || 0).toFixed(0)}
         </span>
       ),
     },
@@ -480,16 +549,33 @@ export default function CanteenPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="space-y-6 p-6 animate-in fade-in duration-500">
         {/* Header */}
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="p-3 bg-orange-100 dark:bg-orange-950 rounded-xl shadow-lg">
-              <UtensilsCrossed className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-            </div>
-            Canteen Management
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2 text-lg">
-            Manage meals, preferences, dietary restrictions, and student orders
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+              <div className="p-3 bg-orange-100 dark:bg-orange-950 rounded-xl shadow-lg">
+                <UtensilsCrossed className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              Canteen Management
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2 text-lg">
+              Manage meals, preferences, dietary restrictions, and student orders
+            </p>
+          </div>
+          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider ml-2">Academic Year</span>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[180px] border-none shadow-none font-bold text-blue-600 dark:text-blue-400 bg-transparent">
+                <SelectValue placeholder="Select Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year) => (
+                  <SelectItem key={year.id} value={year.id.toString()}>
+                    {year.name} {year.is_current ? "(Current)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* KPI Cards - Always Visible */}
@@ -497,7 +583,7 @@ export default function CanteenPage() {
           <KpiCard
             title="Meals Served"
             value={dashboardKPI?.meals_served_today || 0}
-            subtitle={`Today - Avg ${Number(dashboardKPI?.average_order_value || 0).toFixed(2)}/order`}
+            subtitle={`Today - Avg BIF ${Number(dashboardKPI?.average_order_value || 0).toFixed(0)}/order`}
             icon={<ShoppingCart className="w-6 h-6" />}
           />
           <KpiCard
@@ -582,7 +668,7 @@ export default function CanteenPage() {
                         Price
                       </span>
                       <span className="font-semibold text-slate-900 dark:text-white">
-                        ${Number(plan.monthly_cost || 0).toFixed(2)}
+                        BIF {Number(plan.monthly_cost || 0).toFixed(0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -697,7 +783,7 @@ export default function CanteenPage() {
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <p className="text-sm text-muted-foreground dark:text-slate-400">Revenue</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                  ${orders.reduce((sum, o) => sum + Number(o.amount_paid || 0), 0).toFixed(2)}
+                  BIF {orders.reduce((sum, o) => sum + Number(o.amount_paid || 0), 0).toFixed(0)}
                 </p>
               </div>
             </div>
@@ -711,20 +797,16 @@ export default function CanteenPage() {
               />
               <Select
                 value={orderStatusFilter}
-                onValueChange={(value) =>
-                  setOrderStatusFilter(
-                    value as "all" | "pending" | "confirmed" | "served" | "cancelled"
-                  )
-                }
+                onValueChange={(value) => setOrderStatusFilter(value)}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="served">Served</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
