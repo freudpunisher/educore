@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { FEE_CATEGORIES, INVOICE_STATUS_OPTIONS } from "@/constants/finance";
 
 export default function InvoicesPage() {
     const [page, setPage] = useState(1);
@@ -289,13 +290,11 @@ export default function InvoicesPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Fees</SelectItem>
-                                    <SelectItem value="1">Registration Fees</SelectItem>
-                                    <SelectItem value="2">School Fees</SelectItem>
-                                    <SelectItem value="3">Class Fees</SelectItem>
-                                    <SelectItem value="4">Transport Fees</SelectItem>
-                                    <SelectItem value="5">Food Fees</SelectItem>
-                                    <SelectItem value="6">Catering Fees</SelectItem>
-                                    <SelectItem value="7">Other Fees</SelectItem>
+                                    {FEE_CATEGORIES.map((category) => (
+                                        <SelectItem key={category.value} value={category.value}>
+                                            {category.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -308,8 +307,11 @@ export default function InvoicesPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="0">Unpaid</SelectItem>
-                                    <SelectItem value="1">Paid</SelectItem>
+                                    {INVOICE_STATUS_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
