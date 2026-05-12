@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
 import { paginatedAcademicYearSchema, paginatedClassRoomSchema, EnrollmentCreate } from "@/types/enrollment";
+import { feesPreviewSchema } from "@/types/finance";
 import { z } from "zod";
 import toast from "react-hot-toast";
 
@@ -23,10 +24,10 @@ export function useClassRooms(search?: string) {
       let url = "/config/classrooms/";
       const params = new URLSearchParams();
       if (search) params.append("search", search);
-      
+
       const queryString = params.toString();
       if (queryString) url += `?${queryString}`;
-      
+
       const { data } = await axiosInstance.get(url);
       const parsed = paginatedClassRoomSchema.parse(data);
       return parsed.results;
@@ -39,7 +40,18 @@ export function useClassRoom(id: string | number) {
     queryKey: ["classroom", id],
     queryFn: async () => {
       const { data } = await axiosInstance.get(`/config/classrooms/${id}/`);
-      return data; // Individual object, not paginated
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useClassroomFeesPreview(id: number | null) {
+  return useQuery({
+    queryKey: ["classroom-fees-preview", id],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get(`/config/classrooms/${id}/fees-preview/`);
+      return feesPreviewSchema.parse(data?.data || data);
     },
     enabled: !!id,
   });

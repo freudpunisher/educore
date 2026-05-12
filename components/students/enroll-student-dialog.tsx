@@ -20,9 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAcademicYears, useClassRooms, useEnrollStudent } from "@/hooks/use-academic-data";
+import { useAcademicYears, useClassRooms, useEnrollStudent, useClassroomFeesPreview } from "@/hooks/use-academic-data";
 import { enrollmentCreateSchema, type EnrollmentCreate } from "@/types/enrollment";
-import { Loader2, Calendar, School } from "lucide-react";
+import { Loader2, Calendar, School, Info, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type Props = {
   studentId: number;
@@ -52,6 +53,9 @@ export function EnrollStudentDialog({ studentId, studentName, open, onOpenChange
   });
 
   const selectedYear = watch("academic_year");
+  const selectedClass = watch("class_room");
+
+  const { data: feesPreview, isLoading: loadingFees } = useClassroomFeesPreview(selectedClass || null);
 
   const onSubmit = (data: EnrollmentCreate) => {
     enrollMutation.mutate(data, {
@@ -116,6 +120,55 @@ export function EnrollStudentDialog({ studentId, studentName, open, onOpenChange
               <p className="text-sm text-destructive">Class required</p>
             )}
           </div>
+
+          {selectedClass && (
+            <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-center justify-between pb-1 border-b">
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <Info className="w-3 h-3" />
+                  Expected Fees Preview
+                </Label>
+                {loadingFees && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+              </div>
+
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                {feesPreview?.fees.map((fee, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/50 hover:border-primary/30 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary">
+                        <CheckCircle2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-bold text-foreground leading-none mb-1">{fee.label}</p>
+                        <p className="text-[10px] font-medium text-muted-foreground">{fee.assignment || "Academic Fee"}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[13px] font-black text-foreground">{Number(fee.amount).toLocaleString()} FBU</p>
+                    </div>
+                  </div>
+                ))}
+
+                {feesPreview?.fees.length === 0 && !loadingFees && (
+                  <div className="py-8 text-center border-2 border-dashed rounded-2xl opacity-40">
+                    <p className="text-xs font-bold">No fees configured for this class</p>
+                  </div>
+                )}
+              </div>
+
+              {feesPreview?.notice && (
+                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <p className="text-[10px] font-bold leading-relaxed">
+                    <span className="uppercase mr-1">Note:</span>
+                    {feesPreview.notice}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
 
 

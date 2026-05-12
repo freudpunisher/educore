@@ -62,6 +62,20 @@ export const financeOverviewSchema = z.object({
     recentInvoices: z.array(invoiceSchema),
 });
 
+export const feesPreviewItemSchema = z.object({
+    label: z.string(),
+    amount: z.string(),
+    assignment: z.string().optional(),
+    fee_category: z.number().optional(),
+    fee_category_name: z.string().optional(),
+});
+
+export const feesPreviewSchema = z.object({
+    has_fees: z.boolean(),
+    fees: z.array(feesPreviewItemSchema),
+    notice: z.string().nullable().optional(),
+});
+
 export type Invoice = z.infer<typeof invoiceSchema>;
 export type PaginatedInvoice = z.infer<typeof paginatedInvoiceSchema>;
 export type FeesDetail = z.infer<typeof feesDetailSchema>;
@@ -69,3 +83,5 @@ export type Payment = z.infer<typeof paymentSchema>;
 export type PaginatedPayment = z.infer<typeof paginatedPaymentSchema>;
 export type RevenueDataPoint = z.infer<typeof revenueDataPointSchema>;
 export type FinanceOverview = z.infer<typeof financeOverviewSchema>;
+export type FeesPreviewItem = z.infer<typeof feesPreviewItemSchema>;
+export type FeesPreview = z.infer<typeof feesPreviewSchema>;
