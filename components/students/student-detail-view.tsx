@@ -102,7 +102,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
                                     <Calendar className="h-4 w-4 text-orange-500" />
-                                    <span>Né le {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "Inconnu"}</span>
+                                    <span>Born on {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "Unknown"}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
                                     <Activity className="h-4 w-4 text-green-500" />
@@ -132,14 +132,14 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </Select>
                         </div>
                         <StudentPvcCardDialog student={student as any} />
-                        {!student.validated_at && (
+                        {!student.is_validate && (
                             <Button
                                 onClick={() => validateMutation.mutate(student.id)}
                                 disabled={validateMutation.isPending}
                                 className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 px-6 shadow-lg shadow-orange-500/20 gap-2 font-bold"
                             >
                                 <Sparkles className="h-4 w-4" />
-                                Valider Dossier
+                                Validate Student
                             </Button>
                         )}
                     </div>
@@ -397,7 +397,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                                                         <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
                                                             <Calendar className="h-3.5 w-3.5" />
-                                                            {doc.uploaded_at ? `Mis en ligne le ${format(new Date(doc.uploaded_at), "PPP")}` : "Date inconnue"}
+                                                            {doc.uploaded_at ? `Uploaded on ${format(new Date(doc.uploaded_at), "PPP")}` : "Unknown date"}
                                                         </p>
                                                         {doc.uploaded_by_user && (
                                                             <p className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-bold uppercase tracking-wider">

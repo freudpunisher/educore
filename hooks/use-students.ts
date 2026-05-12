@@ -18,9 +18,11 @@ export function useStudents(params?: AcademicsEnrollmentsListRequest) {
     queryFn: async () => {
       try {
         const { data: rawResponse } = await axiosInstance.get("users/students/", { params });
-        const data = (rawResponse && typeof rawResponse === 'object' && 'status' in rawResponse && rawResponse.status === 'success')
-          ? rawResponse.data
-          : rawResponse;
+        console.log("Raw Response for Student List:", JSON.stringify(rawResponse, null, 2));
+        const data = (rawResponse && typeof rawResponse === 'object' && (rawResponse.status === 'success' || rawResponse.success === true))
+          ? (Array.isArray(rawResponse.data) ? { results: rawResponse.data } : rawResponse.data)
+          : (Array.isArray(rawResponse) ? { results: rawResponse } : rawResponse);
+        console.log("Processed data for useStudents Parsing:", JSON.stringify(data, null, 2));
         return paginatedStudentListSchema.parse(data);
       } catch (err: any) {
         if (err.name === "ZodError") {
@@ -43,9 +45,11 @@ export function useStudentDetail(id: number | null) {
       try {
         const response = await axiosInstance.get(`users/students/${id}/`);
         const rawData = response.data;
-        const studentData = (rawData && typeof rawData === 'object' && 'status' in rawData && rawData.status === 'success')
-          ? rawData.data
-          : rawData;
+        console.log("Raw Response for Student Detail:", JSON.stringify(rawData, null, 2));
+        const studentData = (rawData && typeof rawData === 'object' && (rawData.status === 'success' || rawData.success === true))
+          ? (Array.isArray(rawData.data) ? rawData.data[0] : rawData.data)
+          : (Array.isArray(rawData) ? rawData[0] : rawData);
+        console.log("Processed studentData for Parsing:", JSON.stringify(studentData, null, 2));
         return studentDetailSchema.parse(studentData);
       } catch (err: any) {
         if (err.name === "ZodError") {

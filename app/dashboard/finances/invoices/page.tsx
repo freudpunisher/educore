@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { FEE_CATEGORIES, INVOICE_STATUS_OPTIONS } from "@/constants/finance";
 
 export default function InvoicesPage() {
     const [page, setPage] = useState(1);
@@ -44,7 +45,11 @@ export default function InvoicesPage() {
         search: searchQuery || undefined,
     });
 
-    const invoices = data?.results || [];
+    const invoices = [...(data?.results || [])].sort((a, b) => {
+        const priorityA = a.fees_detail?.priority ?? 999;
+        const priorityB = b.fees_detail?.priority ?? 999;
+        return priorityA - priorityB;
+    });
     const totalCount = data?.count || 0;
 
     const resetFilters = () => {
@@ -62,12 +67,14 @@ export default function InvoicesPage() {
 
         const tableBody = invoices.map((inv: any) => `
             <tr>
-                <td><strong>${inv.reference}</strong><br/><small style="color: #64748b;">${inv.fees_detail.code}</small></td>
-                <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail.label}</small></td>
-                <td>${inv.fees_detail.fee_category_name}</td>
+                <td><strong>${inv.reference || "N/A"}</strong><br/><small style="color: #64748b;">${inv.fees_detail?.code || "N/A"}</small></td>
+                <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail?.label || "General Fee"}</small></td>
+                <td>${inv.fees_detail?.fee_category_name || "Uncategorized"}</td>
                 <td>${inv.period_name || 'N/A'}</td>
-                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong></td>
-                <td>${inv.date}</td>
+                <td style="text-align: right;"><strong>${Number(inv.amount || 0).toLocaleString('en-US')}</strong></td>
+                <td style="text-align: right; color: #166534;"><strong>${Number(inv.amount_paid || 0).toLocaleString('en-US')}</strong></td>
+                <td style="text-align: right; color: #991b1b;"><strong>${Number(inv.balance || 0).toLocaleString('en-US')}</strong></td>
+                <td>${inv.date || "N/A"}</td>
                 <td>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${inv.status === 1 ? '#dcfce7' : '#fee2e2'}; color: ${inv.status === 1 ? '#166534' : '#991b1b'}; border: 1px solid ${inv.status === 1 ? '#bbf7d0' : '#fecaca'};">
                         ${inv.status_name}
@@ -76,7 +83,7 @@ export default function InvoicesPage() {
             </tr>
         `).join('');
 
-        const totalAmount = invoices.reduce((sum: number, inv: any) => sum + Number(inv.amount), 0);
+        const totalBalance = invoices.reduce((sum: number, inv: any) => sum + Number(inv.balance || 0), 0);
         const printedDate = new Date().toLocaleString();
 
         const html = `
@@ -106,7 +113,7 @@ export default function InvoicesPage() {
               <div class="container">
                  <div class="header">
                      <div>
-                         <div class="logo">EduCore</div>
+                         <img src="/logo.png" style="height: 60px; margin-bottom: 10px;" alt="Institutional Logo" />
                          <div class="subtitle">123 Education Boulevard<br/>Bujumbura, Burundi</div>
                      </div>
                      <div class="report-details">
@@ -123,7 +130,9 @@ export default function InvoicesPage() {
                               <th>Student / Description</th>
                               <th>Category</th>
                               <th>Period</th>
-                              <th style="text-align: right;">Amount</th>
+                              <th style="text-align: right;">Total</th>
+                              <th style="text-align: right;">Paid</th>
+                              <th style="text-align: right;">Balance</th>
                               <th>Date</th>
                               <th>Status</th>
                           </tr>
@@ -132,11 +141,11 @@ export default function InvoicesPage() {
                          ${tableBody}
                          ${invoices.length > 0 ? (
                 '<tr class="total-row">' +
-                '<td colspan="3" style="text-align: right; padding-top: 20px;">Total Amount:</td>' +
-                '<td style="text-align: right; font-size: 18px; color: #2563eb; padding-top: 20px;">' + totalAmount.toLocaleString("en-US") + ' FBU</td>' +
+                '<td colspan="7" style="text-align: right; padding-top: 20px;">Total Outstanding Balance:</td>' +
+                '<td style="text-align: right; font-size: 18px; color: #2563eb; padding-top: 20px;">' + totalBalance.toLocaleString("en-US") + ' FBU</td>' +
                 '<td colspan="2"></td>' +
                 '</tr>'
-            ) : '<tr><td colspan="6" style="text-align: center;">No invoices found</td></tr>'}
+            ) : '<tr><td colspan="10" style="text-align: center;">No invoices found</td></tr>'}
                      </tbody>
                  </table>
               </div>
@@ -281,13 +290,11 @@ export default function InvoicesPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Fees</SelectItem>
-                                    <SelectItem value="1">Registration Fees</SelectItem>
-                                    <SelectItem value="2">School Fees</SelectItem>
-                                    <SelectItem value="3">Class Fees</SelectItem>
-                                    <SelectItem value="4">Transport Fees</SelectItem>
-                                    <SelectItem value="5">Food Fees</SelectItem>
-                                    <SelectItem value="6">Catering Fees</SelectItem>
-                                    <SelectItem value="7">Other Fees</SelectItem>
+                                    {FEE_CATEGORIES.map((category) => (
+                                        <SelectItem key={category.value} value={category.value}>
+                                            {category.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -300,8 +307,11 @@ export default function InvoicesPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="0">Unpaid</SelectItem>
-                                    <SelectItem value="1">Paid</SelectItem>
+                                    {INVOICE_STATUS_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>
+                                            {option.label}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>

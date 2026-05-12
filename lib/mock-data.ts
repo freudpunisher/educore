@@ -31,15 +31,27 @@ export interface Teacher {
 }
 
 export interface Invoice {
-  id: string
-  studentId: string
-  studentName: string
-  amount: number
+  id: string | number
+  reference: string
+  student_id: string | number
+  student_name: string
+  amount: string
+  amount_paid: string
+  balance: string
   dueDate: string
-  paidDate?: string
-  status: "paid" | "pending" | "overdue"
-  type: "tuition" | "transport" | "meals" | "other"
-  description: string
+  date: string
+  status: number
+  status_name: string
+  type?: string
+  description?: string
+  period_name: string
+  fees_detail?: {
+    id: number
+    code: string
+    label: string
+    fee_category_name: string
+    priority: number
+  }
 }
 
 export interface Expense {
@@ -253,58 +265,89 @@ export const mockTeachers: Teacher[] = [
 
 export const mockInvoices: Invoice[] = [
   {
-    id: "INV-001",
-    studentId: "1",
-    studentName: "Sophie Martin",
-    amount: 450,
+    id: 1,
+    reference: "INV260511-001",
+    student_id: 1,
+    student_name: "Sophie Martin",
+    amount: "450000.00",
+    amount_paid: "450000.00",
+    balance: "0.00",
     dueDate: "2024-06-30",
-    paidDate: "2024-06-25",
-    status: "paid",
-    type: "tuition",
-    description: "Tuition Fees - June 2024",
+    date: "2024-06-25",
+    status: 1,
+    status_name: "Paid",
+    period_name: "Quarterly - 1st TERM",
+    fees_detail: {
+      id: 1,
+      code: "FEE260317-001",
+      label: "FRAIS D'INSCRIPTION",
+      fee_category_name: "Registration Fees",
+      priority: 1
+    }
   },
   {
-    id: "INV-002",
-    studentId: "2",
-    studentName: "Lucas Dubois",
-    amount: 450,
+    id: 2,
+    reference: "INV260511-002",
+    student_id: 2,
+    student_name: "Lucas Dubois",
+    amount: "450000.00",
+    amount_paid: "0.00",
+    balance: "450000.00",
     dueDate: "2024-06-30",
-    status: "pending",
-    type: "tuition",
-    description: "Tuition Fees - June 2024",
+    date: "2024-06-10",
+    status: 0,
+    status_name: "Unpaid",
+    period_name: "Quarterly - 1st TERM",
+    fees_detail: {
+      id: 1,
+      code: "FEE260317-001",
+      label: "FRAIS D'INSCRIPTION",
+      fee_category_name: "Registration Fees",
+      priority: 1
+    }
   },
   {
-    id: "INV-003",
-    studentId: "3",
-    studentName: "Emma Bernard",
-    amount: 120,
+    id: 5,
+    reference: "INV260511-003",
+    student_id: 44,
+    student_name: "Niyonzima Josiane",
+    amount: "135000.00",
+    amount_paid: "0.00",
+    balance: "135000.00",
     dueDate: "2024-06-15",
-    paidDate: "2024-06-10",
-    status: "paid",
-    type: "transport",
-    description: "School Transport - June 2024",
+    date: "2024-05-11 10:57",
+    status: 0,
+    status_name: "Unpaid",
+    period_name: "Quarterly - 2nd QUARTER",
+    fees_detail: {
+      id: 10,
+      code: "FEE260409-001",
+      label: "FRAIS D'ALIMENTATION",
+      fee_category_name: "Food Fees",
+      priority: 5
+    }
   },
   {
-    id: "INV-004",
-    studentId: "4",
-    studentName: "Thomas Petit",
-    amount: 450,
+    id: 6,
+    reference: "INV260511-004",
+    student_id: 45,
+    student_name: "MUGISHA Freud",
+    amount: "150000.00",
+    amount_paid: "150000.00",
+    balance: "0.00",
     dueDate: "2024-05-30",
-    status: "overdue",
-    type: "tuition",
-    description: "Tuition Fees - May 2024",
-  },
-  {
-    id: "INV-005",
-    studentId: "5",
-    studentName: "Léa Roux",
-    amount: 180,
-    dueDate: "2024-06-30",
-    paidDate: "2024-06-28",
-    status: "paid",
-    type: "meals",
-    description: "Canteen - June 2024",
-  },
+    date: "2024-05-11 09:38",
+    status: 1,
+    status_name: "Paid",
+    period_name: "Monthly - MAY",
+    fees_detail: {
+      id: 2,
+      code: "FEE260318-001",
+      label: "FRAIS TRANSPORT",
+      fee_category_name: "Transport Fees",
+      priority: 1
+    }
+  }
 ]
 
 export const mockExpenses: Expense[] = [

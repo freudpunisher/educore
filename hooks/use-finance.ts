@@ -1,6 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema } from "@/types/finance";
+import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema, financeOverviewSchema } from "@/types/finance";
+
+export function useFinanceOverview() {
+    return useQuery({
+        queryKey: ["finances", "overview"],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get(`/finance/overview/`);
+            return financeOverviewSchema.parse(data?.data || data);
+        },
+        staleTime: 1000 * 60 * 5, // 5 minutes
+    });
+}
 
 export interface InvoiceQueryParams {
     page?: number;
@@ -17,14 +28,27 @@ export function useInvoices(params: InvoiceQueryParams = { page: 1, page_size: 1
     return useQuery({
         queryKey: ["finances", "invoices", params],
         queryFn: async () => {
-            const response = await axiosInstance.get(`/finance/invoices/`, {
-                params
-            });
+            try {
+                const response = await axiosInstance.get(`/finance/invoices/`, {
+                    params
+                });
 
-            // The axios interceptor in @/lib/axios returns response.data.data as response.data
-            // We need to validate the structure
-            const validated = paginatedInvoiceSchema.parse(response.data);
-            return validated;
+                // The axios interceptor usually returns response.data.data as response.data
+                // but we extract it defensively here to handle all cases
+                const rawData = response.data;
+                const extraction = (rawData && (rawData.data || rawData.results)) ? (rawData.data || rawData) : rawData;
+
+                console.log("Invoices Raw Extraction:", extraction);
+
+                return paginatedInvoiceSchema.parse(extraction);
+            } catch (err: any) {
+                if (err.name === "ZodError") {
+                    console.error("Zod Validation Issues (useInvoices):", JSON.stringify(err.issues, null, 2));
+                } else {
+                    console.error("Error in useInvoices:", err);
+                }
+                throw err;
+            }
         },
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
