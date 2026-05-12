@@ -70,11 +70,18 @@ export function useStudentAcademics(id: number | null, academicYearId?: number) 
     queryKey: ["students", "academics", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/academics/`, {
-        params: { academic_year: academicYearId }
-      });
-      const payload = data.status === 'success' ? data.data : data;
-      return studentAcademicsResponseSchema.parse(payload);
+      try {
+        const { data } = await axiosInstance.get(`users/students/${id}/academics/`, {
+          params: { academic_year: academicYearId }
+        });
+        const payload = data.status === 'success' ? data.data : data;
+        return studentAcademicsResponseSchema.parse(payload);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Error (Academics):", JSON.stringify(err.issues, null, 2));
+        }
+        throw err;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -86,11 +93,18 @@ export function useStudentFinance(id: number | null, academicYearId?: number) {
     queryKey: ["students", "finance", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/finance/`, {
-        params: { academic_year: academicYearId }
-      });
-      const payload = data.status === 'success' ? data.data : data;
-      return studentFinanceResponseSchema.parse(payload);
+      try {
+        const { data } = await axiosInstance.get(`users/students/${id}/finance/`, {
+          params: { academic_year: academicYearId }
+        });
+        const payload = data.status === 'success' ? data.data : data;
+        return studentFinanceResponseSchema.parse(payload);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Error (Finance):", JSON.stringify(err.issues, null, 2));
+        }
+        throw err;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -102,11 +116,18 @@ export function useStudentLife(id: number | null, academicYearId?: number) {
     queryKey: ["students", "life", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/life/`, {
-        params: { academic_year: academicYearId }
-      });
-      const payload = data.status === 'success' ? data.data : data;
-      return studentLifeResponseSchema.parse(payload);
+      try {
+        const { data } = await axiosInstance.get(`users/students/${id}/life/`, {
+          params: { academic_year: academicYearId }
+        });
+        const payload = data.status === 'success' ? data.data : data;
+        return studentLifeResponseSchema.parse(payload);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Error (Life):", JSON.stringify(err.issues, null, 2));
+        }
+        throw err;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -118,11 +139,18 @@ export function useStudentServices(id: number | null, academicYearId?: number) {
     queryKey: ["students", "services", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/services/`, {
-        params: { academic_year: academicYearId }
-      });
-      const payload = data.status === 'success' ? data.data : data;
-      return studentServicesResponseSchema.parse(payload);
+      try {
+        const { data } = await axiosInstance.get(`users/students/${id}/services/`, {
+          params: { academic_year: academicYearId }
+        });
+        const payload = data.status === 'success' ? data.data : data;
+        return studentServicesResponseSchema.parse(payload);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Error (Services):", JSON.stringify(err.issues, null, 2));
+        }
+        throw err;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
@@ -134,11 +162,18 @@ export function useStudentTransactions(id: number | null, academicYearId?: numbe
     queryKey: ["students", "transactions", id, academicYearId],
     queryFn: async () => {
       if (!id) return null;
-      const { data } = await axiosInstance.get(`users/students/${id}/transactions/`, {
-        params: { academic_year: academicYearId }
-      });
-      const payload = data.status === 'success' ? data.data : data;
-      return studentTransactionsResponseSchema.parse(payload);
+      try {
+        const { data } = await axiosInstance.get(`users/students/${id}/transactions/`, {
+          params: { academic_year: academicYearId }
+        });
+        const payload = data.status === 'success' ? data.data : data;
+        return studentTransactionsResponseSchema.parse(payload);
+      } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("Zod Validation Error (Transactions):", JSON.stringify(err.issues, null, 2));
+        }
+        throw err;
+      }
     },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
