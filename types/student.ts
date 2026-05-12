@@ -1,6 +1,7 @@
 // src/lib/types/student.ts ← FINAL VERSION
 import { z } from "zod";
 import { createPaginatedSchema } from "./api";
+import { transportSubscriptionSchema } from "./transport";
 
 export const enrollmentInfoSchema = z.object({
   classroom: z.string(),
@@ -204,7 +205,7 @@ export type StudentAcademics = z.infer<typeof studentAcademicsResponseSchema>;
 // --- Finance ---
 export const studentPaymentSchema = z.object({
   id: z.number(),
-  amount: z.string(),
+  amount: z.coerce.string(),
   created_at: z.string().transform((str) => new Date(str)),
   payment_mode: z.number().optional(),
 }).passthrough();
@@ -212,8 +213,8 @@ export const studentPaymentSchema = z.object({
 export const studentInvoiceSchema = z.object({
   id: z.number(),
   reference: z.string(),
-  amount: z.string(),
-  balance: z.string(),
+  amount: z.coerce.string(),
+  balance: z.coerce.string(),
   status: z.number().optional(),
   created_at: z.string().transform((str) => new Date(str)),
   payments: z.array(studentPaymentSchema).default([]),
@@ -221,19 +222,19 @@ export const studentInvoiceSchema = z.object({
 
 export const studentFinanceResponseSchema = z.object({
   invoices: z.array(studentInvoiceSchema).default([]),
-  outstanding_balance: z.string(),
-  total_due: z.string(),
-  total_paid: z.string(),
+  outstanding_balance: z.coerce.string(),
+  total_due: z.coerce.string(),
+  total_paid: z.coerce.string(),
 }).passthrough();
 
 export type StudentFinance = z.infer<typeof studentFinanceResponseSchema>;
 
 // --- Student Life ---
 export const attendanceStatsSchema = z.object({
-  absent_count: z.number(),
-  late_count: z.number(),
-  present_count: z.number(),
-  total_count: z.number(),
+  absent_count: z.coerce.number(),
+  late_count: z.coerce.number(),
+  present_count: z.coerce.number(),
+  total_count: z.coerce.number(),
 }).passthrough();
 
 export enum DisciplineStatusEnum {
@@ -272,7 +273,7 @@ export const studentHousingSchema = z.object({
   room_name: z.string(),
   room_type: z.string(),
   bed_number: z.string(),
-  fees: z.number(),
+  fees: z.union([z.string(), z.number()]).optional().transform(val => String(val || "0")),
   is_active: z.boolean().optional(),
   start_date: z.string().transform((str) => new Date(str)),
   end_date: z.string().nullable().transform((val) => (val ? new Date(val) : null)).optional(),
@@ -321,6 +322,7 @@ export const studentServicesResponseSchema = z.object({
   daycare: z.array(studentDaycareSchema).default([]),
   housing: z.array(studentHousingSchema).default([]),
   meals: z.array(studentMealSubscriptionSchema).default([]),
+  transport: z.array(transportSubscriptionSchema).default([]),
 }).passthrough();
 
 export type StudentServices = z.infer<typeof studentServicesResponseSchema>;
@@ -344,7 +346,7 @@ export const studentSaleSchema = z.object({
   id: z.number(),
   product_name: z.string(),
   quantity: z.number().optional(),
-  total_price: z.string(),
+  total_price: z.coerce.string(),
   date: z.string().transform((str) => new Date(str)),
 }).passthrough();
 

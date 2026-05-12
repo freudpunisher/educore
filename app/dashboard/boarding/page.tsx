@@ -26,6 +26,9 @@ import {
   Trash2,
   MoreVertical,
   AlertTriangle,
+  Receipt,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -128,6 +131,7 @@ type Fee = {
   id: number;
   label: string;
   amount: string;
+  fee_category?: number;
 };
 
 type Bed = {
@@ -168,7 +172,7 @@ export default function BoardingPage() {
     title: string;
     description: string;
     onConfirm: () => void;
-  }>({ open: false, title: "", description: "", onConfirm: () => {} });
+  }>({ open: false, title: "", description: "", onConfirm: () => { } });
 
   // Edit states
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -176,6 +180,8 @@ export default function BoardingPage() {
   const [editingAttendance, setEditingAttendance] = useState<Attendance | null>(null);
   const [editingExit, setEditingExit] = useState<ExitPermission | null>(null);
   const [editingBed, setEditingBed] = useState<Bed | null>(null);
+
+  const [selectedRoomId, setSelectedRoomId] = useState<string>("");
 
   // Student search for forms
   const [studentSearch, setStudentSearch] = useState("");
@@ -1196,131 +1202,221 @@ export default function BoardingPage() {
           const initId = editingHousing ? String(editingHousing.student) : "";
           setSelectedStudentId(initId);
           setStudentSearch("");
+          setSelectedRoomId(editingHousing ? String(editingHousing.room) : "");
         }
       }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingHousing ? "Edit Assignment" : "New Assignment"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleHousingSubmit} className="space-y-4">
-            {/* ── Searchable Student Picker ── */}
-            <div className="space-y-2">
-              <Label htmlFor="student-search">Student</Label>
-              <input type="hidden" name="student" value={selectedStudentId} />
-              <div className="relative" ref={studentDropdownRef}>
-                <Input
-                  id="student-search"
-                  placeholder="Search by name or enrollment number…"
-                  value={studentSearch || selectedStudentLabel}
-                  onChange={(e) => {
-                    setStudentSearch(e.target.value);
-                    setSelectedStudentId("");
-                    setStudentDropdownOpen(true);
-                  }}
-                  onFocus={() => setStudentDropdownOpen(true)}
-                  autoComplete="off"
-                  className="w-full"
-                />
-                {studentDropdownOpen && filteredStudentOptions.length > 0 && (
-                  <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
-                    {filteredStudentOptions.map((s) => (
-                      <button
-                        key={s.id}
-                        type="button"
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-purple-50 dark:hover:bg-purple-950 flex items-center justify-between gap-2 ${
-                          selectedStudentId === String(s.id) ? "bg-purple-100 dark:bg-purple-900 font-semibold" : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedStudentId(String(s.id));
-                          setStudentSearch("");
-                          setStudentDropdownOpen(false);
+        <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-2xl lg:max-w-4xl p-0 border-none bg-transparent shadow-none">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl">
+            <DialogHeader className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-left">
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <BedDouble className="w-5 h-5 text-purple-600" />
+                {editingHousing ? "Edit Housing Assignment" : "New Housing Assignment"}
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleHousingSubmit} className="p-8 space-y-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* ── Student Section ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-purple-500" />
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Student Information</Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="student-search">Search Student</Label>
+                    <input type="hidden" name="student" value={selectedStudentId} />
+                    <div className="relative" ref={studentDropdownRef}>
+                      <Input
+                        id="student-search"
+                        placeholder="Name or enrollment number…"
+                        value={studentSearch || selectedStudentLabel}
+                        onChange={(e) => {
+                          setStudentSearch(e.target.value);
+                          setSelectedStudentId("");
+                          setStudentDropdownOpen(true);
                         }}
+                        onFocus={() => setStudentDropdownOpen(true)}
+                        autoComplete="off"
+                        className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-purple-500/20"
+                      />
+                      {studentDropdownOpen && filteredStudentOptions.length > 0 && (
+                        <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-2 animate-in fade-in zoom-in-95 duration-200">
+                          {filteredStudentOptions.map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              className={`w-full text-left px-4 py-3 rounded-xl text-sm hover:bg-purple-50 dark:hover:bg-purple-950 flex items-center justify-between gap-4 transition-colors ${selectedStudentId === String(s.id) ? "bg-purple-100 dark:bg-purple-900 font-bold text-purple-700 dark:text-purple-300" : "text-slate-600 dark:text-slate-400"
+                                }`}
+                              onClick={() => {
+                                setSelectedStudentId(String(s.id));
+                                setStudentSearch("");
+                                setStudentDropdownOpen(false);
+                              }}
+                            >
+                              <span className="truncate flex-1">{s.full_name || "—"}</span>
+                              <span className="text-[10px] font-mono opacity-50 uppercase tracking-tighter">{s.enrollment_number}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {studentDropdownOpen && filteredStudentOptions.length === 0 && studentSearch && (
+                        <div className="absolute z-50 mt-2 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl px-4 py-4 text-sm text-slate-500 text-center italic">
+                          No matches found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Placement Section ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Building2 className="w-4 h-4 text-purple-500" />
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Room & Bed Selection</Label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="room">Room</Label>
+                      <Select
+                        name="room"
+                        value={selectedRoomId}
+                        onValueChange={setSelectedRoomId}
                       >
-                        <span className="truncate">{s.full_name || "—"}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{s.enrollment_number}</span>
-                      </button>
-                    ))}
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {rooms.map(r => <SelectItem key={r.id} value={String(r.id)} className="py-3 px-4">{r.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bed">Bed</Label>
+                      <Select name="bed" defaultValue={editingHousing ? String(editingHousing.bed) : undefined} disabled={!selectedRoomId}>
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                          <SelectValue placeholder={selectedRoomId ? "Select Bed" : "Select Room"} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          {beds
+                            .filter(b =>
+                              String(b.room) === selectedRoomId &&
+                              (b.status === 'free' || (editingHousing && b.id === editingHousing.bed))
+                            )
+                            .map(b => (
+                              <SelectItem key={b.id} value={String(b.id)} className="py-3 px-4">
+                                Bed {b.number} ({b.status})
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                )}
-                {studentDropdownOpen && filteredStudentOptions.length === 0 && studentSearch && (
-                  <div className="absolute z-50 mt-1 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg px-3 py-2 text-sm text-slate-500">
-                    No students found
+                </div>
+
+                {/* ── Billing Section ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Receipt className="w-4 h-4 text-purple-500" />
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Financial Setup</Label>
                   </div>
-                )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="fees">Fees</Label>
+                      <Select name="fees" defaultValue={editingHousing ? String(editingHousing.fees) : undefined}>
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 overflow-hidden">
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent className="max-w-[400px] rounded-xl">
+                          {fees
+                            .filter(f => f.fee_category === 9)
+                            .map(f => (
+                              <SelectItem key={f.id} value={String(f.id)} className="py-3 px-4">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-bold truncate">{f.label}</span>
+                                  <span className="text-[10px] text-muted-foreground">{Number(f.amount).toLocaleString()} FBU</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="period_category">Billing Period</Label>
+                      <Select name="period_category" defaultValue={editingHousing ? String((editingHousing as any).period_category) : "4"}>
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                          <SelectValue placeholder="Period" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="1" className="py-3 px-4">Monthly</SelectItem>
+                          <SelectItem value="2" className="py-3 px-4">Quarterly</SelectItem>
+                          <SelectItem value="3" className="py-3 px-4">Semiannually</SelectItem>
+                          <SelectItem value="4" className="py-3 px-4">Annually</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Status Section ── */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CalendarCheck className="w-4 h-4 text-purple-500" />
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Duration & Status</Label>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="is_active">Status</Label>
+                      <Select name="is_active" defaultValue={String(editingHousing?.is_active ?? true)}>
+                        <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="true" className="py-3 px-4 flex items-center gap-2">
+                            <CheckCircle2 className="w-3 h-3 text-green-500 inline mr-2" />
+                            Active
+                          </SelectItem>
+                          <SelectItem value="false" className="py-3 px-4 flex items-center gap-2">
+                            <X className="w-3 h-3 text-red-500 inline mr-2" />
+                            Inactive
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="end_date">End Date (Optional)</Label>
+                      <Input
+                        id="end_date"
+                        name="end_date"
+                        type="date"
+                        defaultValue={editingHousing?.end_date || ""}
+                        className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              {selectedStudentId && (
-                <p className="text-xs text-green-600 dark:text-green-400">
-                  ✓ Selected: {selectedStudentLabel}
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="room">Room</Label>
-                <Select name="room" defaultValue={editingHousing ? String(editingHousing.room) : undefined}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Room" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rooms.map(r => <SelectItem key={r.id} value={String(r.id)}>{r.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bed">Bed</Label>
-                <Select name="bed" defaultValue={editingHousing ? String(editingHousing.bed) : undefined}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Bed" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {beds.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.number} ({b.status})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fees">Fees</Label>
-                <Select name="fees" defaultValue={editingHousing ? String(editingHousing.fees) : undefined}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Fees" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fees.map(f => <SelectItem key={f.id} value={String(f.id)}>{f.label} ({f.amount})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="period_category">Period</Label>
-                <Select name="period_category" defaultValue={editingHousing ? String((editingHousing as any).period_category) : "4"}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Period" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Monthly</SelectItem>
-                    <SelectItem value="2">Quarterly</SelectItem>
-                    <SelectItem value="3">Semiannually</SelectItem>
-                    <SelectItem value="4">Annually</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="is_active">Status</Label>
-              <Select name="is_active" defaultValue={String(editingHousing?.is_active ?? true)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <DialogFooter>
-              <Button type="submit">{editingHousing ? "Update" : "Create"}</Button>
-            </DialogFooter>
-          </form>
+
+              <DialogFooter className="pt-6 border-t border-slate-200 dark:border-slate-800 flex justify-between sm:justify-between items-center bg-slate-50/30 dark:bg-slate-800/30 -mx-8 -mb-8 px-8 py-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsHousingModalOpen(false)}
+                  className="rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-bold px-6 h-12"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl shadow-lg shadow-purple-500/20 active:scale-95 transition-all font-bold px-10 h-12"
+                >
+                  {editingHousing ? "Save Changes" : "Create Assignment"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </div>
         </DialogContent>
       </Dialog>
 
