@@ -65,7 +65,8 @@ export default function InvoicesPage() {
                 <td><strong>${inv.reference}</strong><br/><small style="color: #64748b;">${inv.fees_detail.code}</small></td>
                 <td><strong>${inv.student_name || 'Institutional'}</strong><br/><small style="color: #64748b;">${inv.fees_detail.label}</small></td>
                 <td>${inv.fees_detail.fee_category_name}</td>
-                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong><br/><small style="color: #64748b;">${inv.fees_detail.fee_category_name || ''}</small></td>
+                <td>${inv.period_name || 'N/A'}</td>
+                <td style="text-align: right;"><strong>${Number(inv.amount).toLocaleString('en-US')} FBU</strong></td>
                 <td>${inv.date}</td>
                 <td>
                     <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: ${inv.status === 1 ? '#dcfce7' : '#fee2e2'}; color: ${inv.status === 1 ? '#166534' : '#991b1b'}; border: 1px solid ${inv.status === 1 ? '#bbf7d0' : '#fecaca'};">
@@ -117,14 +118,15 @@ export default function InvoicesPage() {
 
                  <table>
                      <thead>
-                         <tr>
-                             <th>Reference / Code</th>
-                             <th>Student / Description</th>
-                             <th>Category</th>
-                             <th style="text-align: right;">Amount / Period</th>
-                             <th>Date</th>
-                             <th>Status</th>
-                         </tr>
+                          <tr>
+                              <th>Reference / Code</th>
+                              <th>Student / Description</th>
+                              <th>Category</th>
+                              <th>Period</th>
+                              <th style="text-align: right;">Amount</th>
+                              <th>Date</th>
+                              <th>Status</th>
+                          </tr>
                      </thead>
                      <tbody>
                          ${tableBody}

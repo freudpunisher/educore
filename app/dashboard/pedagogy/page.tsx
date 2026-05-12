@@ -34,7 +34,11 @@ import {
   useGenerateReportCards,
   useDownloadReportCardPDF, 
   useTerms, 
-  useEnrollments 
+  useEnrollments,
+  useGeneratePreschoolAnnualReportCards,
+  useGenerateElementaryAnnualReportCards,
+  useGenerateMiddleSchoolAnnualReportCards,
+  useGenerateHighSchoolAnnualReportCards 
 } from "@/hooks/use-pedagogy"
 import { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -83,6 +87,10 @@ export default function PedagogyPage() {
   )
   const { data: terms = [] } = useTerms(selectedYearId)
   const generateMutation = useGenerateReportCards()
+  const generatePreschoolAnnualMutation = useGeneratePreschoolAnnualReportCards()
+  const generateElementaryAnnualMutation = useGenerateElementaryAnnualReportCards()
+  const generateMiddleAnnualMutation = useGenerateMiddleSchoolAnnualReportCards()
+  const generateHighAnnualMutation = useGenerateHighSchoolAnnualReportCards()
   const downloadMutation = useDownloadReportCardPDF()
 
   const enrollments = enrollmentsData?.results || []
@@ -262,19 +270,75 @@ export default function PedagogyPage() {
   }, [classStats])
 
   const handleGenerateGroupReportCards = async () => {
-    if (!selectedClassId || !selectedTermId) {
-      toast.error("Please select a term first.")
-      return
-    }
-
+    if (!selectedTermId || !selectedClassId) return
+    
     try {
-      await generateMutation.mutateAsync({
+      toast.loading("Génération des bulletins en cours...", { id: "generating" })
+      await generateMutation.mutateAsync({ 
         term: selectedTermId,
-        classroom: selectedClassId
+        classroom: selectedClassId 
       })
-      toast.success("Report cards generation started.")
-    } catch (error) {
-      toast.error("Failed to generate report cards.")
+      toast.success("Bulletins générés avec succès !", { id: "generating" })
+    } catch (error: any) {
+      toast.error("Erreur lors de la génération: " + error.message, { id: "generating" })
+    }
+  }
+
+  const handleGenerateMiddleAnnualReportCards = async () => {
+    if (!selectedClassId) return
+    
+    try {
+      toast.loading("Génération des bulletins annuels Middle School...", { id: "generating-annual" })
+      await generateMiddleAnnualMutation.mutateAsync({ 
+        classroom: selectedClassId 
+      })
+      toast.success("Bulletins annuels générés avec succès !", { id: "generating-annual" })
+    } catch (error: any) {
+      toast.error("Erreur lors de la génération: " + error.message, { id: "generating-annual-ms" })
+    }
+  }
+
+  const handleGenerateElementaryAnnualReportCards = async () => {
+    if (!selectedClassId || !selectedYearId) return
+    
+    try {
+      toast.loading("Génération des bulletins annuels Primaire...", { id: "generating-annual-el" })
+      await generateElementaryAnnualMutation.mutateAsync({ 
+        academic_year: selectedYearId,
+        classroom: selectedClassId 
+      })
+      toast.success("Bulletins annuels générés avec succès !", { id: "generating-annual-el" })
+    } catch (error: any) {
+      toast.error("Erreur lors de la génération: " + error.message, { id: "generating-annual-el" })
+    }
+  }
+
+  const handleGenerateHighAnnualReportCards = async () => {
+    if (!selectedClassId) return
+    
+    try {
+      toast.loading("Génération des bulletins annuels High School...", { id: "generating-annual-hs" })
+      await generateHighAnnualMutation.mutateAsync({ 
+        classroom: selectedClassId 
+      })
+      toast.success("Bulletins annuels générés avec succès !", { id: "generating-annual-hs" })
+    } catch (error: any) {
+      toast.error("Erreur lors de la génération: " + error.message, { id: "generating-annual-hs" })
+    }
+  }
+
+  const handleGeneratePreschoolAnnualReportCards = async () => {
+    if (!selectedClassId || !selectedYearId) return
+    
+    try {
+      toast.loading("Génération des bulletins annuels Maternelle...", { id: "generating-annual-ps" })
+      await generatePreschoolAnnualMutation.mutateAsync({ 
+        academic_year: selectedYearId,
+        classroom: selectedClassId 
+      })
+      toast.success("Bulletins annuels générés avec succès !", { id: "generating-annual-ps" })
+    } catch (error: any) {
+      toast.error("Erreur lors de la génération: " + error.message, { id: "generating-annual-ps" })
     }
   }
 
@@ -472,6 +536,70 @@ export default function PedagogyPage() {
             )}
             Generate Report Cards
           </Button>
+
+          {selectedClass?.level === 'elementary' && (
+            <Button 
+              onClick={handleGenerateElementaryAnnualReportCards} 
+              disabled={generateElementaryAnnualMutation.isPending}
+              variant="outline"
+              className="border-blue-600 text-blue-700 hover:bg-blue-50"
+            >
+              {generateElementaryAnnualMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              Annual Report (Elementary)
+            </Button>
+          )}
+
+          {selectedClass?.level === 'middle' && (
+            <Button 
+              onClick={handleGenerateMiddleAnnualReportCards} 
+              disabled={generateMiddleAnnualMutation.isPending}
+              variant="outline"
+              className="border-amber-600 text-amber-700 hover:bg-amber-50"
+            >
+              {generateMiddleAnnualMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              Annual Report (Middle School)
+            </Button>
+          )}
+
+          {selectedClass?.level === 'high' && (
+            <Button 
+              onClick={handleGenerateHighAnnualReportCards} 
+              disabled={generateHighAnnualMutation.isPending}
+              variant="outline"
+              className="border-indigo-600 text-indigo-700 hover:bg-indigo-50"
+            >
+              {generateHighAnnualMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              Annual Report (High School)
+            </Button>
+          )}
+
+          {selectedClass?.level === 'preschool' && (
+            <Button 
+              onClick={handleGeneratePreschoolAnnualReportCards} 
+              disabled={generatePreschoolAnnualMutation.isPending}
+              variant="outline"
+              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+            >
+              {generatePreschoolAnnualMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4 mr-2" />
+              )}
+              Annual Report (Creche/Pre-K)
+            </Button>
+          )}
         </div>
       </div>
 

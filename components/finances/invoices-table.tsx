@@ -201,6 +201,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         <TableHead className="w-[180px] font-bold">Reference</TableHead>
                         <TableHead className="font-bold">Student / Description</TableHead>
                         <TableHead className="font-bold">Category</TableHead>
+                        <TableHead className="font-bold">Period</TableHead>
                         <TableHead className="font-bold">Amount</TableHead>
                         <TableHead className="font-bold">Date</TableHead>
                         <TableHead className="font-bold">Status</TableHead>
@@ -233,11 +234,16 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                 </Badge>
                             </TableCell>
                             <TableCell>
+                                <div className="flex items-center gap-2 text-xs">
+                                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                                    <span className="font-medium text-muted-foreground">{invoice.period_name || "N/A"}</span>
+                                </div>
+                            </TableCell>
+                            <TableCell>
                                 <div className="flex flex-col">
                                     <span className="text-base font-bold">
                                         {Number(invoice.amount).toLocaleString("en-US")} FBU
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground">Incl. {invoice.fees_detail.period_name}</span>
                                 </div>
                             </TableCell>
                             <TableCell>

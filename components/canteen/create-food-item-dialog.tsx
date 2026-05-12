@@ -162,7 +162,7 @@ export function CreateFoodItemDialog({ onSuccess }: { onSuccess: () => void }) {
                                 name="cost"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Cost ($)</FormLabel>
+                                        <FormLabel>Cost (BIF)</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number"

@@ -46,8 +46,10 @@ axiosInstance.interceptors.request.use(
 // Response interceptor – global error handling + auto refresh example
 axiosInstance.interceptors.response.use(
   (response) => {
-    // If the response follows the standard format, we return 'data' directly
-    if (response.data && response.data.status === "success") {
+    // Support both 'status: success' (legacy) and 'success: true' (StandardResponse)
+    const isSuccess = response.data && (response.data.status === "success" || response.data.success === true);
+    
+    if (isSuccess && response.data.data !== undefined) {
       return {
         ...response,
         data: response.data.data,

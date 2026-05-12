@@ -34,11 +34,12 @@ export const driverSchema = z.object({
     id: z.number(),
     user: z.number(),
     user_name: z.string(),
+    user_email: z.string().optional(),
     vehicle: z.number().nullable().optional(),
-    vehicle_name: z.string().optional(), // Adding this for potential UI use
-    phone: z.string().optional(),
-    status: z.string().optional(),
-});
+    vehicle_detail: vehicleSimpleSchema.optional().nullable(),
+    driving_license_number: z.string(),
+    driving_license_expiration_date: z.string(),
+}).passthrough();
 
 export type Driver = z.infer<typeof driverSchema>;
 
@@ -68,6 +69,20 @@ export enum TransportStatusEnum {
     Suspended = "suspended",
 }
 
+export enum PeriodCategory {
+    MONTHLY = 1,
+    QUARTERLY = 2,
+    SEMIANNUALLY = 3,
+    ANNUALLY = 4,
+}
+
+export const PeriodCategoryLabels = {
+    [PeriodCategory.MONTHLY]: "Monthly",
+    [PeriodCategory.QUARTERLY]: "Quarterly",
+    [PeriodCategory.SEMIANNUALLY]: "Semiannually",
+    [PeriodCategory.ANNUALLY]: "Annually",
+};
+
 export const transportSubscriptionSchema = z.object({
     id: z.number(),
     reference: z.string().optional().nullable(),
@@ -76,7 +91,7 @@ export const transportSubscriptionSchema = z.object({
     student_enrollment: z.string().optional().nullable(),
     itinerary: z.number().optional(),
     itinerary_detail: itinerarySchema.optional().nullable(),
-    period: z.number().optional(),
+    period_category: z.number().optional(),
     enrollment_date: z.union([z.string(), z.date()]).optional().transform((val) => val ? new Date(val) : new Date()),
     status: z.string().optional().nullable(),
 }).passthrough();
@@ -90,7 +105,7 @@ export type TransportSubscriptionsListResponse = z.infer<typeof paginatedTranspo
 export const transportSubscriptionCreateSchema = z.object({
     student: z.number().min(1, "Student is required"),
     itinerary: z.number().min(1, "Route is required"),
-    period: z.number().min(1, "Period is required"),
+    period_category: z.number().min(1, "Period is required"),
     enrollment_date: z.string().min(1, "Enrollment date is required"),
     reference: z.string().optional(),
     status: z.nativeEnum(TransportStatusEnum).default(TransportStatusEnum.Active),

@@ -19,6 +19,9 @@ import {
   Pencil,
   History,
   ChevronsUpDown,
+  CheckCircle,
+  XCircle,
+  Power,
 } from "lucide-react";
 
 import {
@@ -30,7 +33,7 @@ import {
 } from "@/lib/mock/transport";
 import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
-import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum } from "@/types/transport";
+import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum, PeriodCategory, PeriodCategoryLabels } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { Button } from "@/components/ui/button";
@@ -57,6 +60,36 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return "Not set";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat("en", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  }).format(date);
+};
+
+const getVehicleLabel = (driver: any) => {
+  const vehicle = driver.vehicle_detail;
+  if (!vehicle) return "Unassigned";
+
+  return [vehicle.registration, vehicle.model].filter(Boolean).join(" - ") || `Vehicle #${driver.vehicle}`;
+};
+
+const isLicenseExpiringSoon = (expirationDate?: string | null) => {
+  if (!expirationDate) return false;
+
+  const expiresAt = new Date(expirationDate).getTime();
+  if (Number.isNaN(expiresAt)) return false;
+
+  const daysUntilExpiration = (expiresAt - Date.now()) / (1000 * 60 * 60 * 24);
+  return daysUntilExpiration >= 0 && daysUntilExpiration <= 30;
+};
+
 export default function TransportDashboard() {
   const [activeTab, setActiveTab] = useState("subscriptions");
   const [isLoading, setIsLoading] = useState(true);
@@ -68,7 +101,6 @@ export default function TransportDashboard() {
   const [searchCheckIn, setSearchCheckIn] = useState("");
   const [checkInPage, setCheckInPage] = useState(1);
   const [searchDriver, setSearchDriver] = useState("");
-  const [filterDriverStatus, setFilterDriverStatus] = useState("all");
   const [driverPage, setDriverPage] = useState(1);
   const [searchVehicle, setSearchVehicle] = useState("");
   const [filterVehicleStatus, setFilterVehicleStatus] = useState("all");
@@ -184,7 +216,12 @@ export default function TransportDashboard() {
       toast.success("Student enrolled successfully!", { id: loadingToast });
       setIsSubscriptionDialogOpen(false);
     } catch (error: any) {
-      toast.error(error.message || "Failed to add enrollment", { id: loadingToast });
+      console.error("Enrollment error:", error);
+      const errorMessage = error.response?.data?.errors?.non_field_errors?.[0] || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           "Failed to add enrollment";
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 
@@ -196,13 +233,32 @@ export default function TransportDashboard() {
       setIsSubscriptionDialogOpen(false);
       setSelectedSubscription(null);
     } catch (error: any) {
-      toast.error(error.message || "Failed to update enrollment", { id: loadingToast });
+      console.error("Update enrollment error:", error);
+      const errorMessage = error.response?.data?.errors?.non_field_errors?.[0] || 
+                           error.response?.data?.message || 
+                           error.message || 
+                           "Failed to update enrollment";
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 
   const openEditSubscription = (subscription: any) => {
     setSelectedSubscription(subscription);
     setIsSubscriptionDialogOpen(true);
+  };
+
+  const handleToggleSubscriptionStatus = async (subscription: any) => {
+    const newStatus = subscription.status === "active" ? "inactive" : "active";
+    const loadingToast = toast.loading(newStatus === "active" ? "Validating enrollment..." : "Deactivating enrollment...");
+    try {
+      await updateSubscriptionMutation.mutateAsync({
+        id: subscription.id,
+        data: { status: newStatus }
+      });
+      toast.success(newStatus === "active" ? "Enrollment validated!" : "Enrollment deactivated!", { id: loadingToast });
+    } catch (error: any) {
+      toast.error(error.message || "Action failed", { id: loadingToast });
+    }
   };
 
   useEffect(() => {
@@ -430,28 +486,62 @@ export default function TransportDashboard() {
                       render: (date) => new Date(date).toLocaleDateString()
                     },
                     {
-                      key: "period" as any,
+                      key: "period_category" as any,
                       label: "Period",
-                      render: (p) => `${p} months`
+                      render: (p) => PeriodCategoryLabels[p as PeriodCategory] || `${p} months`
                     },
                     {
                       key: "id" as any,
                       label: "Actions",
-                      render: (_, subscription: any) => (
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditSubscription(subscription);
-                            }}
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      )
+                      render: (_, subscription: any) => {
+                        const status = subscription.status?.toLowerCase();
+                        const isActive = status === "active";
+                        
+                        return (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditSubscription(subscription);
+                              }}
+                              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                              title="Edit"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+
+                            {!isActive && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleSubscriptionStatus(subscription);
+                                }}
+                                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                title="Validate"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleSubscriptionStatus(subscription);
+                              }}
+                              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                              title={isActive ? "Deactivate" : "Disable"}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      }
                     },
                   ]}
                   data={filteredSubscriptions}
@@ -739,21 +829,12 @@ export default function TransportDashboard() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
-                  placeholder="Search by name or license..."
+                  placeholder="Search by name, email, license, or vehicle..."
                   value={searchDriver}
                   onChange={(e) => setSearchDriver(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <select
-                value={filterDriverStatus}
-                onChange={(e) => setFilterDriverStatus(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
             </div>
 
             {isDriversLoading ? (
@@ -771,10 +852,23 @@ export default function TransportDashboard() {
                 <DataTable
                   columns={[
                     { key: "user_name", label: "Name", sortable: true },
-                    { key: "licenseNumber" as any, label: "License", sortable: true },
-                    { key: "vehicle_name" as any, label: "Assigned Vehicle", sortable: true },
-                    { key: "status" as any, label: "Status", render: (status) => <StatusBadge status={status as any} /> },
-                    { key: "phone" as any, label: "Contact", sortable: true },
+                    { key: "user_email" as any, label: "Email", render: (email) => email || "Not set" },
+                    {
+                      key: "vehicle_detail" as any,
+                      label: "Assigned Vehicle",
+                      render: (_vehicle, driver) => getVehicleLabel(driver),
+                    },
+                    { key: "driving_license_number" as any, label: "License Number", sortable: true },
+                    {
+                      key: "driving_license_expiration_date" as any,
+                      label: "License Expiration",
+                      sortable: true,
+                      render: (date) => (
+                        <span className={isLicenseExpiringSoon(date) ? "font-semibold text-amber-600 dark:text-amber-400" : ""}>
+                          {formatDate(date)}
+                        </span>
+                      ),
+                    },
                   ]}
                   data={filteredDrivers}
                   itemsPerPage={10}
@@ -811,27 +905,21 @@ export default function TransportDashboard() {
               </>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <div>
                 <p className="text-sm text-muted-foreground">Total Drivers</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{driverData?.count || 0}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Active</p>
+                <p className="text-sm text-muted-foreground">Assigned Vehicle</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {driverData?.results.filter(d => d.status === "active").length || 0}
+                  {driverData?.results.filter(d => Boolean(d.vehicle)).length || 0}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Inactive</p>
-                <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {driverData?.results.filter(d => d.status === "inactive").length || 0}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Utilization</p>
-                <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {driverData?.count ? Math.round((driverData.results.filter(d => d.status === "active").length / driverData.results.length) * 100) : 0}%
+                <p className="text-sm text-muted-foreground">Licenses Expiring Soon</p>
+                <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {driverData?.results.filter(d => isLicenseExpiringSoon(d.driving_license_expiration_date)).length || 0}
                 </p>
               </div>
             </div>
@@ -1051,23 +1139,24 @@ function SubscriptionDialog({
 
   const [studentId, setStudentId] = useState<string>("");
   const [itineraryId, setItineraryId] = useState<string>("");
-  const [period, setPeriod] = useState<string>("1");
+  const [periodCategory, setPeriodCategory] = useState<string>(PeriodCategory.ANNUALLY.toString());
   const [enrollmentDate, setEnrollmentDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
   const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Active);
+  const [openStudentSelect, setOpenStudentSelect] = useState(false);
 
   useEffect(() => {
     if (record && isOpen) {
       setStudentId(record.student?.toString() || "");
       setItineraryId(record.itinerary?.toString() || "");
-      setPeriod(record.period?.toString() || "1");
+      setPeriodCategory(record.period_category?.toString() || PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(record.enrollment_date || new Date().toISOString().split("T")[0]);
       setStatus(record.status || TransportStatusEnum.Active);
     } else if (isOpen) {
       setStudentId("");
       setItineraryId("");
-      setPeriod("1");
+      setPeriodCategory(PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(new Date().toISOString().split("T")[0]);
       setStatus(TransportStatusEnum.Active);
     }
@@ -1078,10 +1167,14 @@ function SubscriptionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!studentId || !itineraryId) {
+      toast.error("Please select a student and a route");
+      return;
+    }
     onSubmit({
       student: parseInt(studentId),
       itinerary: parseInt(itineraryId),
-      period: parseInt(period),
+      period_category: parseInt(periodCategory),
       enrollment_date: enrollmentDate,
       status,
     });
@@ -1105,19 +1198,51 @@ function SubscriptionDialog({
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Student
               </label>
-              <select
-                required
-                value={studentId}
-                onChange={(e) => setStudentId(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Student</option>
-                {students.map((student) => (
-                  <option key={student.id} value={student.id}>
-                    {student.full_name} ({student.enrollment_number})
-                  </option>
-                ))}
-              </select>
+              <Popover open={openStudentSelect} onOpenChange={setOpenStudentSelect}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openStudentSelect}
+                    className="w-full justify-between h-10 px-4 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                  >
+                    {studentId
+                      ? students.find((s) => s.id.toString() === studentId)?.full_name
+                      : "Select Student..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 rounded-xl" align="start">
+                  <Command className="w-full">
+                    <CommandInput placeholder="Search student by name or enrollment..." className="h-9" />
+                    <CommandList className="max-h-[300px]">
+                      <CommandEmpty>No student found.</CommandEmpty>
+                      <CommandGroup>
+                        {students.map((student) => (
+                          <CommandItem
+                            key={`form-student-${student.id}`}
+                            value={`${student.full_name} ${student.enrollment_number}`}
+                            onSelect={() => {
+                              setStudentId(student.id.toString());
+                              setOpenStudentSelect(false);
+                            }}
+                          >
+                            {student.full_name}
+                            <span className="ml-2 text-xs text-muted-foreground">({student.enrollment_number})</span>
+                            <Check
+                              className={cn(
+                                "ml-auto h-4 w-4",
+                                studentId === student.id.toString() ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              <input type="hidden" required value={studentId} />
             </div>
 
             <div className="space-y-2">
@@ -1142,16 +1267,20 @@ function SubscriptionDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Period (Months)
+                  Period Category
                 </label>
-                <input
-                  type="number"
+                <select
                   required
-                  min="1"
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
+                  value={periodCategory}
+                  onChange={(e) => setPeriodCategory(e.target.value)}
                   className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  {Object.entries(PeriodCategoryLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -1192,12 +1321,14 @@ function SubscriptionDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"
-            >
-              {record ? "Save Changes" : "Add Enrollment"}
-            </Button>
+            {record?.status !== "active" && (
+              <Button
+                type="submit"
+                className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"
+              >
+                {record ? "Save Changes" : "Add Enrollment"}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>
