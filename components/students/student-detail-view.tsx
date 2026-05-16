@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
     Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen, CheckCircle,
-    DollarSign, ShieldAlert, Truck, UtensilsCrossed, Home, Baby, Package
+    DollarSign, ShieldAlert, LayoutGrid, UtensilsCrossed, Home, Baby, Package
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
 import { useAcademicYears } from "@/hooks/use-academic-data";
@@ -17,10 +17,7 @@ import { AcademicsTab } from "./tabs/academics-tab";
 import { FinanceTab } from "./tabs/finance-tab";
 import { BehaviorTab } from "./tabs/behavior-tab";
 import { AttendanceTab } from "./tabs/attendance-tab";
-import { TransportTab } from "./tabs/transport-tab";
-import { DiningTab } from "./tabs/dining-tab";
-import { BoardingTab } from "./tabs/boarding-tab";
-import { DaycareTab } from "./tabs/daycare-tab";
+import { ServicesTab } from "./tabs/services-tab";
 import { InventoryTab } from "./tabs/inventory-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -225,32 +222,11 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             Attendance
                         </TabsTrigger>
                         <TabsTrigger
-                            value="transport"
+                            value="services"
                             className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
-                            <Truck className="h-4 w-4" />
-                            Transport
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="dining"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <UtensilsCrossed className="h-4 w-4" />
-                            Dining
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="boarding"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <Home className="h-4 w-4" />
-                            Boarding
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="daycare"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <Baby className="h-4 w-4" />
-                            Daycare
+                            <LayoutGrid className="h-4 w-4" />
+                            Services
                         </TabsTrigger>
                         <TabsTrigger
                             value="inventory"
@@ -293,20 +269,8 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         <AttendanceTab studentId={student.id} academicYearId={activeYearId} />
                     </TabsContent>
 
-                    <TabsContent value="transport" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <TransportTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
-
-                    <TabsContent value="dining" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <DiningTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
-
-                    <TabsContent value="boarding" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <BoardingTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
-
-                    <TabsContent value="daycare" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <DaycareTab studentId={student.id} academicYearId={activeYearId} />
+                    <TabsContent value="services" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300 overflow-visible">
+                        <ServicesTab studentId={student.id} />
                     </TabsContent>
 
                     <TabsContent value="inventory" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">

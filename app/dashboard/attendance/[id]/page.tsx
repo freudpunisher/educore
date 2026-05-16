@@ -33,8 +33,8 @@ import {
   Timer, Save, Lock, ChevronLeft, Users, BarChart3,
 } from "lucide-react";
 
-import { useAttendanceSessionDetail, useBulkMarkAttendance } from "@/hooks/use-attendance-sessions";
-import { useStudentsByClassLevel } from "@/hooks/use-discipline";
+import { useAttendanceSessionDetail, useBulkMarkAttendance, useAttendances } from "@/hooks/use-attendance-sessions";
+import { useStudents } from "@/hooks/use-students";
 import { AttendanceStatusValues, type AttendanceStatusType, type BulkAttendanceItem } from "@/types/attendance";
 
 const STATUS_CONFIG = {
@@ -103,10 +103,13 @@ export default function TakeAttendancePage() {
   const sessionId = Number(id);
 
   const { data: session, isLoading: sessionLoading } = useAttendanceSessionDetail(id as string);
-  const { data: enrollments = [], isLoading: enrollmentsLoading } = useStudentsByClassLevel(
-    session?.classroom || null,
-    !!session?.classroom
-  );
+  const { data: studentsData, isLoading: studentsLoading } = useStudents({
+    classroom: session?.classroom,
+  });
+  const students = studentsData?.results || [];
+  const { data: existingAttendances, isLoading: attendancesLoading } = useAttendances({
+    session: sessionId,
+  });
   const bulkMark = useBulkMarkAttendance();
 
   const [records, setRecords] = useState<Record<number, AttendanceRecord>>({});
@@ -122,16 +125,38 @@ export default function TakeAttendancePage() {
   const [tempNotes, setTempNotes] = useState<string>("");
   const [isSaved, setIsSaved] = useState(false);
 
-  // Initialise tous les élèves à "present" dès le chargement
+  // Initialise les élèves à "present" ou avec les données existantes dès le chargement
   useEffect(() => {
-    if (enrollments.length > 0 && Object.keys(records).length === 0) {
+    if (students.length > 0 && Object.keys(records).length === 0) {
       const initial: Record<number, AttendanceRecord> = {};
-      enrollments.forEach((enr) => {
-        initial[enr.student.id] = { status: "present", lateness_minutes: 0, notes: "" };
+
+      // Map existing attendances by student ID for quick lookup
+      const existingMap: Record<number, any> = {};
+      if (Array.isArray(existingAttendances)) {
+        existingAttendances.forEach(att => {
+          existingMap[att.student] = att;
+        });
+      } else if (existingAttendances?.results) {
+        existingAttendances.results.forEach((att: any) => {
+          existingMap[att.student] = att;
+        });
+      }
+
+      students.forEach((student) => {
+        const existing = existingMap[student.id];
+        if (existing) {
+          initial[student.id] = {
+            status: existing.status || "present",
+            lateness_minutes: existing.lateness_minutes || 0,
+            notes: existing.notes || ""
+          };
+        } else {
+          initial[student.id] = { status: "present", lateness_minutes: 0, notes: "" };
+        }
       });
       setRecords(initial);
     }
-  }, [enrollments]);
+  }, [students, existingAttendances]);
 
   const updateStatus = useCallback(
     (studentId: number, status: AttendanceStatusType, extra?: Partial<AttendanceRecord>) => {
@@ -175,11 +200,15 @@ export default function TakeAttendancePage() {
   const handleFinish = async () => {
     if (!session) return;
 
-    const attendances: BulkAttendanceItem[] = enrollments.map((enr) => {
-      const rec = records[enr.student.id] || { status: "present", lateness_minutes: 0, notes: "" };
+    const attendances: BulkAttendanceItem[] = students.map((student) => {
+      const rec = records[student.id] || { status: "present", lateness_minutes: 0, notes: "" };
       return {
-        student: enr.student.id,
-        enrollment: enr.id,
+        student: student.id,
+        // Since we are using useStudents, we might not have the enrollment ID directly.
+        // We'll check enrollment_info or use the student ID if the backend allows it,
+        // but BulkAttendanceItem requires enrollment ID.
+        // In this system, enrollment_id is often returned as 'id' or in 'enrollment_info'
+        enrollment: student.enrollment_id || student.id, // Fallback if not present
         status: rec.status,
         lateness_minutes: rec.lateness_minutes,
         notes: rec.notes,
@@ -190,8 +219,8 @@ export default function TakeAttendancePage() {
     setIsSaved(true);
   };
 
-  const filtered = enrollments.filter((enr) =>
-    enr.student.full_name?.toLowerCase().includes(search.toLowerCase())
+  const filtered = students.filter((student) =>
+    student.full_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
@@ -199,14 +228,14 @@ export default function TakeAttendancePage() {
     absent: Object.values(records).filter((r) => r.status === "absent").length,
     late: Object.values(records).filter((r) => r.status === "late").length,
     excused: Object.values(records).filter((r) => r.status === "excused" || r.status === "authorized").length,
-    total: enrollments.length,
+    total: students.length,
   };
 
   const attendanceRate = stats.total > 0
     ? Math.round((stats.present / stats.total) * 100)
     : 0;
 
-  if (sessionLoading || enrollmentsLoading) {
+  if (sessionLoading || studentsLoading || (attendancesLoading && Object.keys(records).length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <div className="relative">
@@ -341,12 +370,12 @@ export default function TakeAttendancePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filtered.map((enr) => {
-              const record = records[enr.student.id] || { status: "present" as AttendanceStatusType, lateness_minutes: 0, notes: "" };
+            {filtered.map((student) => {
+              const record = records[student.id] || { status: "present" as AttendanceStatusType, lateness_minutes: 0, notes: "" };
               const status = record.status;
               const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.present;
               const StatusIcon = cfg.icon;
-              const initials = (enr.student.full_name || "?")
+              const initials = (student.full_name || "?")
                 .split(" ")
                 .map((n: string) => n[0])
                 .join("")
@@ -355,7 +384,7 @@ export default function TakeAttendancePage() {
 
               return (
                 <Card
-                  key={enr.student.id}
+                  key={student.id}
                   className={`border-2 transition-all duration-200 hover:shadow-lg ${cfg.color} ${session.is_locked ? "opacity-75" : ""}`}
                 >
                   <CardContent className="p-5">
@@ -368,10 +397,10 @@ export default function TakeAttendancePage() {
                       </Avatar>
                       <div className="min-w-0">
                         <p className="font-semibold text-sm leading-tight truncate">
-                          {enr.student.full_name || "—"}
+                          {student.full_name || "—"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {enr.student.enrollment_number || ""}
+                          {student.enrollment_number || ""}
                         </p>
                       </div>
                     </div>
@@ -403,7 +432,7 @@ export default function TakeAttendancePage() {
                           size="sm"
                           className="h-8 text-xs"
                           variant={status === "present" ? "default" : "ghost"}
-                          onClick={() => updateStatus(enr.student.id, "present")}
+                          onClick={() => updateStatus(student.id, "present")}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                           Présent
@@ -412,7 +441,7 @@ export default function TakeAttendancePage() {
                           size="sm"
                           className="h-8 text-xs"
                           variant={status === "absent" ? "destructive" : "ghost"}
-                          onClick={() => updateStatus(enr.student.id, "absent")}
+                          onClick={() => updateStatus(student.id, "absent")}
                         >
                           <XCircle className="w-3.5 h-3.5 mr-1" />
                           Absent
@@ -426,7 +455,7 @@ export default function TakeAttendancePage() {
                           onClick={() => {
                             setTempLateness(String(record.lateness_minutes || 10));
                             setTempNotes(record.notes || "");
-                            setLatenessDialog({ open: true, studentId: enr.student.id });
+                            setLatenessDialog({ open: true, studentId: student.id });
                           }}
                         >
                           <Timer className="w-3.5 h-3.5 mr-1" />
@@ -441,7 +470,7 @@ export default function TakeAttendancePage() {
                           onClick={() => {
                             setTempJustification(record.justification || "");
                             setTempNotes(record.notes || "");
-                            setJustifyDialog({ open: true, studentId: enr.student.id });
+                            setJustifyDialog({ open: true, studentId: student.id });
                           }}
                         >
                           <FileText className="w-3.5 h-3.5 mr-1" />
@@ -557,7 +586,7 @@ export default function TakeAttendancePage() {
             <Button
               size="lg"
               onClick={handleFinish}
-              disabled={bulkMark.isPending || isSaved || enrollments.length === 0}
+              disabled={bulkMark.isPending || isSaved || students.length === 0}
               className="gap-2 px-8 shadow-lg"
             >
               {bulkMark.isPending ? (
