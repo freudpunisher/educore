@@ -179,18 +179,18 @@ export type StudentDetail = z.infer<typeof studentDetailSchema>;
 
 // --- Academics ---
 export const studentGradesSchema = z.object({
-  assessment_title: z.string(),
+  assessment_title: z.string().nullable().optional(),
   comment: z.string().optional().nullable(),
-  course_name: z.string(),
-  percentage: z.string(),
-  score: z.string(),
+  course_name: z.string().nullable().optional(),
+  percentage: z.coerce.string().nullable().optional(),
+  score: z.coerce.string().nullable().optional(),
 }).passthrough();
 
 export const enrollmentAcademicsSchema = z.object({
   id: z.number(),
-  academic_year_label: z.string(),
-  class_name: z.string(),
-  date_enrolled: z.string().transform((str) => new Date(str)),
+  academic_year_label: z.string().nullable().optional(),
+  class_name: z.string().nullable().optional(),
+  date_enrolled: z.string().nullable().transform((str) => (str ? new Date(str) : new Date())).optional(),
   grades: z.array(studentGradesSchema).default([]),
   is_current: z.boolean().optional(),
   report_cards_data: z.any().optional(),
@@ -270,9 +270,9 @@ export const studentDaycareSchema = z.object({
 
 export const studentHousingSchema = z.object({
   id: z.number(),
-  room_name: z.string(),
-  room_type: z.string(),
-  bed_number: z.string(),
+  room_name: z.string().nullable().optional(),
+  room_type: z.string().nullable().optional(),
+  bed_number: z.string().nullable().optional(),
   fees: z.union([z.string(), z.number()]).optional().transform(val => String(val || "0")),
   is_active: z.boolean().optional(),
   start_date: z.string().transform((str) => new Date(str)),

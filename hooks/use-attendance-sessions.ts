@@ -119,6 +119,7 @@ export function useBulkMarkAttendance() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["attendance-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["student-attendances"] });
+      queryClient.invalidateQueries({ queryKey: ["attendances"] });
       const total = (result?.created || 0) + (result?.updated || 0);
       toast.success(`✅ ${total} présence(s) enregistrée(s)`);
     },
@@ -127,6 +128,25 @@ export function useBulkMarkAttendance() {
         error?.response?.data?.message || "Erreur lors de l'enregistrement";
       toast.error(message);
     },
+  });
+}
+
+export function useAttendances(params?: {
+  session?: number;
+  student?: number;
+  status?: string;
+  date?: string;
+}) {
+  return useQuery({
+    queryKey: ["attendances", params],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/academics/attendances/", {
+        params,
+      });
+      // Standard unwrapping handled by axios interceptor
+      return data?.data || data;
+    },
+    enabled: !!(params?.session || params?.student || params?.date),
   });
 }
 
