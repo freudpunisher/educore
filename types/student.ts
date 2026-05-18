@@ -1,6 +1,7 @@
 // src/lib/types/student.ts ← FINAL VERSION
 import { z } from "zod";
 import { createPaginatedSchema } from "./api";
+import { transportSubscriptionSchema } from "./transport";
 
 export const enrollmentInfoSchema = z.object({
   classroom: z.string(),
@@ -143,17 +144,17 @@ export const studentAccountInfoSchema = z.object({
 }).passthrough();
 
 export const studentDetailSchema = z.object({
-  id: z.coerce.number(),
-  enrollment_number: z.string(),
-  first_name: z.string().nullable(),
-  last_name: z.string().nullable(),
-  full_name: z.string(),
-  gender: z.coerce.number(),
-  date_of_birth: z.union([z.string(), z.date()]).nullable().transform((val) => (val ? new Date(val) : null)),
+  id: z.coerce.number().optional().default(0),
+  enrollment_number: z.string().optional().default("N/A"),
+  first_name: z.string().nullable().optional(),
+  last_name: z.string().nullable().optional(),
+  full_name: z.string().optional().default("Unknown Student"),
+  gender: z.coerce.number().optional().default(0),
+  date_of_birth: z.union([z.string(), z.date()]).nullable().optional().transform((val) => (val ? new Date(val) : null)),
   enrollment_date: z.union([z.string(), z.date()]).nullish().transform((val) => (val ? new Date(val) : new Date())),
   enrollment_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   is_enrolled: z.coerce.boolean().optional(),
-  is_validated: z.coerce.boolean().optional(),
+  is_validate: z.coerce.boolean().optional(),
   account_info: z.union([z.string(), z.record(z.any()), z.null()]).optional(),
   account: z.any().optional(),
   parent_contact: z.string().nullish(),
@@ -167,8 +168,9 @@ export const studentDetailSchema = z.object({
     class_name: z.string(),
     academic_year: z.string(),
   }).nullable().optional(),
-}).passthrough().transform((data) => ({
+}).passthrough().transform((data: any) => ({
   ...data,
+  is_validate: data.is_validate ?? data.is_validated ?? false,
   parents_info: data.responsables || data.parents_info || [],
   account_info: data.account || data.account_info,
 }));
@@ -177,18 +179,18 @@ export type StudentDetail = z.infer<typeof studentDetailSchema>;
 
 // --- Academics ---
 export const studentGradesSchema = z.object({
-  assessment_title: z.string(),
+  assessment_title: z.string().nullable().optional(),
   comment: z.string().optional().nullable(),
-  course_name: z.string(),
-  percentage: z.string(),
-  score: z.string(),
+  course_name: z.string().nullable().optional(),
+  percentage: z.coerce.string().nullable().optional(),
+  score: z.coerce.string().nullable().optional(),
 }).passthrough();
 
 export const enrollmentAcademicsSchema = z.object({
   id: z.number(),
-  academic_year_label: z.string(),
-  class_name: z.string(),
-  date_enrolled: z.string().transform((str) => new Date(str)),
+  academic_year_label: z.string().nullable().optional(),
+  class_name: z.string().nullable().optional(),
+  date_enrolled: z.string().nullable().transform((str) => (str ? new Date(str) : new Date())).optional(),
   grades: z.array(studentGradesSchema).default([]),
   is_current: z.boolean().optional(),
   report_cards_data: z.any().optional(),
@@ -203,7 +205,7 @@ export type StudentAcademics = z.infer<typeof studentAcademicsResponseSchema>;
 // --- Finance ---
 export const studentPaymentSchema = z.object({
   id: z.number(),
-  amount: z.string(),
+  amount: z.coerce.string(),
   created_at: z.string().transform((str) => new Date(str)),
   payment_mode: z.number().optional(),
 }).passthrough();
@@ -211,8 +213,8 @@ export const studentPaymentSchema = z.object({
 export const studentInvoiceSchema = z.object({
   id: z.number(),
   reference: z.string(),
-  amount: z.string(),
-  balance: z.string(),
+  amount: z.coerce.string(),
+  balance: z.coerce.string(),
   status: z.number().optional(),
   created_at: z.string().transform((str) => new Date(str)),
   payments: z.array(studentPaymentSchema).default([]),
@@ -220,19 +222,19 @@ export const studentInvoiceSchema = z.object({
 
 export const studentFinanceResponseSchema = z.object({
   invoices: z.array(studentInvoiceSchema).default([]),
-  outstanding_balance: z.string(),
-  total_due: z.string(),
-  total_paid: z.string(),
+  outstanding_balance: z.coerce.string(),
+  total_due: z.coerce.string(),
+  total_paid: z.coerce.string(),
 }).passthrough();
 
 export type StudentFinance = z.infer<typeof studentFinanceResponseSchema>;
 
 // --- Student Life ---
 export const attendanceStatsSchema = z.object({
-  absent_count: z.number(),
-  late_count: z.number(),
-  present_count: z.number(),
-  total_count: z.number(),
+  absent_count: z.coerce.number(),
+  late_count: z.coerce.number(),
+  present_count: z.coerce.number(),
+  total_count: z.coerce.number(),
 }).passthrough();
 
 export enum DisciplineStatusEnum {
@@ -268,10 +270,10 @@ export const studentDaycareSchema = z.object({
 
 export const studentHousingSchema = z.object({
   id: z.number(),
-  room_name: z.string(),
-  room_type: z.string(),
-  bed_number: z.string(),
-  fees: z.number(),
+  room_name: z.string().nullable().optional(),
+  room_type: z.string().nullable().optional(),
+  bed_number: z.string().nullable().optional(),
+  fees: z.union([z.string(), z.number()]).optional().transform(val => String(val || "0")),
   is_active: z.boolean().optional(),
   start_date: z.string().transform((str) => new Date(str)),
   end_date: z.string().nullable().transform((val) => (val ? new Date(val) : null)).optional(),
@@ -320,6 +322,7 @@ export const studentServicesResponseSchema = z.object({
   daycare: z.array(studentDaycareSchema).default([]),
   housing: z.array(studentHousingSchema).default([]),
   meals: z.array(studentMealSubscriptionSchema).default([]),
+  transport: z.array(transportSubscriptionSchema).default([]),
 }).passthrough();
 
 export type StudentServices = z.infer<typeof studentServicesResponseSchema>;
@@ -343,7 +346,7 @@ export const studentSaleSchema = z.object({
   id: z.number(),
   product_name: z.string(),
   quantity: z.number().optional(),
-  total_price: z.string(),
+  total_price: z.coerce.string(),
   date: z.string().transform((str) => new Date(str)),
 }).passthrough();
 

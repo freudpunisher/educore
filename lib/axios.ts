@@ -48,7 +48,7 @@ axiosInstance.interceptors.response.use(
   (response) => {
     // Support both 'status: success' (legacy) and 'success: true' (StandardResponse)
     const isSuccess = response.data && (response.data.status === "success" || response.data.success === true);
-    
+
     if (isSuccess && response.data.data !== undefined) {
       return {
         ...response,

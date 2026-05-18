@@ -77,11 +77,15 @@ type FoodItem = {
 
 type Subscription = {
   id: number;
+  student: number;
   student_name: string;
   student_enrollment: string;
+  meal_plan: number;
   meal_plan_detail: { name: string };
-  status: string;
+  period_category: number;
+  status: "active" | "paused" | "expired" | "cancelled";
   start_date: string;
+  end_date?: string | null;
   total_amount_due: number;
   amount_paid: number;
   is_paid: boolean;
@@ -122,12 +126,15 @@ type AcademicYear = {
 
 type Attendance = {
   id: number;
+  student: number | null;
   student_name: string;
   student_enrollment: string;
+  account: number | null;
   staff_name: string | null;
+  meal: number;
   meal_info: { date: string; meal_type: string; description: string };
   subscription_info: { plan: string; status: string } | null;
-  status: string;
+  status: "present" | "absent" | "excused";
   checked_in_at: string;
   notes: string;
 };
@@ -157,6 +164,16 @@ export default function CanteenPage() {
   // Edit order state
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.id === selectedOrderId) || null,
+    [orders, selectedOrderId]
+  );
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState<number | null>(null);
+  const [isEditAttendanceOpen, setIsEditAttendanceOpen] = useState(false);
+  const selectedAttendance = useMemo(
+    () => attendance.find((record) => record.id === selectedAttendanceId) || null,
+    [attendance, selectedAttendanceId]
+  );
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -308,14 +325,16 @@ export default function CanteenPage() {
       label: "Status",
       sortable: true,
       render: (value: string) => {
-        const statusMap: Record<string, "active" | "inactive"> = {
-          active: "active",
-          paused: "inactive",
-          expired: "inactive",
-          cancelled: "inactive",
-        };
-        const mapped = statusMap[value?.toLowerCase()] ?? "inactive";
-        return <StatusBadge status={mapped} label={value} />;
+        const isActive = value?.toLowerCase() === "active";
+        return (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
+            isActive
+              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          }`}>
+            {value || "unknown"}
+          </span>
+        );
       },
     },
     {
@@ -565,7 +584,7 @@ export default function CanteenPage() {
   const attendanceColumns = [
     {
       key: "studentName" as const,
-      label: "Student",
+      label: "Attendee",
       sortable: true,
       render: (value: string) => (
         <span className="font-medium text-slate-900 dark:text-white">{value || "Staff"}</span>
@@ -610,6 +629,30 @@ export default function CanteenPage() {
           {value ? new Date(value).toLocaleTimeString() : "—"}
         </span>
       ),
+    },
+    {
+      key: "id" as any,
+      label: "Actions",
+      sortable: false,
+      render: (_: any, row: any) => {
+        if (!row.account) return <span className="text-slate-400">—</span>;
+
+        return (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedAttendanceId(row.id);
+              setIsEditAttendanceOpen(true);
+            }}
+            className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            title="Edit staff attendance"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        );
+      },
     },
   ];
 
@@ -831,9 +874,9 @@ export default function CanteenPage() {
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-                <p className="text-sm text-muted-foreground dark:text-slate-400">Pending</p>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">Paused</p>
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                  {orders.filter((o) => o.status === "pending").length}
+                  {orders.filter((o) => o.status === "paused").length}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
@@ -1067,11 +1110,14 @@ export default function CanteenPage() {
                 data={attendance
                   .filter((a) =>
                     !attendanceSearchTerm ||
-                    (a.student_name || "").toLowerCase().includes(attendanceSearchTerm.toLowerCase())
+                    (a.student_name || a.staff_name || "").toLowerCase().includes(attendanceSearchTerm.toLowerCase())
                   )
                   .map((a) => ({
                     id: a.id,
-                    studentName: a.student_name,
+                    account: a.account,
+                    meal: a.meal,
+                    notes: a.notes,
+                    studentName: a.student_name || a.staff_name || "Staff",
                     enrollment: a.student_enrollment,
                     mealType: a.meal_info?.meal_type || "N/A",
                     mealDate: a.meal_info?.date || "N/A",
@@ -1084,6 +1130,30 @@ export default function CanteenPage() {
             </div>
           </TabsContent>
         </Tabs>
+        <CreateSubscriptionDialog
+          mealPlans={mealPlans}
+          onSuccess={fetchData}
+          record={selectedOrder}
+          open={isEditOrderOpen}
+          onOpenChange={(open) => {
+            setIsEditOrderOpen(open);
+            if (!open) {
+              setSelectedOrderId(null);
+            }
+          }}
+        />
+        <CreateStaffAttendanceDialog
+          meals={meals}
+          onSuccess={fetchData}
+          record={selectedAttendance}
+          open={isEditAttendanceOpen}
+          onOpenChange={(open) => {
+            setIsEditAttendanceOpen(open);
+            if (!open) {
+              setSelectedAttendanceId(null);
+            }
+          }}
+        />
       </div>
     </div>
   );

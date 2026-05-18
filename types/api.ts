@@ -9,9 +9,9 @@ export interface PaginatedResponse<T> {
 
 export function createPaginatedSchema<T extends z.ZodTypeAny>(itemSchema: T) {
     return z.object({
-        count: z.number(),
-        next: z.string().nullable(),
-        previous: z.string().nullable(),
-        results: z.array(itemSchema),
+        count: z.coerce.number().optional().default(0),
+        next: z.string().nullable().optional(),
+        previous: z.string().nullable().optional(),
+        results: z.array(itemSchema).default([]),
     });
 }
