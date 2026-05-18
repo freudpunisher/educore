@@ -233,7 +233,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
                         >
                             <Package className="h-4 w-4" />
-                            Inventory
+                            Distribution
                         </TabsTrigger>
                         <TabsTrigger
                             value="family"
@@ -288,7 +288,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {student.parents_info?.map((p, index) => (
+                                {student.parents_info?.map((p: any, index: number) => (
                                     <Card key={index} className="relative overflow-hidden group hover:shadow-md transition-shadow">
                                         {p.is_primary && (
                                             <div className="absolute top-0 right-0">
@@ -335,7 +335,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 gap-3">
-                                {student.documents?.map((doc, idx) => {
+                                {student.documents?.map((doc: any, idx: number) => {
                                     const getIcon = (type: string) => {
                                         switch (type) {
                                             case "bulletin": return <ClipboardList className="h-6 w-6" />;
