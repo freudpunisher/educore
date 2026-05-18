@@ -150,6 +150,32 @@ export function useAttendances(params?: {
   });
 }
 
+export function useCreateAttendance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      student: number;
+      enrollment: number;
+      session: number;
+      status: string;
+      lateness_minutes?: number;
+      notes?: string;
+    }) => {
+      const { data } = await axiosInstance.post("/academics/attendances/", payload);
+      return data?.data || data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attendances"] });
+      queryClient.invalidateQueries({ queryKey: ["attendance-sessions"] });
+      // Removed generic success toast to avoid spamming the user during live marking
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.message || "Erreur lors de l'enregistrement";
+      toast.error(message);
+    },
+  });
+}
+
 export function useStudentAttendanceHistory(
   studentId: number | null,
   classroomId?: number | null
