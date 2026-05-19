@@ -49,18 +49,12 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
     const { data: life } = useStudentLife(student.id, activeYearId);
 
     const getEnrollmentDisplay = (info: any) => {
-        // Use pre-computed current_class if available from StudentBaseSerializer
         const currentClass = student.current_class;
         if (currentClass) {
             return `${currentClass.class_name} (${currentClass.academic_year})`;
         }
-
         if (!info) return "N/A";
-        if (typeof info === "string") return info;
-        if (typeof info === "object") {
-            return (info as any).classroom || (info as any).class_level || "Linked";
-        }
-        return "Linked";
+        return info.classroom || "Linked";
     };
 
     const attendanceRate = life?.attendance_stats
@@ -70,59 +64,60 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
     const hasArrears = finance ? parseFloat(finance.outstanding_balance) > 0 : false;
 
     return (
-        <div className="flex flex-col h-full bg-muted/30 overflow-hidden">
+        <div className="flex flex-col h-full bg-transparent overflow-hidden">
             {/* Header / Overview */}
-            <div className="p-6 pb-0 space-y-6 flex-shrink-0">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div className="flex items-center gap-6">
-                        <div className="relative group">
-                            <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-4 border-background shadow-xl group-hover:scale-105 transition-transform duration-300">
+            <div className="p-8 pb-0 space-y-8 flex-shrink-0">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                    <div className="flex items-center gap-8">
+                        <div className="relative">
+                            <div className="h-28 w-28 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary overflow-hidden border-4 border-background shadow-2xl transition-transform hover:scale-105 duration-500">
                                 {student.image ? (
                                     <img src={student.image} alt={student.full_name} className="h-full w-full object-cover" />
                                 ) : (
-                                    <Users className="h-10 w-10" />
+                                    <Users className="h-12 w-12 opacity-40 shadow-inner" />
                                 )}
                             </div>
-                            <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-green-500 border-4 border-background rounded-full shadow-lg" />
+                            <div className="absolute -bottom-2 -right-2 h-9 w-9 bg-emerald-500 border-4 border-background rounded-full shadow-lg flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-white" />
+                            </div>
                         </div>
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-3xl font-bold tracking-tight">{student.full_name}</h1>
-                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-mono text-xs font-bold">
-                                    ID: {student.enrollment_number || `STU-${student.id}`}
+                        <div className="space-y-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                <h1 className="text-4xl font-black tracking-tight text-foreground">{student.full_name}</h1>
+                                <Badge variant="secondary" className="w-fit bg-primary/10 text-primary border-none font-black text-xs px-3 py-1 uppercase tracking-tighter">
+                                    {student.enrollment_number || `STU-${student.id}`}
                                 </Badge>
                             </div>
-                            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex items-center gap-2 text-sm font-bold text-foreground/70 bg-card/50 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-border/50">
                                     <GraduationCap className="h-4 w-4 text-primary" />
                                     <span>{getEnrollmentDisplay(student.enrollment_info)}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm font-bold text-foreground/70 bg-card/50 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-border/50">
                                     <Calendar className="h-4 w-4 text-orange-500" />
-                                    <span>Born on {student.date_of_birth ? format(new Date(student.date_of_birth), "PPP") : "Unknown"}</span>
+                                    <span>{student.date_of_birth ? format(new Date(student.date_of_birth), "dd MMM yyyy") : "N/A"}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/50 px-3 py-1 rounded-full border border-border/50 shadow-sm">
-                                    <Activity className="h-4 w-4 text-green-500" />
-                                    <span className="capitalize">{student.gender === 1 ? "Girl" : "Boy"}</span>
+                                <div className="flex items-center gap-2 text-sm font-bold text-foreground/70 bg-card/50 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-border/50">
+                                    <Activity className="h-4 w-4 text-emerald-500" />
+                                    <span className="capitalize">{student.gender === 1 ? "Female" : "Male"}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex flex-col gap-1.5 min-w-[200px]">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80 px-1">Academic Year Filter</p>
+                    <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex flex-col gap-1.5">
                             <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                <SelectTrigger className="h-11 rounded-xl bg-background border-border/50 shadow-sm hover:shadow-md transition-all">
+                                <SelectTrigger className="h-12 w-[220px] rounded-2xl bg-card/80 border-none shadow-sm hover:shadow-md transition-all font-bold text-foreground/80">
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-primary" />
-                                        <SelectValue placeholder="Select Year" />
+                                        <SelectValue placeholder="Academic Year" />
                                     </div>
                                 </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="current" className="font-bold text-primary">Current Session (Default)</SelectItem>
+                                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                                    <SelectItem value="current" className="font-bold text-primary">Current Session</SelectItem>
                                     {academicYears?.map((year) => (
                                         <SelectItem key={year.id} value={year.id.toString()}>
-                                            {year.start_year}-{year.end_year} {year.is_current ? "(Current)" : ""}
+                                            {year.academic_year_display || `${year.start_year}-${year.end_year}`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -133,60 +128,71 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             <Button
                                 onClick={() => validateMutation.mutate(student.id)}
                                 disabled={validateMutation.isPending}
-                                className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl h-11 px-6 shadow-lg shadow-orange-500/20 gap-2 font-bold"
+                                className="bg-orange-500 hover:bg-orange-600 text-white rounded-2xl h-12 px-8 shadow-xl shadow-orange-500/20 gap-2 font-black uppercase tracking-widest text-xs transition-all hover:scale-105 active:scale-95"
                             >
                                 <Sparkles className="h-4 w-4" />
-                                Validate Student
+                                Validate
                             </Button>
                         )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-6">
-                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
-                                <Users className="h-5 w-5" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pb-8">
+                    {/* Enrollment Card */}
+                    <div className="relative overflow-hidden group bg-card/40 backdrop-blur-xl rounded-[2rem] p-6 transition-all hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 cursor-default border border-border/50">
+                        <Users className="absolute -right-4 -bottom-4 h-24 w-24 text-primary/5 -rotate-12 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700" />
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className="p-3 bg-blue-500/10 text-blue-600 rounded-2xl shadow-inner">
+                                <Users className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Enrollment</p>
-                                <p className="text-lg font-bold truncate">{student.current_class?.class_name || "Enrolled"}</p>
+                                <p className="text-[10px] font-black text-blue-600/50 uppercase tracking-[0.2em]">Enrollment</p>
+                                <p className="text-xl font-black text-foreground line-clamp-1">{student.current_class?.class_name || "Enrolled"}</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${hasArrears ? 'bg-orange-500/10 text-orange-600' : 'bg-green-500/10 text-green-600'}`}>
-                                <Wallet className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Financial Status</p>
-                                <p className="text-lg font-bold">{hasArrears ? "Arrears" : "Good Standing"}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-2.5 bg-purple-500/10 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
-                                <CheckCircle className="h-5 w-5" />
+                        </div>
+                    </div>
+
+                    {/* Financial Status Card */}
+                    <div className="relative overflow-hidden group bg-card/40 backdrop-blur-xl rounded-[2rem] p-6 transition-all hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 cursor-default border border-border/50">
+                        <Wallet className="absolute -right-4 -bottom-4 h-24 w-24 text-primary/5 -rotate-12 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700" />
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className={`p-3 rounded-2xl shadow-inner ${hasArrears ? 'bg-orange-500/10 text-orange-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                                <Wallet className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Attendance Rate</p>
-                                <p className="text-lg font-bold">{attendanceRate}% Average</p>
+                                <p className="text-[10px] font-black text-emerald-600/50 uppercase tracking-[0.2em]">Financial Status</p>
+                                <p className={`text-xl font-black ${hasArrears ? 'text-orange-600' : 'text-emerald-700'}`}>{hasArrears ? "Arrears" : "Good Standing"}</p>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/40 backdrop-blur-sm border-border/50 shadow-sm hover:shadow-md transition-all group overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-2.5 bg-orange-500/10 text-orange-600 rounded-xl group-hover:scale-110 transition-transform">
-                                <Award className="h-5 w-5" />
+                        </div>
+                    </div>
+
+                    {/* Attendance Card */}
+                    <div className="relative overflow-hidden group bg-card/40 backdrop-blur-xl rounded-[2rem] p-6 transition-all hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 cursor-default border border-border/50">
+                        <CheckCircle className="absolute -right-4 -bottom-4 h-24 w-24 text-primary/5 -rotate-12 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700" />
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className="p-3 bg-purple-500/10 text-purple-600 rounded-2xl shadow-inner">
+                                <Activity className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Discipline</p>
-                                <p className="text-lg font-bold">{life?.discipline_score || "10.0"}/10.0</p>
+                                <p className="text-[10px] font-black text-purple-600/50 uppercase tracking-[0.2em]">Active Presence</p>
+                                <p className="text-xl font-black text-foreground">{attendanceRate}% Ratio</p>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+
+                    {/* Discipline Card */}
+                    <div className="relative overflow-hidden group bg-card/40 backdrop-blur-xl rounded-[2rem] p-6 transition-all hover:bg-card/60 hover:shadow-2xl hover:shadow-primary/5 cursor-default border border-border/50">
+                        <Award className="absolute -right-4 -bottom-4 h-24 w-24 text-primary/5 -rotate-12 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-700" />
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className="p-3 bg-amber-500/10 text-amber-600 rounded-2xl shadow-inner">
+                                <Award className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black text-amber-600/50 uppercase tracking-[0.2em]">Merit Score</p>
+                                <p className="text-xl font-black text-foreground">{life?.discipline_score || "10.0"}/10</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
