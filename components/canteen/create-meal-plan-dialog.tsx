@@ -130,7 +130,7 @@ export function CreateMealPlanDialog({ onSuccess }: { onSuccess: () => void }) {
                                 name="monthly_cost"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Monthly Cost ($)</FormLabel>
+                                        <FormLabel>Monthly Cost (BIF)</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="number"

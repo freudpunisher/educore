@@ -22,6 +22,10 @@ import {
   ShoppingCart,
   Plus,
   Download,
+  Pencil,
+  CheckCircle,
+  PauseCircle,
+  XCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { CreateMealPlanDialog } from "@/components/canteen/create-meal-plan-dialog";
@@ -73,11 +77,15 @@ type FoodItem = {
 
 type Subscription = {
   id: number;
+  student: number;
   student_name: string;
   student_enrollment: string;
+  meal_plan: number;
   meal_plan_detail: { name: string };
-  status: string;
+  period_category: number;
+  status: "active" | "paused" | "expired" | "cancelled";
   start_date: string;
+  end_date?: string | null;
   total_amount_due: number;
   amount_paid: number;
   is_paid: boolean;
@@ -110,14 +118,23 @@ type Meal = {
   availability_status: { available: number; total: number; served: number };
 };
 
+type AcademicYear = {
+  id: number;
+  name: string;
+  is_current: boolean;
+};
+
 type Attendance = {
   id: number;
+  student: number | null;
   student_name: string;
   student_enrollment: string;
+  account: number | null;
   staff_name: string | null;
+  meal: number;
   meal_info: { date: string; meal_type: string; description: string };
   subscription_info: { plan: string; status: string } | null;
-  status: string;
+  status: "present" | "absent" | "excused";
   checked_in_at: string;
   notes: string;
 };
@@ -135,6 +152,8 @@ export default function CanteenPage() {
   const [mealTypes, setMealTypes] = useState<MealType[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [academicYears, setAcademicYears] = useState<AcademicYear[]>([]);
+  const [selectedYear, setSelectedYear] = useState<string>("");
 
   const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
@@ -142,18 +161,33 @@ export default function CanteenPage() {
   const [preferenceSearchTerm, setPreferenceSearchTerm] = useState("");
   const [attendanceSearchTerm, setAttendanceSearchTerm] = useState("");
 
+  // Edit order state
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.id === selectedOrderId) || null,
+    [orders, selectedOrderId]
+  );
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState<number | null>(null);
+  const [isEditAttendanceOpen, setIsEditAttendanceOpen] = useState(false);
+  const selectedAttendance = useMemo(
+    () => attendance.find((record) => record.id === selectedAttendanceId) || null,
+    [attendance, selectedAttendanceId]
+  );
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      const params = selectedYear ? { academic_year: selectedYear } : {};
       const [kpiRes, plansRes, itemsRes, ordersRes, prefsRes, typesRes, mealsRes, attendanceRes] = await Promise.all([
-        api.get<CanteenDashboardKPI>("food/dashboard-meal/"),
+        api.get<CanteenDashboardKPI>("food/dashboard-meal/", { params }),
         api.get<any>("food/meal-plans/"),
         api.get<any>("food/food-items/"),
-        api.get<any>("food/subscriptions/"),
-        api.get<any>("food/student-preferences/"),
+        api.get<any>("food/subscriptions/", { params }),
+        api.get<any>("food/student-preferences/", { params }),
         api.get<any>("food/meal-types/"),
-        api.get<any>("food/meals/"),
-        api.get<any>("food/attendance/"),
+        api.get<any>("food/meals/", { params }),
+        api.get<any>("food/attendance/", { params }),
       ]);
 
       setDashboardKPI(kpiRes);
@@ -172,8 +206,40 @@ export default function CanteenPage() {
   };
 
   useEffect(() => {
-    fetchData();
+    api.get<any>("academics/years/").then((res) => {
+      const years = Array.isArray(res) ? res : res.results || [];
+      setAcademicYears(years);
+      const current = years.find((y: any) => y.is_current);
+      if (current) {
+        setSelectedYear(current.id.toString());
+      } else if (years.length > 0) {
+        setSelectedYear(years[0].id.toString());
+      }
+    });
   }, []);
+
+  useEffect(() => {
+    if (selectedYear) {
+      fetchData();
+    }
+  }, [selectedYear]);
+
+  const PERIOD_CATEGORY_LABELS: Record<number, string> = {
+    1: "Monthly",
+    2: "Quarterly",
+    3: "Semiannually",
+    4: "Annually",
+  };
+
+  const handleSubscriptionAction = async (id: number, status: string) => {
+    try {
+      await api.patch(`food/subscriptions/${id}/`, { status });
+      toast.success(`Subscription ${status} successfully`);
+      fetchData();
+    } catch {
+      toast.error("Failed to update subscription");
+    }
+  };
 
   // Filter meal orders
   const filteredOrders = useMemo(() => {
@@ -196,8 +262,10 @@ export default function CanteenPage() {
         mealPlan: order.meal_plan_detail?.name || "N/A",
         servingDate: order.start_date,
         totalPrice: order.total_amount_due,
+        amountPaid: order.amount_paid,
         status: order.status,
-        paymentStatus: order.is_paid ? "paid" : "pending",
+        isPaid: order.is_paid,
+        periodCategory: PERIOD_CATEGORY_LABELS[(order as any).period_category] || "—",
       }));
   }, [orders, orderStatusFilter, orderSearchTerm]);
 
@@ -226,9 +294,9 @@ export default function CanteenPage() {
     },
     {
       key: "class" as const,
-      label: "Class",
+      label: "Enrollment #",
       sortable: true,
-      render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
+      render: (value: string) => <span className="font-mono text-xs text-slate-600 dark:text-slate-300">{value || "—"}</span>,
     },
     {
       key: "mealPlan" as const,
@@ -237,8 +305,18 @@ export default function CanteenPage() {
       render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
     },
     {
+      key: "periodCategory" as const,
+      label: "Period",
+      sortable: true,
+      render: (value: string) => (
+        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+          {value}
+        </span>
+      ),
+    },
+    {
       key: "servingDate" as const,
-      label: "Serving Date",
+      label: "Start Date",
       sortable: true,
       render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
     },
@@ -247,27 +325,113 @@ export default function CanteenPage() {
       label: "Status",
       sortable: true,
       render: (value: string) => {
-        const statusMap: Record<string, "active" | "inactive"> = {
-          pending: "inactive",
-          confirmed: "active",
-          served: "active",
-          cancelled: "inactive",
-          active: "active",
-          inactive: "inactive",
-        };
-        const status = statusMap[value?.toLowerCase()] || (value as any);
-        return <StatusBadge status={status} />;
+        const isActive = value?.toLowerCase() === "active";
+        return (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
+            isActive
+              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+          }`}>
+            {value || "unknown"}
+          </span>
+        );
       },
     },
     {
+      key: "isPaid" as const,
+      label: "Payment",
+      sortable: true,
+      render: (value: boolean) => (
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+          value
+            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+        }`}>
+          {value ? "Paid" : "Pending"}
+        </span>
+      ),
+    },
+    {
       key: "totalPrice" as const,
-      label: "Amount",
+      label: "Total Due",
       sortable: true,
       render: (value: number) => (
         <span className="font-semibold text-slate-900 dark:text-white">
-          ${Number(value || 0).toFixed(2)}
+          BIF {Number(value || 0).toFixed(0)}
         </span>
       ),
+    },
+    {
+      key: "id" as any,
+      label: "Actions",
+      sortable: false,
+      render: (_: any, row: any) => {
+        const isActive = row.status === "active";
+        return (
+          <div className="flex items-center gap-1">
+            {/* Edit */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedOrderId(row.id);
+                setIsEditOrderOpen(true);
+              }}
+              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+
+            {/* Validate / Activate */}
+            {!isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubscriptionAction(row.id, "active");
+                }}
+                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                title="Validate / Activate"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Pause / Deactivate */}
+            {isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubscriptionAction(row.id, "paused");
+                }}
+                className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                title="Pause"
+              >
+                <PauseCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Cancel */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSubscriptionAction(row.id, "cancelled");
+              }}
+              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+              title="Cancel"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
@@ -306,7 +470,7 @@ export default function CanteenPage() {
       sortable: true,
       render: (value: number) => (
         <span className="font-semibold text-slate-900 dark:text-white">
-          ${Number(value || 0).toFixed(2)}
+          BIF {Number(value || 0).toFixed(0)}
         </span>
       ),
     },
@@ -420,7 +584,7 @@ export default function CanteenPage() {
   const attendanceColumns = [
     {
       key: "studentName" as const,
-      label: "Student",
+      label: "Attendee",
       sortable: true,
       render: (value: string) => (
         <span className="font-medium text-slate-900 dark:text-white">{value || "Staff"}</span>
@@ -466,6 +630,30 @@ export default function CanteenPage() {
         </span>
       ),
     },
+    {
+      key: "id" as any,
+      label: "Actions",
+      sortable: false,
+      render: (_: any, row: any) => {
+        if (!row.account) return <span className="text-slate-400">—</span>;
+
+        return (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedAttendanceId(row.id);
+              setIsEditAttendanceOpen(true);
+            }}
+            className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+            title="Edit staff attendance"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+        );
+      },
+    },
   ];
 
   if (isLoading) {
@@ -480,16 +668,33 @@ export default function CanteenPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <div className="space-y-6 p-6 animate-in fade-in duration-500">
         {/* Header */}
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
-            <div className="p-3 bg-orange-100 dark:bg-orange-950 rounded-xl shadow-lg">
-              <UtensilsCrossed className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-            </div>
-            Canteen Management
-          </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-2 text-lg">
-            Manage meals, preferences, dietary restrictions, and student orders
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-3">
+              <div className="p-3 bg-orange-100 dark:bg-orange-950 rounded-xl shadow-lg">
+                <UtensilsCrossed className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              Canteen Management
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-2 text-lg">
+              Manage meals, preferences, dietary restrictions, and student orders
+            </p>
+          </div>
+          <div className="flex items-center gap-4 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+            <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider ml-2">Academic Year</span>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[180px] border-none shadow-none font-bold text-blue-600 dark:text-blue-400 bg-transparent">
+                <SelectValue placeholder="Select Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {academicYears.map((year) => (
+                  <SelectItem key={year.id} value={year.id.toString()}>
+                    {year.name} {year.is_current ? "(Current)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* KPI Cards - Always Visible */}
@@ -497,7 +702,7 @@ export default function CanteenPage() {
           <KpiCard
             title="Meals Served"
             value={dashboardKPI?.meals_served_today || 0}
-            subtitle={`Today - Avg ${Number(dashboardKPI?.average_order_value || 0).toFixed(2)}/order`}
+            subtitle={`Today - Avg BIF ${Number(dashboardKPI?.average_order_value || 0).toFixed(0)}/order`}
             icon={<ShoppingCart className="w-6 h-6" />}
           />
           <KpiCard
@@ -522,28 +727,14 @@ export default function CanteenPage() {
 
         {/* Tabs Section */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Plans
-            </TabsTrigger>
-            <TabsTrigger value="items" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Items
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Subscriptions
-            </TabsTrigger>
-            <TabsTrigger value="preferences" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Preferences
-            </TabsTrigger>
-            <TabsTrigger value="meal-types" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meal Types
-            </TabsTrigger>
-            <TabsTrigger value="meals" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Meals
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="data-[state=active]:bg-blue-100 dark:data-[state=active]:bg-blue-950">
-              Attendance
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="overview">Meal Plans</TabsTrigger>
+            <TabsTrigger value="items">Meal Items</TabsTrigger>
+            <TabsTrigger value="orders">Subscriptions</TabsTrigger>
+            <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="meal-types">Meal Types</TabsTrigger>
+            <TabsTrigger value="meals">Meals</TabsTrigger>
+            <TabsTrigger value="attendance">Attendance</TabsTrigger>
           </TabsList>
 
           {/* Meal Plans Tab */}
@@ -582,7 +773,7 @@ export default function CanteenPage() {
                         Price
                       </span>
                       <span className="font-semibold text-slate-900 dark:text-white">
-                        ${Number(plan.monthly_cost || 0).toFixed(2)}
+                        BIF {Number(plan.monthly_cost || 0).toFixed(0)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -683,9 +874,9 @@ export default function CanteenPage() {
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
-                <p className="text-sm text-muted-foreground dark:text-slate-400">Pending</p>
+                <p className="text-sm text-muted-foreground dark:text-slate-400">Paused</p>
                 <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">
-                  {orders.filter((o) => o.status === "pending").length}
+                  {orders.filter((o) => o.status === "paused").length}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
@@ -697,7 +888,7 @@ export default function CanteenPage() {
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                 <p className="text-sm text-muted-foreground dark:text-slate-400">Revenue</p>
                 <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                  ${orders.reduce((sum, o) => sum + Number(o.amount_paid || 0), 0).toFixed(2)}
+                  BIF {orders.reduce((sum, o) => sum + Number(o.amount_paid || 0), 0).toFixed(0)}
                 </p>
               </div>
             </div>
@@ -711,20 +902,16 @@ export default function CanteenPage() {
               />
               <Select
                 value={orderStatusFilter}
-                onValueChange={(value) =>
-                  setOrderStatusFilter(
-                    value as "all" | "pending" | "confirmed" | "served" | "cancelled"
-                  )
-                }
+                onValueChange={(value) => setOrderStatusFilter(value)}
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="served">Served</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
@@ -923,11 +1110,14 @@ export default function CanteenPage() {
                 data={attendance
                   .filter((a) =>
                     !attendanceSearchTerm ||
-                    (a.student_name || "").toLowerCase().includes(attendanceSearchTerm.toLowerCase())
+                    (a.student_name || a.staff_name || "").toLowerCase().includes(attendanceSearchTerm.toLowerCase())
                   )
                   .map((a) => ({
                     id: a.id,
-                    studentName: a.student_name,
+                    account: a.account,
+                    meal: a.meal,
+                    notes: a.notes,
+                    studentName: a.student_name || a.staff_name || "Staff",
                     enrollment: a.student_enrollment,
                     mealType: a.meal_info?.meal_type || "N/A",
                     mealDate: a.meal_info?.date || "N/A",
@@ -940,6 +1130,30 @@ export default function CanteenPage() {
             </div>
           </TabsContent>
         </Tabs>
+        <CreateSubscriptionDialog
+          mealPlans={mealPlans}
+          onSuccess={fetchData}
+          record={selectedOrder}
+          open={isEditOrderOpen}
+          onOpenChange={(open) => {
+            setIsEditOrderOpen(open);
+            if (!open) {
+              setSelectedOrderId(null);
+            }
+          }}
+        />
+        <CreateStaffAttendanceDialog
+          meals={meals}
+          onSuccess={fetchData}
+          record={selectedAttendance}
+          open={isEditAttendanceOpen}
+          onOpenChange={(open) => {
+            setIsEditAttendanceOpen(open);
+            if (!open) {
+              setSelectedAttendanceId(null);
+            }
+          }}
+        />
       </div>
     </div>
   );

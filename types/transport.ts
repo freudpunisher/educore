@@ -34,11 +34,12 @@ export const driverSchema = z.object({
     id: z.number(),
     user: z.number(),
     user_name: z.string(),
+    user_email: z.string().optional(),
     vehicle: z.number().nullable().optional(),
-    vehicle_name: z.string().optional(), // Adding this for potential UI use
-    phone: z.string().optional(),
-    status: z.string().optional(),
-});
+    vehicle_detail: vehicleSimpleSchema.optional().nullable(),
+    driving_license_number: z.string(),
+    driving_license_expiration_date: z.string(),
+}).passthrough();
 
 export type Driver = z.infer<typeof driverSchema>;
 
