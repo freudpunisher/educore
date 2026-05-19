@@ -105,8 +105,20 @@ export function useStudentAcademics(id: number | null, academicYearId?: number) 
               course_name: z.any(),
               percentage: z.any(),
               score: z.any(),
+              comment: z.any().optional(),
             }).passthrough()).default([]),
             is_current: z.any().optional(),
+            student_count: z.any().optional(),
+            assessment_count: z.any().optional(),
+            class_capacity: z.any().optional(),
+            course_count: z.any().optional(),
+            class_average: z.any().optional(),
+            subjects: z.array(z.object({
+              course_name: z.string(),
+              teacher: z.string(),
+              student_grade: z.union([z.string(), z.number()]),
+              class_average: z.coerce.number(),
+            })).default([]),
           }).passthrough()).default([]),
         }).passthrough();
 

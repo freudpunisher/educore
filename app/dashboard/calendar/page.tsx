@@ -1,11 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { CalendarIcon, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
-import { api } from "@/lib/api"
+import { useEvents, useCreateEvent } from "@/hooks/use-events"
+import { EventTypeValues } from "@/types/academics"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -25,61 +21,47 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-type SchoolEvent = {
-  id: number;
-  title: string;
-  description: string;
-  start_date: string;
-  end_date: string | null;
-  event_type: "holiday" | "exam" | "event" | "meeting" | "other";
-  location: string | null;
-};
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { CalendarIcon, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { useState } from "react"
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [events, setEvents] = useState<SchoolEvent[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  useEffect(() => {
-    fetchEvents()
-  }, [])
+  // Calcule le début et la fin du mois pour le filtrage (optionnel, selon l'API)
+  const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split("T")[0]
+  const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split("T")[0]
 
-  const fetchEvents = async () => {
-    setIsLoading(true)
-    try {
-      const resp = await api.get<any>("academics/events/")
-      setEvents(Array.isArray(resp) ? resp : resp.results || [])
-    } catch {
-      toast.error("Failed to load events")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { data: eventsData, isLoading } = useEvents({
+    start_date: startDate,
+    end_date: endDate,
+  })
+  const events = eventsData?.results || []
+
+  const createEvent = useCreateEvent()
 
   const handleCreateEvent = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsSubmitting(true)
     const fd = new FormData(e.currentTarget)
-    const data = {
-      title: fd.get("title"),
-      description: fd.get("description"),
-      start_date: fd.get("start_date"),
-      end_date: fd.get("end_date") || null,
-      event_type: fd.get("event_type"),
-      location: fd.get("location"),
+
+    const payload = {
+      title: fd.get("title") as string,
+      description: fd.get("description") as string,
+      start_date: fd.get("start_date") as string, // Direct YYYY-MM-DD string from input
+      end_date: (fd.get("end_date") as string) || null, // Direct YYYY-MM-DD string from input
+      event_type: fd.get("event_type") as any || "event",
+      location: fd.get("location") as string,
     }
 
     try {
-      await api.post("academics/events/", data)
+      await createEvent.mutateAsync(payload)
       toast.success("Event created successfully")
       setIsModalOpen(false)
-      fetchEvents()
     } catch {
       toast.error("Failed to create event")
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -112,8 +94,15 @@ export default function CalendarPage() {
   }
 
   const getEventsForDate = (day: number) => {
-    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-    return events.filter((event) => event.start_date === dateStr)
+    const dayStr = String(day).padStart(2, "0")
+    const monthStr = String(currentDate.getMonth() + 1).padStart(2, "0")
+    const dateStr = `${currentDate.getFullYear()}-${monthStr}-${dayStr}`
+
+    return events.filter((event) => {
+      // Handles both ISO strings and YYYY-MM-DD strings defensively
+      const eventDate = String(event.start_date).split("T")[0]
+      return eventDate === dateStr
+    })
   }
 
   const previousMonth = () => {
@@ -276,8 +265,8 @@ export default function CalendarPage() {
               <Textarea id="description" name="description" placeholder="Short event summary..." rows={3} />
             </div>
             <DialogFooter>
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+              <Button type="submit" disabled={createEvent.isPending} className="w-full">
+                {createEvent.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
                 Create Event
               </Button>
             </DialogFooter>

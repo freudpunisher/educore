@@ -92,7 +92,7 @@ export default function BehaviorPage() {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 animate-in fade-in duration-700">
+        <div className=" mx-auto py-8 px-4 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">

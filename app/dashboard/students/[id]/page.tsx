@@ -112,10 +112,7 @@ export default function StudentDetailPage() {
         <div className="h-px bg-gradient-to-r from-border/80 via-border/30 to-transparent" />
 
         {/* ── Detail card ─────────────────────────────────── */}
-        <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden ring-1 ring-black/[0.03]">
-          {/* Subtle header accent stripe */}
-          <div className="h-1 w-full bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
-
+        <div className="rounded-2xl border-none bg-card/30 overflow-hidden min-h-[600px]">
           <StudentDetailView student={student} />
         </div>
 

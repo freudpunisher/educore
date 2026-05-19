@@ -5,8 +5,9 @@ import { createPaginatedSchema } from "./api";
 export const academicYearSchema = z.object({
   id: z.number(),
   start_year: z.number(),
-  end_year: z.number(),        // ← WAS string → now number
+  end_year: z.number(),
   is_current: z.boolean(),
+  academic_year_display: z.string().optional(),
 });
 
 export const classRoomSchema = z.object({

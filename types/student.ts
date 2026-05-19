@@ -194,6 +194,17 @@ export const enrollmentAcademicsSchema = z.object({
   grades: z.array(studentGradesSchema).default([]),
   is_current: z.boolean().optional(),
   report_cards_data: z.any().optional(),
+  student_count: z.coerce.number().optional().default(0),
+  assessment_count: z.coerce.number().optional().default(0),
+  class_capacity: z.coerce.number().optional().default(0),
+  course_count: z.coerce.number().optional().default(0),
+  class_average: z.coerce.number().optional().default(0.0),
+  subjects: z.array(z.object({
+    course_name: z.string(),
+    teacher: z.string(),
+    student_grade: z.union([z.string(), z.number()]),
+    class_average: z.coerce.number(),
+  })).default([]),
 }).passthrough();
 
 export const studentAcademicsResponseSchema = z.object({
@@ -254,8 +265,19 @@ export const studentRecordSchema = z.object({
 
 export const studentLifeResponseSchema = z.object({
   attendance_stats: attendanceStatsSchema.optional(),
+  attendance_history: z.array(z.object({
+    id: z.number(),
+    date: z.string().transform((str) => new Date(str)),
+    session_type: z.string().optional().nullable(),
+    subject: z.string().optional().nullable(),
+    start_time: z.string().optional().nullable(),
+    end_time: z.string().optional().nullable(),
+    status: z.string(),
+    lateness_minutes: z.coerce.number().optional().default(0),
+    notes: z.string().optional().nullable(),
+  }).passthrough()).default([]),
   discipline_history: z.array(studentRecordSchema).default([]),
-  discipline_score: z.string(),
+  discipline_score: z.union([z.string(), z.number()]),
 }).passthrough();
 
 export type StudentLife = z.infer<typeof studentLifeResponseSchema>;
@@ -340,6 +362,9 @@ export const studentDistributionSchema = z.object({
   quantity: z.number().optional(),
   distribution_date: z.string().transform((str) => new Date(str)),
   status: z.nativeEnum(Status4EcEnum).optional(),
+  notes: z.string().optional().nullable(),
+  expected_return_date: z.string().nullable().optional(),
+  returned_date: z.string().nullable().optional(),
 }).passthrough();
 
 export const studentSaleSchema = z.object({
