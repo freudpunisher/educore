@@ -246,7 +246,7 @@ export function StudentPvcCardDialog({ student }: StudentPvcCardProps) {
                 </Button>
             </DialogTrigger>
 
-            <DialogContent className="max-w-2xl bg-white text-zinc-900 border-none shadow-2xl p-0 overflow-hidden font-sans">
+            <DialogContent className="max-w-2xl bg-white text-zinc-900 border-none shadow-2xl p-0 overflow-hidden font-sans" style={{ maxWidth: "80vh", width: "80vh" }}>
 
                 {/* Header */}
                 <div className="p-6 border-b border-zinc-100 bg-white">
