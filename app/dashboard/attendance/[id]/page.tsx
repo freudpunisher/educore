@@ -265,7 +265,7 @@ export default function TakeAttendancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 pb-32">
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className=" mx-auto px-4 py-6 space-y-6">
 
         {/* Back button */}
         <Button variant="ghost" onClick={() => router.back()} className="gap-2 -ml-2">
@@ -274,7 +274,7 @@ export default function TakeAttendancePage() {
 
         {/* Hero Header */}
         <Card className="border-0 shadow-xl overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 p-6 text-white">
+          <div className="bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-600 p-6 text-white">
             <div className="flex flex-col lg:flex-row justify-between gap-6">
               <div>
                 <div className="flex items-center gap-3 mb-3">
