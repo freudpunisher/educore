@@ -8,127 +8,101 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Clock, Download, Plus, Loader2 } from "lucide-react"
-import { api } from "@/lib/api"
 import { toast } from "sonner"
 
-type ClassRoom = {
-  id: number;
-  code: string;
-  name: string;
-};
-
-type TimetableSlot = {
-  id: number;
-  course: number;
-  course_name: string;
-  teacher_name: string;
-  classroom_id: number;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  room: string | null;
-};
-
-type Course = {
-  id: number;
-  name: string;
-  teacher_name: string;
-};
+import {
+  useTimetable,
+  useClassRooms,
+  useCourses,
+  useTeachers,
+  useCreateTimetableSlot
+} from "@/hooks/use-timetable"
+import {
+  ClassRoom,
+  TimetableSlot,
+  Course,
+  Teacher
+} from "@/types/timetable"
 
 export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState<string>("")
-  const [classRooms, setClassRooms] = useState<ClassRoom[]>([])
-  const [slots, setSlots] = useState<TimetableSlot[]>([])
-  const [courses, setCourses] = useState<Course[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAdding, setIsAdding] = useState(false)
+  const [selectedCourseId, setSelectedCourseId] = useState<string>("all")
+  const [selectedDay, setSelectedDay] = useState<string>("all")
+
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  // Form state
+  // API Hooks
+  const { data: classRooms = [], isLoading: isLoadingClasses } = useClassRooms()
+  const { data: slots = [], isLoading: isLoadingTimetable } = useTimetable({
+    classroom: selectedClassId ? parseInt(selectedClassId) : undefined,
+    course: selectedCourseId !== "all" ? parseInt(selectedCourseId) : undefined,
+    day_of_week: selectedDay !== "all" ? parseInt(selectedDay) : undefined,
+  })
+  const { data: courses = [] } = useCourses(selectedClassId)
+  const { data: teachers = [] } = useTeachers()
+  const createSlotMutation = useCreateTimetableSlot()
+
   const [newSlot, setNewSlot] = useState({
+    classroom_id: "",
     course: "",
+    teacher: "",
     day_of_week: "0",
     start_time: "08:00",
     end_time: "09:00",
-    room: "",
   })
 
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
   const timeSlots = ["08:00-09:00", "09:00-10:00", "10:15-11:15", "11:15-12:15", "14:00-15:00", "15:00-16:00"]
 
+  // Initialize selectedClassId when classRooms load
   useEffect(() => {
-    fetchClassRooms()
-  }, [])
-
-  useEffect(() => {
-    if (selectedClassId) {
-      fetchTimetable(selectedClassId)
-      fetchCourses(selectedClassId)
+    if (classRooms.length > 0 && !selectedClassId) {
+      const firstId = classRooms[0].id.toString()
+      setSelectedClassId(firstId)
+      setNewSlot(prev => ({ ...prev, classroom_id: firstId }))
     }
-  }, [selectedClassId])
+  }, [classRooms, selectedClassId])
 
-  const fetchClassRooms = async () => {
-    try {
-      const resp = await api.get<any>("config/classrooms/")
-      const data = resp.results || resp
-      setClassRooms(data)
-      if (data.length > 0) {
-        setSelectedClassId(data[0].id.toString())
-      }
-    } catch {
-      toast.error("Failed to load classrooms")
-    } finally {
-      setIsLoading(false)
+  const handleCreateSlot = async () => {
+    if (!newSlot.classroom_id) {
+      toast.error("Please select a classroom")
+      return
     }
-  }
-
-  const fetchTimetable = async (classId: string) => {
-    setIsLoading(true)
-    try {
-      const resp = await api.get<any>(`config/timetable/?course__classroom=${classId}`)
-      setSlots(resp.results || resp)
-    } catch {
-      toast.error("Failed to load timetable")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const fetchCourses = async (classId: string) => {
-    try {
-      const resp = await api.get<any>(`config/courses/?classroom=${classId}`)
-      setCourses(resp.results || resp)
-    } catch {
-      toast.error("Failed to load courses")
-    }
-  }
-
-  const createSlot = async () => {
     if (!newSlot.course) {
       toast.error("Please select a course")
       return
     }
-    setIsAdding(true)
+    if (!newSlot.teacher) {
+      toast.error("Please select a teacher")
+      return
+    }
+
     try {
-      await api.post("config/timetable/", {
+      await createSlotMutation.mutateAsync({
         ...newSlot,
+        classroom_id: parseInt(newSlot.classroom_id),
         course: parseInt(newSlot.course),
+        teacher: parseInt(newSlot.teacher),
         day_of_week: parseInt(newSlot.day_of_week),
       })
-      toast.success("Timetable slot created")
+
       setIsDialogOpen(false)
-      fetchTimetable(selectedClassId)
+      setNewSlot({
+        classroom_id: selectedClassId,
+        course: "",
+        teacher: "",
+        day_of_week: "0",
+        start_time: "08:00",
+        end_time: "09:00",
+      })
     } catch {
-      toast.error("Failed to create slot")
-    } finally {
-      setIsAdding(false)
+      // toast is handled by hook
     }
   }
 
   const getSlotForDayAndTime = (dayIndex: number, timeSlot: string) => {
     const [start] = timeSlot.split("-")
-    // Match by day index and start time (HH:MM)
-    return slots.find((s) => s.day_of_week === dayIndex && s.start_time.startsWith(start))
+    return slots.find((s: TimetableSlot) => s.day_of_week === dayIndex && s.start_time.startsWith(start))
   }
 
   const subjectColors: Record<string, string> = {
@@ -165,19 +139,51 @@ export default function TimetablePage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="course">Course</Label>
-                  <Select value={newSlot.course} onValueChange={(v) => setNewSlot({ ...newSlot, course: v })}>
+                  <Label htmlFor="classroom">Classroom</Label>
+                  <Select value={newSlot.classroom_id} onValueChange={(v) => setNewSlot({ ...newSlot, classroom_id: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a course" />
+                      <SelectValue placeholder="Select a classroom" />
                     </SelectTrigger>
                     <SelectContent>
-                      {courses.map((c) => (
-                        <SelectItem key={c.id} value={c.id.toString()}>
-                          {c.name} ({c.teacher_name})
+                      {classRooms.map((cls: ClassRoom) => (
+                        <SelectItem key={cls.id} value={cls.id.toString()}>
+                          {cls.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="course">Course</Label>
+                    <Select value={newSlot.course} onValueChange={(v) => setNewSlot({ ...newSlot, course: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a course" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.map((c: Course) => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="teacher">Teacher</Label>
+                    <Select value={newSlot.teacher} onValueChange={(v) => setNewSlot({ ...newSlot, teacher: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a teacher" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teachers.map((t: Teacher) => (
+                          <SelectItem key={t.id} value={t.id.toString()}>
+                            {t.user?.first_name} {t.user?.last_name || ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
@@ -194,15 +200,6 @@ export default function TimetablePage() {
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="room">Room</Label>
-                    <Input
-                      id="room"
-                      placeholder="Ex: Room 101"
-                      value={newSlot.room}
-                      onChange={(e) => setNewSlot({ ...newSlot, room: e.target.value })}
-                    />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -230,8 +227,8 @@ export default function TimetablePage() {
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={createSlot} disabled={isAdding}>
-                  {isAdding && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <Button onClick={handleCreateSlot} disabled={createSlotMutation.isPending}>
+                  {createSlotMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Create Slot
                 </Button>
               </DialogFooter>
@@ -250,18 +247,48 @@ export default function TimetablePage() {
               </CardTitle>
               <CardDescription>Detailed timetable by class</CardDescription>
             </div>
-            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select a class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classRooms.map((cls) => (
-                  <SelectItem key={cls.id} value={cls.id.toString()}>
-                    {cls.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2">
+              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select class" />
+                </SelectTrigger>
+                <SelectContent>
+                  {classRooms.map((cls: ClassRoom) => (
+                    <SelectItem key={cls.id} value={cls.id.toString()}>
+                      {cls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter Course" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Courses</SelectItem>
+                  {courses.map((c: Course) => (
+                    <SelectItem key={c.id} value={c.id.toString()}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedDay} onValueChange={setSelectedDay}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Days</SelectItem>
+                  {days.map((day, i) => (
+                    <SelectItem key={day} value={i.toString()}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
