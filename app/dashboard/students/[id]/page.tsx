@@ -101,6 +101,7 @@ export default function StudentDetailPage() {
               size="sm"
               variant="outline"
               className="gap-2 border-border/60 hover:bg-muted/60 text-sm font-medium"
+              onClick={() => router.push(`/dashboard/students/${studentId}/edit`)}
             >
               <Edit className="w-3.5 h-3.5" />
               Edit
