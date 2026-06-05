@@ -216,6 +216,9 @@ export default function StorePage() {
   const [currentRecipientType, setCurrentRecipientType] = useState("staff");
   const [selectedRecipientId, setSelectedRecipientId] = useState(0);
   const [selectedRecipientName, setSelectedRecipientName] = useState("");
+  const [currentBuyerType, setCurrentBuyerType] = useState("student");
+  const [selectedBuyerId, setSelectedBuyerId] = useState(0);
+  const [selectedBuyerName, setSelectedBuyerName] = useState("");
 
   // Filters
   const [inventorySearch, setInventorySearch] = useState("");
@@ -269,12 +272,12 @@ export default function StorePage() {
   }, []);
 
   useEffect(() => {
-    if (isDistributionModalOpen && !editingDistribution && accounts.length === 0) {
+    if ((isDistributionModalOpen || isSaleModalOpen) && accounts.length === 0) {
       api.get<any>("users/accounts/")
         .then((res) => setAccounts(Array.isArray(res) ? res : res.results || []))
         .catch(() => toast.error("Failed to load accounts"));
     }
-  }, [isDistributionModalOpen, editingDistribution]);
+  }, [isDistributionModalOpen, isSaleModalOpen]);
 
   // ─── CRUD Handlers ────────────────────────────────────────────────────────
 
@@ -423,6 +426,7 @@ export default function StorePage() {
       unit_price: parseFloat(fd.get("unit_price") as string),
       buyer_name: fd.get("buyer_name"),
       buyer_type: fd.get("buyer_type"),
+      buyer_id: parseInt(fd.get("buyer_id") as string) || null,
       is_paid: fd.get("is_paid") === "true",
       notes: fd.get("notes") || null,
     };
@@ -1644,13 +1648,55 @@ export default function StorePage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Buyer Name</Label>
-                <Input name="buyer_name" placeholder="e.g. Jean Dupont" required />
-              </div>
+              {["staff", "student"].includes(currentBuyerType) ? (
+                <div className="space-y-2">
+                  <Label>Buyer</Label>
+                  <Select
+                    onValueChange={(val) => {
+                      const account = accounts.find((a) => a.id === parseInt(val));
+                      if (account) {
+                        setSelectedBuyerId(account.id);
+                        setSelectedBuyerName(
+                          [account.user.first_name, account.user.last_name].filter(Boolean).join(" ") || account.user.username
+                        );
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
+                    <SelectContent>
+                      {accounts
+                        .filter((a) =>
+                          currentBuyerType === "staff"
+                            ? !["student", "student_parent", "none"].includes(a.role)
+                            : a.role === "student"
+                        )
+                        .map((a) => (
+                          <SelectItem key={a.id} value={String(a.id)}>
+                            {[a.user.first_name, a.user.last_name].filter(Boolean).join(" ") || a.user.username}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="buyer_id" value={selectedBuyerId} />
+                  <input type="hidden" name="buyer_name" value={selectedBuyerName} />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Buyer Name</Label>
+                  <Input name="buyer_name" placeholder="e.g. Jean Dupont" required />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Buyer Type</Label>
-                <Select name="buyer_type" defaultValue="student">
+                <Select
+                  name="buyer_type"
+                  defaultValue="student"
+                  onValueChange={(val) => {
+                    setCurrentBuyerType(val);
+                    setSelectedBuyerId(0);
+                    setSelectedBuyerName("");
+                  }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="student">Student</SelectItem>
