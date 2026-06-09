@@ -2,7 +2,8 @@
 
 import { 
     FileText, Download, PieChart, BarChart, Users, DollarSign, BookOpen, 
-    Truck, Utensils, Home, Baby, Package, GraduationCap, Calendar, Loader2, Check 
+    Truck, Utensils, Home, Baby, Package, GraduationCap, Calendar, Loader2, Check,
+    Building2,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,17 +27,20 @@ import {
 } from "@/components/ui/dialog";
 import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export default function ReportsDashboard() {
+    const { user } = useAuth();
     const { data: academicYears } = useAcademicYears();
     const [selectedYear, setSelectedYear] = useState<string>("current");
+    const isBodyControl = user?.role === "body_control";
     const [downloadingReport, setDownloadingReport] = useState<string | null>(null);
 
     // Custom Builder Dialog State
     const [isCustomOpen, setIsCustomOpen] = useState(false);
-    const [customCategory, setCustomCategory] = useState<"students" | "finance" | "logistics" | "inventory">("students");
+    const [customCategory, setCustomCategory] = useState<string>("students");
     const [customColumns, setCustomColumns] = useState<string[]>(["ID", "Enrollment Number", "Full Name", "Class", "Gender", "Status"]);
     const [customLimit, setCustomLimit] = useState<string>("50");
     const [customFormat, setCustomFormat] = useState<"excel" | "pdf">("excel");
@@ -331,6 +335,27 @@ export default function ReportsDashboard() {
                 filename = "Canteen_Consumption_Report";
                 displayTitle = "Canteen Consumption Report";
             }
+            else if (reportName === "Daily Daycare Log") {
+                headers = ["Child Name", "Date", "Check In", "Check Out", "Meal Notes", "Activity"];
+                rows = [
+                    ["Alice Maniriho", "2026-06-08", "07:30", "16:00", "Lunch + Snack", "Drawing, Nap"],
+                    ["Bob Niyonzima", "2026-06-08", "07:45", "15:30", "Lunch only", "Outdoor play"],
+                    ["Claire Uwimana", "2026-06-08", "08:00", "16:30", "Full board", "Music, Nap"],
+                ];
+                filename = "Daily_Daycare_Log";
+                displayTitle = "Daily Daycare Log";
+            }
+            else if (reportName === "Attendance Summary") {
+                headers = ["Child Name", "Total Days", "Present", "Absent", "Attendance Rate"];
+                rows = [
+                    ["Alice Maniriho", "20", "19", "1", "95%"],
+                    ["Bob Niyonzima", "20", "18", "2", "90%"],
+                    ["Claire Uwimana", "20", "20", "0", "100%"],
+                    ["David Hakizimana", "20", "17", "3", "85%"],
+                ];
+                filename = "Attendance_Summary";
+                displayTitle = "Attendance Summary";
+            }
             else if (reportName === "Dormitory Occupancy List") {
                 headers = ["Dormitory / Pavillion", "Room Type", "Total Capacity", "Occupied Beds", "Occupancy Rate"];
                 rows = [
@@ -388,14 +413,16 @@ export default function ReportsDashboard() {
         }
     };
 
-    const handleCategoryChange = (val: "students" | "finance" | "logistics" | "inventory") => {
-        setCustomCategory(val);
+    const handleCategoryChange = (val: "students" | "finance" | "logistics" | "inventory" | "daycare") => {
+        setCustomCategory(val as any);
         if (val === "students") {
             setCustomColumns(["ID", "Enrollment Number", "Full Name", "Class", "Gender", "Status"]);
         } else if (val === "finance") {
             setCustomColumns(["Payment Reference", "Date", "Amount (Fbu)", "Invoice ID", "Payment Method"]);
         } else if (val === "logistics") {
             setCustomColumns(["Student Name", "Route / Room", "Vehicle / Bed", "Driver / Room Type", "Enrollment Date"]);
+        } else if (val === "daycare") {
+            setCustomColumns(["Child Name", "Date", "Check In", "Check Out", "Meal Notes"]);
         } else if (val === "inventory") {
             setCustomColumns(["Item Code", "Designation", "Category", "Quantity", "Movement Type"]);
         }
@@ -405,6 +432,7 @@ export default function ReportsDashboard() {
         if (customCategory === "students") return ["ID", "Enrollment Number", "Full Name", "Class", "Gender", "Status"];
         if (customCategory === "finance") return ["Payment Reference", "Date", "Amount (Fbu)", "Invoice ID", "Payment Method"];
         if (customCategory === "logistics") return ["Student Name", "Route / Room", "Vehicle / Bed", "Driver / Room Type", "Enrollment Date"];
+        if (customCategory === "daycare") return ["Child Name", "Date", "Check In", "Check Out", "Meal Notes"];
         return ["Item Code", "Designation", "Category", "Quantity", "Movement Type"];
     };
 
@@ -481,6 +509,13 @@ export default function ReportsDashboard() {
                     ];
                 }
             }
+            else if (customCategory === "daycare") {
+                rawRows = [
+                    { "Child Name": "Alice Maniriho", "Date": "2026-06-08", "Check In": "07:30", "Check Out": "16:00", "Meal Notes": "Lunch + Snack" },
+                    { "Child Name": "Bob Niyonzima", "Date": "2026-06-08", "Check In": "07:45", "Check Out": "15:30", "Meal Notes": "Lunch only" },
+                    { "Child Name": "Claire Uwimana", "Date": "2026-06-08", "Check In": "08:00", "Check Out": "16:30", "Meal Notes": "Full board" },
+                ];
+            }
             else if (customCategory === "inventory") {
                 rawRows = [
                     { "Item Code": "MAT-5021", "Designation": "Exercise book 100 pages", "Category": "Academic", "Quantity": "1240", "Movement Type": "Distribution" },
@@ -518,17 +553,17 @@ export default function ReportsDashboard() {
         }
     };
 
-    const reportCategories = [
+    const allReportCategories = [
         {
             title: "Academic Reports",
             description: "Grades, performance analysis, and report cards.",
             icon: GraduationCap,
             color: "text-blue-600",
             bg: "bg-blue-50",
+            roles: ["body_control", "global_control", "system_admin", "director", "academic_principal", "teacher"],
             reports: [
                 { name: "Global Performance Index", format: "Excel/PDF" },
                 { name: "Class Ranking Report", format: "PDF" },
-                { name: "Subject Pass Rate Analysis", format: "Excel" },
             ]
         },
         {
@@ -537,6 +572,7 @@ export default function ReportsDashboard() {
             icon: DollarSign,
             color: "text-green-600",
             bg: "bg-green-50",
+            roles: ["body_control", "global_control", "system_admin", "director", "accountant", "academic_principal"],
             reports: [
                 { name: "Monthly Revenue Summary", format: "Excel" },
                 { name: "Unpaid Invoices List", format: "PDF" },
@@ -544,15 +580,48 @@ export default function ReportsDashboard() {
             ]
         },
         {
-            title: "Logistics & Services",
-            description: "Transport, canteen, and boarding usage.",
+            title: "Transport",
+            description: "Daily transport routes, vehicles, and driver logs.",
             icon: Truck,
             color: "text-orange-600",
             bg: "bg-orange-50",
+            roles: ["body_control", "global_control", "system_admin", "director"],
             reports: [
                 { name: "Daily Transport Log", format: "PDF" },
+            ]
+        },
+        {
+            title: "Restaurant",
+            description: "Canteen subscriptions, consumption, and meal plans.",
+            icon: Utensils,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+            roles: ["body_control", "global_control", "system_admin", "director"],
+            reports: [
                 { name: "Canteen Consumption Report", format: "Excel" },
+            ]
+        },
+        {
+            title: "Boarding",
+            description: "Dormitory occupancy, room assignments, and bed management.",
+            icon: Home,
+            color: "text-indigo-600",
+            bg: "bg-indigo-50",
+            roles: ["body_control", "global_control", "system_admin", "director"],
+            reports: [
                 { name: "Dormitory Occupancy List", format: "PDF" },
+            ]
+        },
+        {
+            title: "Daycare",
+            description: "Daily attendance, check-in/out logs, and activity reports.",
+            icon: Baby,
+            color: "text-pink-600",
+            bg: "bg-pink-50",
+            roles: ["body_control", "global_control", "system_admin", "director"],
+            reports: [
+                { name: "Daily Daycare Log", format: "Excel" },
+                { name: "Attendance Summary", format: "PDF" },
             ]
         },
         {
@@ -561,6 +630,7 @@ export default function ReportsDashboard() {
             icon: Package,
             color: "text-purple-600",
             bg: "bg-purple-50",
+            roles: ["global_control", "system_admin", "director", "storage"],
             reports: [
                 { name: "Current Stock Inventory", format: "Excel" },
                 { name: "Material Distribution History", format: "PDF" },
@@ -568,6 +638,10 @@ export default function ReportsDashboard() {
             ]
         }
     ];
+
+    const reportCategories = allReportCategories.filter(
+        (cat) => !cat.roles || cat.roles.includes(user?.role ?? "")
+    );
 
     return (
         <div className="p-8 space-y-8 animate-in fade-in duration-500">
@@ -704,7 +778,10 @@ export default function ReportsDashboard() {
                                                 <SelectItem value="students">Students Database</SelectItem>
                                                 <SelectItem value="finance">Finances & Payments</SelectItem>
                                                 <SelectItem value="logistics">Logistics & Services</SelectItem>
-                                                <SelectItem value="inventory">Inventory & Stock</SelectItem>
+                                                <SelectItem value="daycare">Daycare Records</SelectItem>
+                                                {!isBodyControl && (
+                                                    <SelectItem value="inventory">Inventory & Stock</SelectItem>
+                                                )}
                                             </SelectContent>
                                         </Select>
                                     </div>

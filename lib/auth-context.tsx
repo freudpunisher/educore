@@ -33,7 +33,7 @@ export type User = {
   id: number;
   username: string;
   email: string;
-  role: "admin" | "teacher" | "driver" | "parent" | "none";
+  role: string;
   fullName: string;
   isActive: boolean;
   // Helper method
