@@ -15,10 +15,24 @@ export default function ProfilePage() {
 
     const getRoleLabel = (role: string) => {
         const labels: Record<string, string> = {
-            admin: "Administrator",
-            teacher: "Teacher",
+            global_control: "Global Control",
+            system_admin: "System Admin",
+            body_control: "Body Control",
+            director: "Director",
+            academic_principal: "Academic Principal",
+            discipline_principal: "Discipline Principal",
+            receptionist: "Receptionist",
+            accountant: "Accountant",
+            hr: "Human Resources",
             driver: "Driver",
-            parent: "Parent",
+            teacher: "Teacher",
+            student_parent: "Parent",
+            student: "Student",
+            boarding: "Boarding Manager",
+            daycare: "Daycare Manager",
+            restaurant: "Restaurant Manager",
+            storage: "Storage Manager",
+            none: "No Role",
         }
         return labels[role] || role
     }

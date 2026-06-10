@@ -1,7 +1,7 @@
 // components/layout/dashboard-header.tsx
 "use client";
 
-import { Bell, Search, User, Moon, Sun, LogOut } from "lucide-react";
+import { Search, User, Moon, Sun, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationButton } from "@/components/layout/notification-button";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-provider";
 
@@ -52,11 +53,24 @@ export function DashboardHeader() {
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      admin: "Administrator",
-      teacher: "Teacher",
+      global_control: "Global Control",
+      system_admin: "System Admin",
+      body_control: "Body Control",
+      director: "Director",
+      academic_principal: "Academic Principal",
+      discipline_principal: "Discipline Principal",
+      receptionist: "Receptionist",
+      accountant: "Accountant",
+      hr: "Human Resources",
       driver: "Driver",
-      parent: "Parent",
-      none: "Utilisateur",
+      teacher: "Teacher",
+      student_parent: "Parent",
+      student: "Student",
+      boarding: "Boarding Manager",
+      daycare: "Daycare Manager",
+      restaurant: "Restaurant Manager",
+      storage: "Storage Manager",
+      none: "No Role",
     };
     return labels[role] || role;
   };
@@ -95,12 +109,8 @@ export function DashboardHeader() {
           <span className="sr-only">Changer le thème</span>
         </Button>
 
-        {/* Notifications */}
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* Notifications (cloche dynamique) */}
+        <NotificationButton />
 
         {/* User Menu */}
         <DropdownMenu>
