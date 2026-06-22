@@ -41,16 +41,13 @@ import {
 export default function PaymentsPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [invoiceFilter, setInvoiceFilter] = useState("all")
-    const [invoiceComboSearch, setInvoiceComboSearch] = useState("")
     const [openInvoiceCombo, setOpenInvoiceCombo] = useState(false)
     const [paymentPage, setPaymentPage] = useState(1)
     const { toast } = useToast()
 
     const debouncedSearch = useDebounce(searchTerm, 500);
-    const debouncedInvoiceComboSearch = useDebounce(invoiceComboSearch, 500);
 
     const { data: invoicesData, isLoading: isInvoicesLoading } = useInvoices({
-        search: debouncedInvoiceComboSearch,
         page_size: 10000
     });
     const invoices = invoicesData?.results || [];
@@ -260,11 +257,9 @@ export default function PaymentsPage() {
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[300px] p-0 rounded-2xl border-border shadow-2xl" align="end">
-                                    <Command shouldFilter={false}>
+                                    <Command>
                                         <CommandInput
                                             placeholder="Search invoices..."
-                                            value={invoiceComboSearch}
-                                            onValueChange={setInvoiceComboSearch}
                                             className="h-12 border-none focus:ring-0"
                                         />
                                         <CommandList>
@@ -291,7 +286,7 @@ export default function PaymentsPage() {
                                                 {invoices.map((inv) => (
                                                     <CommandItem
                                                         key={`invoice-${inv.id}`}
-                                                        value={inv.id.toString()}
+                                                        value={`${inv.reference} ${inv.student_name} ${inv.id}`}
                                                         onSelect={() => {
                                                             setInvoiceFilter(inv.id.toString());
                                                             setOpenInvoiceCombo(false);

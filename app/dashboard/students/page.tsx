@@ -6,9 +6,11 @@ import { Users, Plus } from "lucide-react";
 import { useStudents } from "@/hooks/use-students";
 import { useState } from "react";
 import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
+import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
 
 export default function StudentsPage() {
+  const { user } = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [academicYear, setAcademicYear] = useState<number | undefined>();
@@ -35,12 +37,14 @@ export default function StudentsPage() {
             <Users className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl">Student List</CardTitle>
           </div>
-          <Link href="/dashboard/students/new">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              New Student
-            </Button>
-          </Link>
+          {user?.role === "receptionist" && (
+            <Link href="/dashboard/students/new">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                New Student
+              </Button>
+            </Link>
+          )}
         </CardHeader>
 
         <CardContent>

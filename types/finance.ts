@@ -49,6 +49,8 @@ export const paymentSchema = z.object({
     document: z.string().nullable().optional(),
     invoice: nullableNumericIdSchema,
     invoice_reference: z.string(),
+    student_name: z.string().nullable().optional(),
+    student_id: nullableNumericIdSchema,
     payment_mode: nullableNumericIdSchema,
     payment_mode_name: z.string(),
 }).passthrough();

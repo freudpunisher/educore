@@ -18,6 +18,7 @@ export const studentListSchema = z.object({
   is_enrolled: z.boolean().optional(),
   is_validated: z.boolean().optional(),
   account_active: z.boolean().optional(),
+  registration_paid: z.boolean().optional(),
   enrollment_info: z.union([enrollmentInfoSchema, z.record(z.any()), z.string()]).nullish(),
   image: z.string().nullable().optional(),
 }).passthrough();

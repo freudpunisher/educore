@@ -47,7 +47,7 @@ import { EnrollStudentDialog } from "./enroll-student-dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const genderLabel = (g: number) => (g === 1 ? "Girl" : "Boy");
+const genderLabel = (g?: number) => (g === 1 ? "Male" : g === 0 ? "Female" : "Unknown");
 
 interface StudentsTableProps {
   students: Student[];
@@ -189,7 +189,7 @@ export default function StudentsTable({
               View
             </Button>
 
-            {student.is_validated && (
+            {student.is_validated && student.registration_paid && (
               <Button
                 variant="outline"
                 size="sm"

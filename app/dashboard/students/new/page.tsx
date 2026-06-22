@@ -104,13 +104,17 @@ export default function NewStudentPage() {
             <CardDescription>Basic personal details of the student.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>First Name <span className="text-destructive">*</span></Label>
                 <Input placeholder="Jean" {...register("first_name")} />
                 {errors.first_name && (
                   <p className="text-sm text-destructive">{errors.first_name.message}</p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label>Middle Name</Label>
+                <Input placeholder="(optional)" {...register("middle_name")} />
               </div>
               <div className="space-y-2">
                 <Label>Last Name <span className="text-destructive">*</span></Label>
@@ -132,8 +136,8 @@ export default function NewStudentPage() {
                     <SelectValue placeholder="Choose gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Girl</SelectItem>
-                    <SelectItem value="0">Boy</SelectItem>
+                    <SelectItem value="1">Male</SelectItem>
+                    <SelectItem value="0">Female</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.gender && (
