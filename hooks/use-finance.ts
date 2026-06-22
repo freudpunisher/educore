@@ -82,6 +82,8 @@ export interface PaymentQueryParams {
     page?: number;
     search?: string;
     invoice?: number;
+    date_from?: string;
+    date_to?: string;
 }
 
 export function usePayments(params: PaymentQueryParams = { page: 1 }) {
