@@ -33,6 +33,7 @@ import {
 } from "@/lib/mock/transport";
 import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
+import { useAuth } from "@/lib/auth-context";
 import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum, PeriodCategory, PeriodCategoryLabels } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -110,6 +111,8 @@ export default function TransportDashboard() {
   const [expandedVerification, setExpandedVerification] = useState<string | null>(null);
   const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
+
+  const { user } = useAuth();
 
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
@@ -233,13 +236,21 @@ export default function TransportDashboard() {
       setIsSubscriptionDialogOpen(false);
       setSelectedSubscription(null);
     } catch (error: any) {
-      console.error("Update enrollment error:", error);
+      console.error("Update error:", error);
       const errorMessage = error.response?.data?.errors?.non_field_errors?.[0] || 
                            error.response?.data?.message || 
                            error.message || 
                            "Failed to update enrollment";
       toast.error(errorMessage, { id: loadingToast });
     }
+  };
+
+  const handleValidateSubscription = async () => {
+    if (!selectedSubscription) return;
+    await updateSubscriptionMutation.mutateAsync({
+      id: selectedSubscription.id,
+      data: { status: TransportStatusEnum.Active },
+    });
   };
 
   const openEditSubscription = (subscription: any) => {
@@ -362,16 +373,18 @@ export default function TransportDashboard() {
                   Manage student transport enrollment and status
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedSubscription(null);
-                  setIsSubscriptionDialogOpen(true);
-                }}
-                className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Enrollment
-              </Button>
+              {user?.role === "transporter" && (
+                <Button
+                  onClick={() => {
+                    setSelectedSubscription(null);
+                    setIsSubscriptionDialogOpen(true);
+                  }}
+                  className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Enrollment
+                </Button>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -499,20 +512,36 @@ export default function TransportDashboard() {
                         
                         return (
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditSubscription(subscription);
-                              }}
-                              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-
                             {!isActive && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditSubscription(subscription);
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleSubscriptionStatus(subscription);
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                  title="Validate"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
+
+                            {isActive && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -520,25 +549,12 @@ export default function TransportDashboard() {
                                   e.stopPropagation();
                                   handleToggleSubscriptionStatus(subscription);
                                 }}
-                                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                                title="Validate"
+                                className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                                title="Deactivate"
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                <XCircle className="h-4 w-4" />
                               </Button>
                             )}
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleSubscriptionStatus(subscription);
-                              }}
-                              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                              title={isActive ? "Deactivate" : "Disable"}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
                           </div>
                         );
                       }
@@ -1117,6 +1133,7 @@ export default function TransportDashboard() {
             handleCreateSubscription(data);
           }
         }}
+        onValidate={handleValidateSubscription}
         record={selectedSubscription}
       />
     </div>
@@ -1127,11 +1144,13 @@ function SubscriptionDialog({
   isOpen,
   onClose,
   onSubmit,
+  onValidate,
   record,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: TransportSubscriptionCreate | Partial<TransportSubscriptionCreate>) => void;
+  onValidate?: () => void;
   record?: any | null;
 }) {
   const { data: studentsData } = useStudents();
@@ -1143,8 +1162,9 @@ function SubscriptionDialog({
   const [enrollmentDate, setEnrollmentDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Active);
+  const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Inactive);
   const [openStudentSelect, setOpenStudentSelect] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
 
   useEffect(() => {
     if (record && isOpen) {
@@ -1152,13 +1172,13 @@ function SubscriptionDialog({
       setItineraryId(record.itinerary?.toString() || "");
       setPeriodCategory(record.period_category?.toString() || PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(record.enrollment_date || new Date().toISOString().split("T")[0]);
-      setStatus(record.status || TransportStatusEnum.Active);
+      setStatus(record.status || TransportStatusEnum.Inactive);
     } else if (isOpen) {
       setStudentId("");
       setItineraryId("");
       setPeriodCategory(PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(new Date().toISOString().split("T")[0]);
-      setStatus(TransportStatusEnum.Active);
+      setStatus(TransportStatusEnum.Inactive);
     }
   }, [record, isOpen]);
 
@@ -1178,6 +1198,18 @@ function SubscriptionDialog({
       enrollment_date: enrollmentDate,
       status,
     });
+  };
+
+  const handleValidate = async () => {
+    if (!onValidate || !record) return;
+    const loadingToast = toast.loading("Validating subscription...");
+    try {
+      await onValidate();
+      setIsValidated(true);
+      toast.success("Subscription validated successfully!", { id: loadingToast });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to validate subscription", { id: loadingToast });
+    }
   };
 
   return (
@@ -1321,7 +1353,16 @@ function SubscriptionDialog({
             >
               Cancel
             </Button>
-            {record?.status !== "active" && (
+            {record && record.status !== "active" && !isValidated && onValidate && (
+              <Button
+                type="button"
+                onClick={handleValidate}
+                className="rounded-xl px-6 h-11 bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 dark:shadow-none transition-all"
+              >
+                Validate
+              </Button>
+            )}
+            {record?.status !== "active" && !isValidated && (
               <Button
                 type="submit"
                 className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"

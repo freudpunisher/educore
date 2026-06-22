@@ -49,8 +49,17 @@ export const paymentSchema = z.object({
     document: z.string().nullable().optional(),
     invoice: nullableNumericIdSchema,
     invoice_reference: z.string(),
+    student_name: z.string().nullable().optional(),
+    student_id: nullableNumericIdSchema,
     payment_mode: nullableNumericIdSchema,
     payment_mode_name: z.string(),
+    institution: nullableNumericIdSchema,
+    institution_name: z.string().nullable().optional(),
+    payment_reference: z.string().nullable().optional(),
+    payment_date: z.string().nullable().optional(),
+    created_by: nullableNumericIdSchema,
+    created_by_name: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
 }).passthrough();
 
 export const paginatedPaymentSchema = createPaginatedSchema(paymentSchema);

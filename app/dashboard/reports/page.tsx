@@ -585,7 +585,7 @@ export default function ReportsDashboard() {
             icon: Truck,
             color: "text-orange-600",
             bg: "bg-orange-50",
-            roles: ["body_control", "global_control", "system_admin", "director"],
+            roles: ["body_control", "global_control", "system_admin", "director", "transporter"],
             reports: [
                 { name: "Daily Transport Log", format: "PDF" },
             ]

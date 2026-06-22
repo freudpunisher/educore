@@ -21,16 +21,34 @@ import {
   Calendar,
   Eye,
   Receipt,
-  Wallet
+  Wallet,
+  Landmark,
+  ArrowRightLeft,
+  CheckCircle2,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
-import { useFinanceOverview } from "@/hooks/use-finance"
+import { useFinanceOverview, useInvoices, usePayments } from "@/hooks/use-finance"
 import { Loader2 } from "lucide-react"
 import { ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Area, AreaChart } from "recharts"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 export default function FinancesPage() {
+  const router = useRouter()
   const { data: overview, isLoading } = useFinanceOverview()
   const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState("invoices")
+  const [invoicePage, setInvoicePage] = useState(1)
+  const [paymentPage, setPaymentPage] = useState(1)
+
+  const { data: invoicesData, isLoading: loadingInvoices } = useInvoices(
+    activeTab === "invoices" ? { page: invoicePage, page_size: 10, search: searchTerm || undefined } : { page: 1 }
+  )
+  const { data: paymentsData, isLoading: loadingPayments } = usePayments(
+    activeTab === "payments" ? { page: paymentPage } : { page: 1 }
+  )
 
   if (isLoading) {
     return (
@@ -47,12 +65,10 @@ export default function FinancesPage() {
   const totalBalance = overview?.totalBalance || 0
   const overdueCount = overview?.overdueCount || 0
 
-  const filteredInvoices = recentInvoices.filter(invoice => {
-    const matchesSearch = (invoice.student_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.reference || "").toLowerCase().includes(searchTerm.toLowerCase());
-
-    return matchesSearch;
-  });
+  const invoices = invoicesData?.results || []
+  const invoiceCount = invoicesData?.count || 0
+  const payments = paymentsData?.results || []
+  const paymentCount = paymentsData?.count || 0
 
   const handlePrintStatement = (invoice: any) => {
     const printWindow = window.open('', '_blank');
@@ -115,7 +131,7 @@ export default function FinancesPage() {
                     <div style="font-size: 18px; font-weight: 800; color: ${invoice.status === 1 ? '#059669' : '#e11d48'};">
                         ${invoice.status_name.toUpperCase()}
                     </div>
-                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Due Date: ${invoice.dueDate}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 4px;">Date: ${invoice.date}</div>
                 </div>
             </div>
 
@@ -305,11 +321,18 @@ export default function FinancesPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="invoices" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex items-center justify-between">
-            <div className="bg-muted p-1 rounded-2xl h-12 flex items-center px-4">
-              <span className="font-bold text-sm px-4">Recent Invoices</span>
-            </div>
+            <TabsList className="bg-muted p-1 rounded-2xl h-12">
+              <TabsTrigger value="invoices" className="rounded-xl font-bold text-sm px-5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <Receipt className="w-4 h-4 mr-2" />
+                Invoices
+              </TabsTrigger>
+              <TabsTrigger value="payments" className="rounded-xl font-bold text-sm px-5 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                Payments
+              </TabsTrigger>
+            </TabsList>
 
             <div className="flex items-center gap-2">
               <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
@@ -333,7 +356,22 @@ export default function FinancesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredInvoices.map((invoice) => (
+                    {loadingInvoices ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : invoices.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center">
+                          <div className="flex flex-col items-center gap-2 opacity-20">
+                            <Users className="w-12 h-12" />
+                            <p className="font-bold text-foreground">No invoices found</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : invoices.map((invoice) => (
                       <TableRow key={invoice.id} className="border-border hover:bg-muted/30 transition-colors group">
                         <TableCell className="py-6 pl-8">
                           <div className="flex items-center gap-3">
@@ -377,7 +415,12 @@ export default function FinancesPage() {
                         </TableCell>
                         <TableCell className="py-6 pr-8 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-background hover:shadow-md transition-all">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-xl hover:bg-background hover:shadow-md transition-all"
+                              onClick={() => invoice.student_id && router.push(`/dashboard/students/${invoice.student_id}`)}
+                            >
                               <Eye className="w-4 h-4 text-muted-foreground" />
                             </Button>
                             <Button
@@ -392,18 +435,148 @@ export default function FinancesPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {filteredInvoices.length === 0 && (
+                  </TableBody>
+                </Table>
+
+                {/* Pagination for Invoices */}
+                {invoiceCount > 0 && (
+                  <div className="flex items-center justify-between px-8 py-4 border-t border-border">
+                    <div className="text-sm text-muted-foreground font-medium">
+                      Showing {(invoicePage - 1) * 10 + 1} to {Math.min(invoicePage * 10, invoiceCount)} of {invoiceCount} invoices
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInvoicePage((p) => Math.max(1, p - 1))}
+                        disabled={invoicePage <= 1 || loadingInvoices}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setInvoicePage((p) => p + 1)}
+                        disabled={invoicePage * 10 >= invoiceCount || loadingInvoices}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <Card className="border-none shadow-2xl shadow-primary/5 bg-card rounded-[2.5rem] overflow-hidden">
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader className="bg-muted/50">
+                    <TableRow className="border-border hover:bg-transparent">
+                      <TableHead className="py-6 pl-8 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Reference</TableHead>
+                      <TableHead className="py-6 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Invoice</TableHead>
+                      <TableHead className="py-6 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Amount</TableHead>
+                      <TableHead className="py-6 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Mode</TableHead>
+                      <TableHead className="py-6 font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Doc</TableHead>
+                      <TableHead className="py-6 pr-8 text-right font-bold text-muted-foreground uppercase tracking-wider text-[10px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingPayments ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center">
+                          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : payments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="py-20 text-center">
                           <div className="flex flex-col items-center gap-2 opacity-20">
-                            <Users className="w-12 h-12" />
-                            <p className="font-bold text-foreground">No results found for your filters</p>
+                            <Landmark className="w-12 h-12" />
+                            <p className="font-bold text-foreground">No payments recorded yet</p>
                           </div>
                         </TableCell>
                       </TableRow>
+                    ) : (
+                      payments.map((payment) => (
+                        <TableRow key={payment.id} className="border-border hover:bg-muted/30 transition-colors group">
+                          <TableCell className="py-6 pl-8">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                              </div>
+                              <div>
+                                <div className="font-bold text-foreground leading-none mb-1">PAY-{payment.id}</div>
+                                <div className="text-[11px] font-semibold text-muted-foreground">{payment.payment_mode_name}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <div className="font-bold text-foreground leading-none mb-1">{payment.invoice_reference}</div>
+                            <div className="text-[11px] font-semibold text-muted-foreground">{payment.student_name || `Invoice #${payment.invoice}`}</div>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <span className="font-black text-emerald-600">{Number(payment.amount).toLocaleString()} FBU</span>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            <Badge variant="outline" className="rounded-xl px-3 py-1 text-[10px] font-bold">
+                              {payment.payment_mode_name}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-6">
+                            {payment.document ? (
+                              <a href={payment.document} target="_blank" rel="noopener noreferrer">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-background hover:shadow-md transition-all">
+                                  <Eye className="w-4 h-4 text-primary" />
+                                </Button>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground font-bold">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-6 pr-8 text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-xl hover:bg-background hover:shadow-md transition-all"
+                              onClick={() => payment.student_id && router.push(`/dashboard/students/${payment.student_id}`)}
+                            >
+                              <Eye className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
+
+                {/* Pagination for Payments */}
+                {paymentCount > 0 && (
+                  <div className="flex items-center justify-between px-8 py-4 border-t border-border">
+                    <div className="text-sm text-muted-foreground font-medium">
+                      Showing {(paymentPage - 1) * 10 + 1} to {Math.min(paymentPage * 10, paymentCount)} of {paymentCount} payments
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPaymentPage((p) => Math.max(1, p - 1))}
+                        disabled={paymentPage <= 1 || loadingPayments}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPaymentPage((p) => p + 1)}
+                        disabled={paymentPage * 10 >= paymentCount || loadingPayments}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -62,7 +62,7 @@ export function DashboardHeader() {
       receptionist: "Receptionist",
       accountant: "Accountant",
       hr: "Human Resources",
-      driver: "Driver",
+      transporter: "Transporter",
       teacher: "Teacher",
       student_parent: "Parent",
       student: "Student",
@@ -142,8 +142,10 @@ export function DashboardHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
+              <User className="mr-2 h-4 w-4" />
+              Profile
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"

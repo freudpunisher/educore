@@ -108,7 +108,7 @@ export const transportSubscriptionCreateSchema = z.object({
     period_category: z.number().min(1, "Period is required"),
     enrollment_date: z.string().min(1, "Enrollment date is required"),
     reference: z.string().optional(),
-    status: z.nativeEnum(TransportStatusEnum).default(TransportStatusEnum.Active),
+    status: z.nativeEnum(TransportStatusEnum).default(TransportStatusEnum.Inactive),
 });
 
 export type TransportSubscriptionCreate = z.infer<typeof transportSubscriptionCreateSchema>;

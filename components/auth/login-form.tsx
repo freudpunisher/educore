@@ -53,7 +53,9 @@ export function LoginForm() {
               <Alert variant="destructive" className="rounded-2xl border-none bg-destructive/10 text-destructive animate-in shake duration-500">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="font-bold">
-                  {(loginMutation.error as any)?.response?.data?.detail || "Incorrect username or password"}
+                  {(loginMutation.error as any)?.response?.data?.message ||
+                    (loginMutation.error as any)?.response?.data?.errors?.non_field_errors?.[0] ||
+                    "Nom d'utilisateur ou mot de passe incorrect"}
                 </AlertDescription>
               </Alert>
             )}
