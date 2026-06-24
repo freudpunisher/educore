@@ -65,13 +65,15 @@ axiosInstance.interceptors.response.use(
       error.response?.status === 401 &&
       error.response?.data?.code === "token_not_valid"
     ) {
-      console.warn("Auth: Invalid token detected, clearing storage and redirecting.");
+      console.warn("Auth: Invalid token detected, clearing storage.");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_data");
 
       if (!isServer) {
-        window.location.href = "/login";
+        window.dispatchEvent(new CustomEvent("auth:unauthorized", {
+          detail: { message: "Session expired. Please log in again." },
+        }));
       }
       return Promise.reject(error);
     }
@@ -99,12 +101,16 @@ axiosInstance.interceptors.response.use(
           throw new Error("Invalid refresh response");
         }
       } catch (refreshError) {
-        // Force logout, redirect to login
-        console.warn("Auth: Refresh token failed or expired, redirecting to login.");
+        // Auth failed — dispatch event instead of hard redirect
+        console.warn("Auth: Refresh token failed or expired.");
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user_data");
-        if (!isServer) window.location.href = "/login";
+        if (!isServer) {
+          window.dispatchEvent(new CustomEvent("auth:unauthorized", {
+            detail: { message: "Session expired. Please log in again." },
+          }));
+        }
         return Promise.reject(refreshError);
       }
     }

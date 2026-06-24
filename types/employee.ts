@@ -20,6 +20,7 @@ export type EmployeeListRequest = {
   active?: boolean;
   search?: string;
   page?: number;
+  page_size?: number;
 };
 
 export const employeeCreateSchema = z.object({
