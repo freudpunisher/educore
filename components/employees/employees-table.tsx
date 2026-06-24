@@ -56,14 +56,19 @@ interface EmployeesTableProps {
 
 const roleLabels: Record<string, string> = {
   global_control: "Global Control",
+  body_control: "Body Control (Audit)",
   director: "Director",
-  academic_principal: "Academic Principal",
-  discipline_principal: "Discipline Principal",
+  academic_principal: "Academic Manager",
+  discipline_principal: "Discipline Manager",
   receptionist: "Receptionist",
   accountant: "Accountant",
-  hr: "Human Resources",
-  driver: "Driver",
+  hr: "HR Manager",
+  transporter: "Transporter Supervisor (Driver)",
   teacher: "Teacher",
+  boarding: "Boarding Supervisor",
+  daycare: "Daycare Supervisor",
+  restaurant: "Restaurant Supervisor",
+  storage: "Inventory & Logistics Officer",
 };
 
 export default function EmployeesTable({

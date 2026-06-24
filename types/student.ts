@@ -76,19 +76,24 @@ export const studentDocumentSchema = z.object({
 export type StudentDocument = z.infer<typeof studentDocumentSchema>;
 
 export enum RoleEnum {
-  AcademicPrincipal = "academic_principal",
-  Accountant = "accountant",
-  Director = "director",
-  DisciplinePrincipal = "discipline_principal",
-  Driver = "driver",
   GlobalControl = "global_control",
-  Hr = "hr",
-  None = "none",
-  Receptionist = "receptionist",
-  Student = "student",
-  StudentParent = "student_parent",
   SystemAdmin = "system_admin",
+  BodyControl = "body_control",
+  Director = "director",
+  AcademicPrincipal = "academic_principal",
+  DisciplinePrincipal = "discipline_principal",
+  Receptionist = "receptionist",
+  Accountant = "accountant",
+  Hr = "hr",
+  Transporter = "transporter",
   Teacher = "teacher",
+  StudentParent = "student_parent",
+  Student = "student",
+  Boarding = "boarding",
+  Daycare = "daycare",
+  Restaurant = "restaurant",
+  Storage = "storage",
+  None = "none",
 }
 
 export const userSchema = z.object({

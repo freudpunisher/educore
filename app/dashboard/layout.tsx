@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import type { ReactNode } from "react"
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar"
 import { DashboardHeader } from "@/components/layout/dashboard-header"
+import { AuthErrorListener } from "@/components/auth/auth-error-listener"
 
 export default function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default function DashboardLayout({
         </Suspense>
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <AuthErrorListener />
     </div>
   )
 }

@@ -316,25 +316,28 @@ export default function InvoicesPage() {
                             </Select>
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={handlePrintList}
-                                disabled={invoices.length === 0}
-                            >
-                                <Printer className="h-4 w-4 mr-2" />
-                                Print List
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full"
-                                onClick={resetFilters}
-                                disabled={!selectedStudent && (!selectedAcademicYear || selectedAcademicYear === "all") && (!selectedClassRoom || selectedClassRoom === "all") && (!selectedEntity || selectedEntity === "all") && (!selectedStatus || selectedStatus === "all")}
-                            >
-                                <X className="h-4 w-4 mr-2" />
-                                Clear Filters
-                            </Button>
+                        <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider invisible">Actions</label>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={handlePrintList}
+                                    disabled={invoices.length === 0}
+                                >
+                                    <Printer className="h-4 w-4 mr-2" />
+                                    Print
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="flex-1"
+                                    onClick={resetFilters}
+                                    disabled={!selectedStudent && (!selectedAcademicYear || selectedAcademicYear === "all") && (!selectedClassRoom || selectedClassRoom === "all") && (!selectedEntity || selectedEntity === "all") && (!selectedStatus || selectedStatus === "all")}
+                                >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Clear
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

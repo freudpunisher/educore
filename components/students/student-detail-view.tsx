@@ -1,6 +1,7 @@
 "use client";
 
 import { StudentDetail } from "@/types/student";
+import { useAuth } from "@/lib/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
@@ -36,7 +37,45 @@ interface StudentDetailViewProps {
     student: StudentDetail;
 }
 
+const ROLE_TABS: Record<string, string[]> = {
+    accountant: ["invoicing"],
+};
+
+const TAB_ICONS: Record<string, React.ReactNode> = {
+    academics: <GraduationCap className="h-4 w-4" />,
+    invoicing: <DollarSign className="h-4 w-4" />,
+    behavior: <ShieldAlert className="h-4 w-4" />,
+    attendance: <Activity className="h-4 w-4" />,
+    services: <LayoutGrid className="h-4 w-4" />,
+    inventory: <Package className="h-4 w-4" />,
+    family: <Users className="h-4 w-4" />,
+    documents: <FileText className="h-4 w-4" />,
+};
+
+const TAB_LABELS: Record<string, string> = {
+    academics: "Academics",
+    invoicing: "Invoicing",
+    behavior: "Behavior",
+    attendance: "Attendance",
+    services: "Services",
+    inventory: "Distribution",
+    family: "Family",
+    documents: "Documents",
+};
+
+const ALL_TABS = ["academics", "invoicing", "behavior", "attendance", "services", "inventory", "family", "documents"];
+
+function getAllowedTabs(role: string | undefined): string[] {
+    if (!role) return ALL_TABS;
+    return ROLE_TABS[role] || ALL_TABS;
+}
+
 export function StudentDetailView({ student }: StudentDetailViewProps) {
+    const { user } = useAuth();
+    const role = user?.role;
+    const allowedTabs = getAllowedTabs(role);
+    const defaultTab = allowedTabs.includes("invoicing") && role === "accountant" ? "invoicing" : allowedTabs[0];
+
     const validateMutation = useValidateStudent();
     const { data: academicYears } = useAcademicYears();
     const [selectedYear, setSelectedYear] = useState<string>("current");
@@ -196,94 +235,61 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                 </div>
             </div>
 
-            <Tabs defaultValue="academics" className="flex-1 flex flex-col min-h-0">
+            <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col min-h-0">
                 <div className="px-6 py-4 border-b bg-background/50 backdrop-blur-sm sticky top-0 z-10 overflow-x-auto no-scrollbar flex-shrink-0">
                     <TabsList className="w-max justify-start h-auto p-0 bg-transparent gap-4">
-                        <TabsTrigger
-                            value="academics"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <GraduationCap className="h-4 w-4" />
-                            Academics
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="invoicing"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <DollarSign className="h-4 w-4" />
-                            Invoicing
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="behavior"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <ShieldAlert className="h-4 w-4" />
-                            Behavior
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="attendance"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <Activity className="h-4 w-4" />
-                            Attendance
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="services"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <LayoutGrid className="h-4 w-4" />
-                            Services
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="inventory"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <Package className="h-4 w-4" />
-                            Distribution
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="family"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <Users className="h-4 w-4" />
-                            Family
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="documents"
-                            className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
-                        >
-                            <FileText className="h-4 w-4" />
-                            Documents
-                        </TabsTrigger>
+                        {allowedTabs.map((tab) => (
+                            <TabsTrigger
+                                key={tab}
+                                value={tab}
+                                className="group flex items-center gap-2.5 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-none rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all hover:bg-muted/50"
+                            >
+                                {TAB_ICONS[tab]}
+                                {TAB_LABELS[tab]}
+                            </TabsTrigger>
+                        ))}
                     </TabsList>
                 </div>
 
                 <ScrollArea className="flex-1 min-h-0">
-                    <TabsContent value="academics" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <AcademicsTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
+                    {allowedTabs.includes("academics") && (
+                        <TabsContent value="academics" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <AcademicsTab studentId={student.id} academicYearId={activeYearId} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="invoicing" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <FinanceTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
+                    {allowedTabs.includes("invoicing") && (
+                        <TabsContent value="invoicing" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <FinanceTab studentId={student.id} academicYearId={activeYearId} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="behavior" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <BehaviorTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
+                    {allowedTabs.includes("behavior") && (
+                        <TabsContent value="behavior" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <BehaviorTab studentId={student.id} academicYearId={activeYearId} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="attendance" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <AttendanceTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
+                    {allowedTabs.includes("attendance") && (
+                        <TabsContent value="attendance" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <AttendanceTab studentId={student.id} academicYearId={activeYearId} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="services" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300 overflow-visible">
-                        <ServicesTab studentId={student.id} />
-                    </TabsContent>
+                    {allowedTabs.includes("services") && (
+                        <TabsContent value="services" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300 overflow-visible">
+                            <ServicesTab studentId={student.id} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="inventory" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                        <InventoryTab studentId={student.id} academicYearId={activeYearId} />
-                    </TabsContent>
+                    {allowedTabs.includes("inventory") && (
+                        <TabsContent value="inventory" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <InventoryTab studentId={student.id} academicYearId={activeYearId} />
+                        </TabsContent>
+                    )}
 
-                    <TabsContent value="family" className="p-6 m-0 space-y-6">
+                    {allowedTabs.includes("family") && (
+                        <TabsContent value="family" className="p-6 m-0 space-y-6">
                         <h3 className="text-lg font-semibold flex items-center gap-2">
                             <Users className="h-5 w-5 text-muted-foreground" />
                             Parent / Guardian Contacts
@@ -326,8 +332,10 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         )}
                     </TabsContent>
+                    )}
 
-                    <TabsContent value="documents" className="p-6 m-0 space-y-6">
+                    {allowedTabs.includes("documents") && (
+                        <TabsContent value="documents" className="p-6 m-0 space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-semibold flex items-center gap-2">
                                 <FileText className="h-5 w-5 text-muted-foreground" />
@@ -392,6 +400,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </div>
                         )}
                     </TabsContent>
+                    )}
                 </ScrollArea>
             </Tabs>
         </div>
