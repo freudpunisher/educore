@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,7 @@ const SESSION_TYPE_CONFIG = {
 };
 
 export function AttendanceSessionsTable() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -256,6 +258,7 @@ export function AttendanceSessionsTable() {
             </div>
 
             {/* Create Dialog */}
+            {user?.can?.('academics.manage') && (
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 h-11 shrink-0">
@@ -453,6 +456,7 @@ export function AttendanceSessionsTable() {
                 </Form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
         </div>
 

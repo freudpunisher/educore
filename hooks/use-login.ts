@@ -28,12 +28,8 @@ export function useLogin() {
       router.push("/dashboard");
       router.refresh();
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
-        "Incorrect username or password";
-      throw new Error(message);
+    onError: (_error: any) => {
+      // Error is handled in the form component via loginMutation.error
     },
   });
 }

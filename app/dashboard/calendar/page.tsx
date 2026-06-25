@@ -25,9 +25,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CalendarIcon, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 import { useState } from "react"
 
 export default function CalendarPage() {
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date())
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -120,10 +122,12 @@ export default function CalendarPage() {
           <h1 className="text-3xl font-bold text-foreground">Calendar</h1>
           <p className="text-muted-foreground">Events, exams, and school holidays</p>
         </div>
+        {user?.can?.('academics.manage') && (
         <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="w-4 h-4 mr-2" />
           New Event
         </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
