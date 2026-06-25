@@ -86,6 +86,7 @@ export enum RoleEnum {
   Accountant = "accountant",
   Hr = "hr",
   Transporter = "transporter",
+  Driver = "driver",
   Teacher = "teacher",
   StudentParent = "student_parent",
   Student = "student",

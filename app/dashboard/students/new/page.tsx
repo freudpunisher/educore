@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -22,11 +23,18 @@ import {
   CalendarDays, UserCheck, ImageIcon
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function NewStudentPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const createMutation = useCreateStudent();
+
+  useEffect(() => {
+    if (!user?.can?.('users.manage')) {
+      router.push('/dashboard/students');
+    }
+  }, [user]);
   const [studentImage, setStudentImage] = useState<File | null>(null);
 
   const {

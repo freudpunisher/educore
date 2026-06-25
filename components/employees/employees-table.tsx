@@ -34,12 +34,27 @@ import {
   User,
   Phone,
   MapPin,
+  Mail,
   Pencil,
   Trash2,
+  Hash,
+  RotateCcw,
 } from "lucide-react";
 import { useState } from "react";
 import { Employee } from "@/types/employee";
 import { Loader2 } from "lucide-react";
+import { useDeleteEmployee, useRestoreEmployee } from "@/hooks/use-employees";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface EmployeesTableProps {
   employees: Employee[];
@@ -52,9 +67,13 @@ interface EmployeesTableProps {
   onSearchChange: (search: string) => void;
   roleFilter?: string;
   onRoleFilterChange: (role?: string) => void;
+  showDeleted?: boolean;
 }
 
 const roleLabels: Record<string, string> = {
+  system_admin: "System Admin",
+  student: "Student",
+  student_parent: "Student Parent",
   global_control: "Global Control",
   body_control: "Body Control (Audit)",
   director: "Director",
@@ -64,12 +83,77 @@ const roleLabels: Record<string, string> = {
   accountant: "Accountant",
   hr: "HR Manager",
   transporter: "Transporter Supervisor (Driver)",
+  driver: "Driver",
   teacher: "Teacher",
   boarding: "Boarding Supervisor",
   daycare: "Daycare Supervisor",
   restaurant: "Restaurant Supervisor",
   storage: "Inventory & Logistics Officer",
 };
+
+function ActionsCell({ employee }: { employee: Employee }) {
+  const [open, setOpen] = useState(false);
+  const deleteMutation = useDeleteEmployee();
+  const restoreMutation = useRestoreEmployee();
+
+  const handleDelete = () => {
+    deleteMutation.mutate(employee.id);
+    setOpen(false);
+  };
+
+  const handleRestore = () => {
+    restoreMutation.mutate(employee.id);
+  };
+
+  if (employee.is_deleted) {
+    return (
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRestore}
+          disabled={restoreMutation.isPending}
+        >
+          <RotateCcw className="h-4 w-4 mr-1" />
+          Restore
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-end gap-2">
+      <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Pencil className="h-4 w-4" />
+      </Button>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete account</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will deactivate the user and mark the account as deleted.
+              The data will be preserved and can be restored by an administrator.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
 
 export default function EmployeesTable({
   employees,
@@ -82,10 +166,29 @@ export default function EmployeesTable({
   onSearchChange,
   roleFilter,
   onRoleFilterChange,
+  showDeleted,
 }: EmployeesTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns: ColumnDef<Employee>[] = [
+    {
+      accessorKey: "id",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          ID
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 text-sm font-mono">
+          <Hash className="w-3 h-3 text-muted-foreground" />
+          {row.original.id}
+        </div>
+      ),
+    },
     {
       accessorKey: "user.last_name",
       header: ({ column }) => (
@@ -104,6 +207,19 @@ export default function EmployeesTable({
             <User className="w-4 h-4 text-muted-foreground" />
             {user.last_name} {user.first_name}
             <span className="text-xs text-muted-foreground">(@{user.username})</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "user.email",
+      header: "Email",
+      cell: ({ row }) => {
+        const user = row.original.user;
+        return (
+          <div className="flex items-center gap-2 text-sm">
+            <Mail className="w-3 h-3 text-muted-foreground" />
+            {user.email || "---"}
           </div>
         );
       },
@@ -138,27 +254,23 @@ export default function EmployeesTable({
       ),
     },
     {
-      accessorKey: "active",
+      accessorKey: "is_deleted",
       header: "Status",
-      cell: ({ row }) => (
-        <Badge variant={row.original.active ? "default" : "destructive"}>
-          {row.original.active ? "Active" : "Inactive"}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        if (row.original.is_deleted) {
+          return <Badge variant="destructive">Deleted</Badge>;
+        }
+        return (
+          <Badge variant={row.original.active ? "default" : "secondary"}>
+            {row.original.active ? "Active" : "Inactive"}
+          </Badge>
+        );
+      },
     },
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({ row }) => <ActionsCell employee={row.original} />,
     },
   ];
 
@@ -179,7 +291,7 @@ export default function EmployeesTable({
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search employee..."
+            placeholder="Search account..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10"
@@ -255,7 +367,7 @@ export default function EmployeesTable({
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
           Showing {employees.length > 0 ? (currentPage - 1) * 10 + 1 : 0} to{" "}
-          {Math.min(currentPage * 10, totalCount)} of {totalCount} employees
+          {Math.min(currentPage * 10, totalCount)} of {totalCount} accounts
         </div>
         <div className="flex gap-2">
           <Button

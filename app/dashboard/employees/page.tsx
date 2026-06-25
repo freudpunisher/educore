@@ -3,16 +3,24 @@
 import EmployeesTable from "@/components/employees/employees-table";
 import AddEmployeeDialog from "@/components/employees/add-employee-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Briefcase } from "lucide-react";
+import { Users, Briefcase, Eye, EyeOff, ShieldAlert } from "lucide-react";
 import { useEmployees } from "@/hooks/use-employees";
 import { useState, useMemo } from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/lib/auth-context";
 
 const PAGE_SIZE = 10;
 
+const ADMIN_ROLES = ["system_admin", "director", "global_control"];
+
 export default function EmployeesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role && ADMIN_ROLES.includes(user.role);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const handleRoleFilterChange = (role?: string) => {
     setRoleFilter(role);
@@ -28,6 +36,7 @@ export default function EmployeesPage() {
     page_size: 1000,
     search: search || undefined,
     role: roleFilter,
+    include_deleted: showDeleted || undefined,
   });
 
   const allEmployees = employeesResponse?.results || [];
@@ -72,9 +81,26 @@ export default function EmployeesPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-4">
             <Briefcase className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl">Employee List</CardTitle>
+            <CardTitle className="text-3xl">Accounts</CardTitle>
           </div>
-          <AddEmployeeDialog onEmployeeCreated={handleEmployeeCreated} />
+          <div className="flex items-center gap-4">
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="show-deleted"
+                  checked={showDeleted}
+                  onCheckedChange={(checked) => {
+                    setShowDeleted(checked);
+                    setPage(1);
+                  }}
+                />
+                <Label htmlFor="show-deleted" className="text-sm cursor-pointer">
+                  Show deleted
+                </Label>
+              </div>
+            )}
+            <AddEmployeeDialog onEmployeeCreated={handleEmployeeCreated} />
+          </div>
         </CardHeader>
 
 
@@ -90,6 +116,7 @@ export default function EmployeesPage() {
             onSearchChange={handleSearchChange}
             roleFilter={roleFilter}
             onRoleFilterChange={handleRoleFilterChange}
+            showDeleted={showDeleted}
           />
         </CardContent>
       </Card>

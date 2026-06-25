@@ -52,3 +52,39 @@ export function useCreateEmployee() {
   });
 }
 
+export function useDeleteEmployee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await axiosInstance.delete(`users/accounts/${id}/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast.success("Account deleted successfully");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to delete account";
+      toast.error(message, { duration: 6000 });
+    },
+  });
+}
+
+export function useRestoreEmployee() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await axiosInstance.post(`users/accounts/${id}/restore/`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      toast.success("Account restored successfully");
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to restore account";
+      toast.error(message, { duration: 6000 });
+    },
+  });
+}
+

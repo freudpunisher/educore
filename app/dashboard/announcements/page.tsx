@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuth } from "@/lib/auth-context"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,7 @@ type Announcement = {
 };
 
 export default function AnnouncementsPage() {
+  const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isPublishing, setIsPublishing] = useState(false)
@@ -124,6 +126,7 @@ export default function AnnouncementsPage() {
           <p className="text-muted-foreground">Important communications and information</p>
         </div>
 
+        {user?.can?.('academics.manage') && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -205,6 +208,7 @@ export default function AnnouncementsPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       <div className="grid gap-6">

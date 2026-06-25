@@ -18,5 +18,5 @@ export default function LoginPage() {
 }
 
 export const metadata = {
-  title: "Connexion - Gestion Scolaire",
+  title: "Login - School Management",
 };

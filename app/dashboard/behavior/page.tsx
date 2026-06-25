@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useBehaviorRecords, useUpdateDisciplineRecord } from "@/hooks/use-discipline";
+import { useAuth } from "@/lib/auth-context";
 import { BehaviorTable } from "@/components/discipline/behavior-table";
 import { BehaviorFilters } from "@/components/discipline/behavior-filters";
 import { BehaviorModal } from "@/components/discipline/behavior-modal";
@@ -21,6 +22,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import toast from "react-hot-toast";
 
 export default function BehaviorPage() {
+    const { user } = useAuth();
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("all");
@@ -103,6 +105,7 @@ export default function BehaviorPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2 text-lg font-medium">Record and manage disciplinary incidents across the school.</p>
                 </div>
+                {user?.can?.('academics.manage') && (
                 <Button
                     onClick={() => {
                         setSelectedRecord(null);
@@ -113,6 +116,7 @@ export default function BehaviorPage() {
                     <Plus className="w-5 h-5" />
                     Add New Record
                 </Button>
+                )}
             </div>
 
             <Card className="border-none shadow-2xl shadow-muted/20 bg-card/30 backdrop-blur-md rounded-[2.5rem] overflow-hidden">

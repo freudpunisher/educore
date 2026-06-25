@@ -20,7 +20,7 @@ export const MODULE_ACCESS = {
   Calendar: [
     ...ALL_ROLES,
     "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "hr", "transporter",
+    "accountant", "hr", "transporter",
     "teacher", "student",
     "boarding", "daycare", "restaurant", "storage",
   ],
@@ -37,8 +37,8 @@ export const MODULE_ACCESS = {
   ],
   Finances: [
     ...ALL_ROLES,
-    "director", "academic_principal",
-    "receptionist", "accountant", "student_parent",
+    "director",
+    "accountant", "student_parent",
   ],
   Pedagogy: [
     ...ALL_ROLES,
@@ -46,31 +46,31 @@ export const MODULE_ACCESS = {
   ],
   "Course Tracking": [
     ...ALL_ROLES,
-    "director", "academic_principal", "teacher",
+    "director", "teacher",
   ],
   Transport: [
     ...ALL_ROLES,
-    "director", "academic_principal", "transporter",
+    "director", "accountant", "receptionist", "transporter",
   ],
   Employees: [
     ...ALL_ROLES,
-    "director", "academic_principal", "hr",
+    "director", "hr",
   ],
   Restaurant: [
     ...ALL_ROLES,
-    "director", "academic_principal", "restaurant",
+    "director", "accountant", "receptionist", "restaurant",
   ],
   Daycare: [
     ...ALL_ROLES,
-    "director", "academic_principal", "daycare",
+    "director", "accountant", "receptionist", "daycare",
   ],
   Boarding: [
     ...ALL_ROLES,
-    "director", "academic_principal", "boarding",
+    "director", "accountant", "receptionist", "boarding",
   ],
   Storage: [
     ...ALL_ROLES,
-    "director", "academic_principal", "storage",
+    "director", "accountant", "storage",
   ],
   Rapports: [
     ...ALL_ROLES,

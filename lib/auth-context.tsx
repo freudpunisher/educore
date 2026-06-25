@@ -19,6 +19,7 @@ type BackendProfile = {
   active: boolean;
   address: string;
   phone_number: string | null;
+  permissions?: string[];
 };
 
 type LoginResponse = {
@@ -36,8 +37,10 @@ export type User = {
   role: string;
   fullName: string;
   isActive: boolean;
-  // Helper method
+  permissions: string[];
+  // Helper methods
   is: (role: string) => boolean;
+  can: (permission: string) => boolean;
 };
 
 type AuthContextType = {
@@ -77,9 +80,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         username: "user",
         email: "",
         role: "none",
+        permissions: [],
         fullName: "Utilisateur",
         isActive: true,
         is: (role: string) => role === "none",
+        can: () => false,
       };
     } else {
       const userData = profile.user || (profile.id ? profile : null);
@@ -92,14 +97,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .trim()
           : userData?.username || profile.username || "User";
 
+      const permissions = profile.permissions || (userData as any)?.permissions || [];
+
       cleanUser = {
         id: profile.id || userData?.id || 0,
         username: userData?.username || profile.username || "unknown",
         email: userData?.email || profile.email || "",
         role: (profile.role as User["role"]) || (userData?.role as User["role"]) || "none",
+        permissions,
         fullName,
         isActive: profile.active !== undefined ? !!profile.active : true,
         is: (role: string) => (profile.role === role || userData?.role === role),
+        can: (permission: string) => permissions.includes(permission),
       };
     }
 
@@ -137,8 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (savedUser && token) {
       try {
         const parsedUser = JSON.parse(savedUser);
-        // Add helper method back since it's not restored by JSON.parse
+        // Add helper methods back since they're not restored by JSON.parse
         parsedUser.is = (role: string) => parsedUser.role === role;
+        parsedUser.can = (permission: string) => parsedUser.permissions?.includes(permission) ?? false;
         setUser(parsedUser);
       } catch (err) {
         console.error("Failed to parse saved user data:", err);

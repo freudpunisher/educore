@@ -79,7 +79,12 @@ axiosInstance.interceptors.response.use(
     }
 
     // Handle 401 globally with token refresh logic
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip for login requests – pass through original error so the form can display the backend message
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("login/")
+    ) {
       originalRequest._retry = true;
 
       try {
