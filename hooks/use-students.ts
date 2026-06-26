@@ -8,7 +8,8 @@ import {
   studentFinanceResponseSchema,
   studentLifeResponseSchema,
   studentServicesResponseSchema,
-  studentTransactionsResponseSchema
+  studentTransactionsResponseSchema,
+  studentStatsSchema,
 } from "@/types/student";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -291,5 +292,17 @@ export function useValidateStudent() {
       console.error("Student Validation Error:", err);
       toast.error("Échec de la validation de l'élève");
     },
+  });
+}
+
+export function useStudentStats() {
+  return useQuery({
+    queryKey: ["students", "stats"],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get("users/students/stats/");
+      const payload = unwrap(raw, "useStudentStats");
+      return studentStatsSchema.parse(payload);
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }

@@ -20,6 +20,7 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
       const { data } = await axiosInstance.get(url);
       return data;
     },
+    enabled: !!classId,
   });
 }
 
@@ -43,6 +44,7 @@ export function useGrades(enrollmentId?: number, academicYearId?: number, termId
       const parsed = paginatedGradeSchema.parse(data);
       return parsed;
     },
+    enabled: !!classId,
   });
 }
 
@@ -165,6 +167,7 @@ export function useEnrollments(classId?: number, academicYearId?: number) {
       const parsed = paginatedEnrollmentListSchema.parse(data);
       return parsed;
     },
+    enabled: !!classId,
   });
 }
 
@@ -188,7 +191,7 @@ export function useReportCards(academicYearId?: number, classId?: number, termId
       const parsed = paginatedReportCardSchema.parse(data);
       return parsed;
     },
-    enabled: !!academicYearId || !!classId,
+    enabled: !!classId,
   });
 }
 
@@ -281,9 +284,48 @@ export function useDownloadReportCardPDF() {
   return useMutation({
     mutationFn: async (reportCardId: number) => {
       const response = await axiosInstance.get(`/academics/report-cards/${reportCardId}/download_pdf/`, {
-        responseType: 'blob', // Important for file downloads
+        responseType: 'blob',
       });
       return response.data;
     },
+  });
+}
+
+export function useAllTeachers() {
+  return useQuery({
+    queryKey: ["teachers"],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get("users/accounts/?role=teacher");
+      const data = raw?.results || raw || [];
+      return data;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useTeacherCourses(teacherId: number | null) {
+  return useQuery({
+    queryKey: ["teacher-courses", teacherId],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(`users/accounts/${teacherId}/teacher-courses/`);
+      const payload = raw?.data || raw;
+      return payload;
+    },
+    enabled: !!teacherId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useAllCourses(page: number = 1, search?: string) {
+  return useQuery({
+    queryKey: ["all-courses", page, search],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      params.append("page", page.toString());
+      const { data } = await axiosInstance.get(`/config/courses/?${params.toString()}`);
+      return data;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }

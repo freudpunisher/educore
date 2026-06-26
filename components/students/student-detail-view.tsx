@@ -84,8 +84,8 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
         ? academicYears?.find(y => y.is_current)?.id
         : parseInt(selectedYear);
 
-    const { data: finance } = useStudentFinance(student.id, activeYearId);
-    const { data: life } = useStudentLife(student.id, activeYearId);
+    const { data: finance } = useStudentFinance(activeYearId ? student.id : null, activeYearId);
+    const { data: life } = useStudentLife(activeYearId ? student.id : null, activeYearId);
 
     const getEnrollmentDisplay = (info: any) => {
         const currentClass = student.current_class;
@@ -96,8 +96,9 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
         return info.classroom || "Linked";
     };
 
-    const attendanceRate = life?.attendance_stats
-        ? Math.round((life.attendance_stats.present_count / life.attendance_stats.total_count) * 100)
+    const totalCount = life?.attendance_stats?.total_count || 0;
+    const attendanceRate = totalCount > 0
+        ? Math.round(((life?.attendance_stats?.present_count || 0) / totalCount) * 100)
         : 0;
 
     const hasArrears = finance ? parseFloat(finance.outstanding_balance) > 0 : false;

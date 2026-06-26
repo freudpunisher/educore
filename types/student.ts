@@ -388,3 +388,15 @@ export const studentTransactionsResponseSchema = z.object({
 }).passthrough();
 
 export type StudentTransactions = z.infer<typeof studentTransactionsResponseSchema>;
+
+export const studentStatsSchema = z.object({
+  total: z.number(),
+  total_enrolled: z.number(),
+  active: z.number(),
+  inactive: z.number(),
+  male: z.number(),
+  female: z.number(),
+  abandoned: z.number(),
+});
+
+export type StudentStats = z.infer<typeof studentStatsSchema>;
