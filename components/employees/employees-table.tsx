@@ -43,7 +43,8 @@ import {
 import { useState } from "react";
 import { Employee } from "@/types/employee";
 import { Loader2 } from "lucide-react";
-import { useDeleteEmployee, useRestoreEmployee } from "@/hooks/use-employees";
+import { useDeleteEmployee, useRestoreEmployee, useToggleEmployeeActive } from "@/hooks/use-employees";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +96,7 @@ function ActionsCell({ employee }: { employee: Employee }) {
   const [open, setOpen] = useState(false);
   const deleteMutation = useDeleteEmployee();
   const restoreMutation = useRestoreEmployee();
+  const toggleActiveMutation = useToggleEmployeeActive();
 
   const handleDelete = () => {
     deleteMutation.mutate(employee.id);
@@ -103,6 +105,10 @@ function ActionsCell({ employee }: { employee: Employee }) {
 
   const handleRestore = () => {
     restoreMutation.mutate(employee.id);
+  };
+
+  const handleToggleActive = () => {
+    toggleActiveMutation.mutate(employee.id);
   };
 
   if (employee.is_deleted) {
@@ -122,7 +128,17 @@ function ActionsCell({ employee }: { employee: Employee }) {
   }
 
   return (
-    <div className="flex justify-end gap-2">
+    <div className="flex justify-end gap-2 items-center">
+      <div className="flex items-center gap-2 mr-2">
+        <Switch
+          checked={employee.active}
+          onCheckedChange={handleToggleActive}
+          disabled={toggleActiveMutation.isPending}
+        />
+        <span className="text-xs text-muted-foreground w-14">
+          {employee.active ? "Active" : "Inactive"}
+        </span>
+      </div>
       <Button variant="ghost" size="icon" className="h-8 w-8">
         <Pencil className="h-4 w-4" />
       </Button>

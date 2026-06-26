@@ -38,9 +38,12 @@ import {
   useGeneratePreschoolAnnualReportCards,
   useGenerateElementaryAnnualReportCards,
   useGenerateMiddleSchoolAnnualReportCards,
-  useGenerateHighSchoolAnnualReportCards 
+  useGenerateHighSchoolAnnualReportCards,
+  useAllTeachers,
+  useTeacherCourses,
+  useAllCourses,
 } from "@/hooks/use-pedagogy"
-import { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { CreateAssessmentDialog } from "@/components/pedagogy/create-assessment-dialog"
@@ -58,6 +61,8 @@ export default function PedagogyPage() {
   const [selectedClassId, setSelectedClassId] = useState<number | undefined>(undefined)
   const [selectedTermId, setSelectedTermId] = useState<number | undefined>(undefined)
   const [classSearch, setClassSearch] = useState("")
+  const [activeTab, setActiveTab] = useState("classes")
+  const [teacherToDetail, setTeacherToDetail] = useState<number | null>(null)
 
   const academicYears = yearsData || []
 
@@ -72,6 +77,9 @@ export default function PedagogyPage() {
 
   // Data fetching
   const { data: classrooms = [], isLoading: classroomsLoading } = useClassRooms(classSearch)
+  const { data: teachers = [], isLoading: teachersLoading } = useAllTeachers()
+  const { data: allCoursesData } = useAllCourses(1)
+  const { data: teacherOverview, isLoading: teacherOverviewLoading } = useTeacherCourses(teacherToDetail)
   const { data: selectedClass, isLoading: selectedClassLoading } = useClassRoom(selectedClassId || "")
   const isHighSchool = selectedClass?.level === 'high'
   
@@ -399,12 +407,15 @@ export default function PedagogyPage() {
 
   // --- SELECTION VIEW ---
   if (!selectedClassId) {
+    const totalTeachers = teachers.length
+    const totalCourses = allCoursesData?.count || 0
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Pedagogy Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Select a class to manage courses, assessments and grades.</p>
+            <p className="text-muted-foreground mt-1">Manage classes, teachers, courses, assessments and grades.</p>
           </div>
           <div className="flex items-center gap-3">
             <Select 
@@ -423,64 +434,204 @@ export default function PedagogyPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search classes..."
-                className="pl-8"
-                value={classSearch}
-                onChange={(e) => setClassSearch(e.target.value)}
-              />
-            </div>
+            {activeTab === "classes" && (
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search classes..."
+                  className="pl-8"
+                  value={classSearch}
+                  onChange={(e) => setClassSearch(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {classrooms.map((cls: any) => (
-            <Card 
-              key={cls.id} 
-              className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
-              onClick={() => setSelectedClassId(cls.id)}
-            >
-              <CardHeader className="pb-3">
+        {/* KPI Cards */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="bg-blue-50/30 border-blue-100 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-blue-600 uppercase">Total Courses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalCourses}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-50/30 border-purple-100 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-purple-600 uppercase">Total Teachers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalTeachers}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs: Classes / Teachers */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-muted/50 p-1">
+            <TabsTrigger value="classes" className="gap-2">
+              <Users className="w-4 h-4" /> Classes
+            </TabsTrigger>
+            <TabsTrigger value="teachers" className="gap-2">
+              <BookOpen className="w-4 h-4" /> Teachers
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="classes" className="mt-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {classrooms.map((cls: any) => (
+                <Card 
+                  key={cls.id} 
+                  className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+                  onClick={() => setSelectedClassId(cls.id)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="font-mono">{cls.code}</Badge>
+                      <Badge className={cn(
+                        "capitalize",
+                        cls.level === 'high' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100' :
+                        cls.level === 'middle' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
+                        'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                      )}>
+                        {cls.level}
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-2 text-xl">{cls.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <span>Roster</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="w-4 h-4" />
+                        <span>{cls.grade_label || 'Manage'}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" className="w-full mt-4 group-hover:bg-primary group-hover:text-white transition-colors">
+                      Open Pedagogy
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+              {classrooms.length === 0 && (
+                <div className="col-span-full py-20 text-center">
+                  <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
+                  <h3 className="mt-4 font-semibold text-lg">No classes found</h3>
+                  <p className="text-muted-foreground">Try adjusting your filters or search term.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="teachers" className="mt-6">
+            <Card className="shadow-sm overflow-hidden border-muted/60">
+              <CardHeader className="bg-muted/10 border-b border-muted/60">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="font-mono">{cls.code}</Badge>
-                  <Badge className={cn(
-                    "capitalize",
-                    cls.level === 'high' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100' :
-                    cls.level === 'middle' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
-                    'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                  )}>
-                    {cls.level}
-                  </Badge>
+                  <CardTitle className="text-lg font-semibold">Teachers</CardTitle>
+                  <Badge variant="outline" className="bg-white">{teachers.length} Teachers</Badge>
                 </div>
-                <CardTitle className="mt-2 text-xl">{cls.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>Roster</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="w-4 h-4" />
-                    <span>{cls.grade_label || 'Manage'}</span>
-                  </div>
-                </div>
-                <Button variant="ghost" className="w-full mt-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                  Open Pedagogy
-                </Button>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Username</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="text-center font-bold">Courses</TableHead>
+                      <TableHead className="text-right font-bold pr-6">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teachers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
+                          No teachers found.
+                        </TableCell>
+                      </TableRow>
+                    ) : teachers.map((t: any) => (
+                      <React.Fragment key={t.id}>
+                        <TableRow className="hover:bg-muted/5 group">
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                {(t.user?.first_name?.charAt(0) || t.user?.username?.charAt(0) || '?').toUpperCase()}
+                              </div>
+                              <span>{t.user?.first_name} {t.user?.last_name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.user?.username}</code>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{t.user?.email || '—'}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="font-mono">{t.courses_count ?? 0}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={() => setTeacherToDetail(teacherToDetail === t.id ? null : t.id)}
+                            >
+                              <BookOpen className="w-4 h-4 mr-1" /> 
+                              {teacherToDetail === t.id ? 'Hide Details' : 'Details'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {teacherToDetail === t.id && (
+                          <TableRow key={`${t.id}-detail`}>
+                            <TableCell colSpan={5} className="p-4 bg-muted/10">
+                              {teacherOverviewLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                </div>
+                              ) : teacherOverview ? (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h4 className="font-semibold text-sm mb-2">Courses ({teacherOverview.courses?.length || 0})</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {teacherOverview.courses?.length > 0 ? teacherOverview.courses.map((c: any) => (
+                                        <Badge key={c.id} variant="secondary" className="text-xs">
+                                          {c.name} ({c.code})
+                                        </Badge>
+                                      )) : (
+                                        <p className="text-xs text-muted-foreground">No courses assigned.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-sm mb-2">Classes ({teacherOverview.classrooms?.length || 0})</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {teacherOverview.classrooms?.length > 0 ? teacherOverview.classrooms.map((c: any) => (
+                                        <Badge key={c.id} variant="outline" className="text-xs">
+                                          {c.name}
+                                        </Badge>
+                                      )) : (
+                                        <p className="text-xs text-muted-foreground">No classes assigned.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground text-center py-4">Failed to load details.</p>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          )}
+                        </React.Fragment>
+                      ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
-          ))}
-          {classrooms.length === 0 && (
-            <div className="col-span-full py-20 text-center">
-              <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
-              <h3 className="mt-4 font-semibold text-lg">No classes found</h3>
-              <p className="text-muted-foreground">Try adjusting your filters or search term.</p>
-            </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     )
   }
@@ -687,7 +838,7 @@ export default function PedagogyPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {classStats?.studentAverages.length === 0 ? (
+                    {!classStats || classStats.studentAverages.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="text-center py-20 text-muted-foreground">
                           No student academic records found for this classroom and year.

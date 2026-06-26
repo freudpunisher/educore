@@ -88,3 +88,21 @@ export function useRestoreEmployee() {
   });
 }
 
+export function useToggleEmployeeActive() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await axiosInstance.post(`users/accounts/${id}/toggle_active/`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employees"] });
+    },
+    onError: (error: any) => {
+      const message = error.response?.data?.message || "Failed to toggle account status";
+      toast.error(message, { duration: 6000 });
+    },
+  });
+}
+
