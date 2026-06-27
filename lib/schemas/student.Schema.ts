@@ -23,7 +23,9 @@ export const createStudentSchema = z.object({
     ),
   parent_email: z
     .string()
-    .email("Invalid parent email"),
+    .email("Invalid parent email")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;

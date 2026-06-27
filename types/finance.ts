@@ -100,3 +100,50 @@ export type RevenueDataPoint = z.infer<typeof revenueDataPointSchema>;
 export type FinanceOverview = z.infer<typeof financeOverviewSchema>;
 export type FeesPreviewItem = z.infer<typeof feesPreviewItemSchema>;
 export type FeesPreview = z.infer<typeof feesPreviewSchema>;
+
+export const surplusRefundSchema = z.object({
+    id: numericIdSchema,
+    surplus: numericIdSchema,
+    amount: z.string(),
+    refund_mode: nullableNumericIdSchema,
+    refund_mode_name: z.string(),
+    check_number: z.string().nullable().optional(),
+    institution: nullableNumericIdSchema,
+    document: z.any().nullable().optional(),
+    document_url: z.string().nullable().optional(),
+    observations: z.string().nullable().optional(),
+    created_by: nullableNumericIdSchema,
+    created_by_name: z.string().nullable().optional(),
+    created_at: z.string().nullable().optional(),
+    cancelled_at: z.string().nullable().optional(),
+    cancelled_by: nullableNumericIdSchema,
+    cancelled_by_name: z.string().nullable().optional(),
+});
+
+export const paymentSurplusSchema = z.object({
+    id: numericIdSchema,
+    student: numericIdSchema,
+    student_name: z.string(),
+    invoice: numericIdSchema,
+    invoice_reference: z.string(),
+    total_surplus: z.string(),
+    refunded_amount: z.string(),
+    remaining: z.string(),
+    refunds: z.array(surplusRefundSchema).optional(),
+    refunds_count: z.number().optional(),
+    created_at: z.string().nullable().optional(),
+});
+
+export const surplusAggregatesSchema = z.object({
+    total_surplus: z.string(),
+    total_refunded: z.string(),
+    remaining: z.string(),
+});
+
+export const paginatedSurplusSchema = createPaginatedSchema(paymentSurplusSchema).extend({
+    aggregates: surplusAggregatesSchema.optional(),
+});
+export const paginatedRefundSchema = createPaginatedSchema(surplusRefundSchema);
+
+export type SurplusRefund = z.infer<typeof surplusRefundSchema>;
+export type PaymentSurplus = z.infer<typeof paymentSurplusSchema>;

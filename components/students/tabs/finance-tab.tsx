@@ -1,7 +1,7 @@
 "use client";
 
 import { useStudentFinance } from "@/hooks/use-students";
-import { Wallet, CreditCard, Receipt, Loader2, ArrowUpRight, Calendar, Printer } from "lucide-react";
+import { Wallet, CreditCard, Receipt, Loader2, ArrowUpRight, Calendar, Printer, CircleDollarSign, Landmark } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -154,6 +154,102 @@ export function FinanceTab({ studentId, academicYearId }: { studentId: number, a
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Surplus & Refunds */}
+            {data?.surplus && Number(data.surplus.total_surplus) > 0 && (
+                <section className="space-y-3">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <CircleDollarSign className="h-5 w-5 text-emerald-500" />
+                        Payment Surplus & Refunds
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <Card className="bg-emerald-500/5 border-emerald-500/20">
+                            <CardHeader className="pb-1">
+                                <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    Total Surplus
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xl font-bold text-emerald-600">{Number(data.surplus.total_surplus).toLocaleString()} Fbu</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-red-500/5 border-red-500/20">
+                            <CardHeader className="pb-1">
+                                <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    Refunded
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xl font-bold text-red-600">{Number(data.surplus.total_refunded).toLocaleString()} Fbu</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-amber-500/5 border-amber-500/20">
+                            <CardHeader className="pb-1">
+                                <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    Remaining
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xl font-bold text-amber-600">{Number(data.surplus.remaining).toLocaleString()} Fbu</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-muted-foreground/20">
+                            <CardHeader className="pb-1">
+                                <CardTitle className="text-[10px] font-semibold text-muted-foreground uppercase">
+                                    Refunds Count
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-xl font-bold">{data.surplus_details?.reduce((sum: number, s: any) => sum + (s.refunds_count || 0), 0) || 0}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {data.surplus_details?.map((surplus: any) => (
+                        <Card key={surplus.id} className="overflow-hidden border-emerald-500/20">
+                            <CardHeader className="p-3 bg-emerald-50/50 flex flex-row items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Landmark className="h-4 w-4 text-emerald-600" />
+                                    <span className="text-sm font-bold">{surplus.invoice_reference}</span>
+                                </div>
+                                <Badge variant="outline" className="border-emerald-200 text-emerald-700 bg-emerald-50">
+                                    Remaining: {Number(surplus.remaining).toLocaleString()} Fbu
+                                </Badge>
+                            </CardHeader>
+                            {(surplus.refunds?.length ?? 0) > 0 && (
+                                <CardContent className="p-0">
+                                    <Table>
+                                        <TableHeader className="bg-muted/10">
+                                            <TableRow>
+                                                <TableHead className="text-[10px]">Date</TableHead>
+                                                <TableHead className="text-[10px]">Amount</TableHead>
+                                                <TableHead className="text-[10px]">Mode</TableHead>
+                                                <TableHead className="text-[10px]">By</TableHead>
+                                                <TableHead className="text-[10px]">Status</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {surplus.refunds.map((refund: any) => (
+                                                <TableRow key={refund.id} className="text-xs">
+                                                    <TableCell>{refund.created_at ? format(new Date(refund.created_at), "MMM dd, yyyy") : "—"}</TableCell>
+                                                    <TableCell className="font-bold text-red-600">-{Number(refund.amount).toLocaleString()} Fbu</TableCell>
+                                                    <TableCell>{refund.refund_mode_name || "—"}</TableCell>
+                                                    <TableCell>{refund.created_by_name || "—"}</TableCell>
+                                                    <TableCell>
+                                                        <Badge variant={refund.cancelled_at ? "destructive" : "default"} className="text-[10px]">
+                                                            {refund.cancelled_at ? "Cancelled" : "Active"}
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            )}
+                        </Card>
+                    ))}
+                </section>
+            )}
 
             {/* Invoices List */}
             <section className="space-y-4">

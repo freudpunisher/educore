@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, Plus, UserCheck, UserMinus } from "lucide-react";
 import { useStudents, useStudentStats } from "@/hooks/use-students";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
@@ -16,25 +16,25 @@ export default function StudentsPage() {
   const [search, setSearch] = useState("");
   const [academicYear, setAcademicYear] = useState<number | undefined>();
   const [classroom, setClassroom] = useState<number | undefined>();
+  const [gender, setGender] = useState<number | undefined>();
+
+  const onAcademicYearChange = (id?: number) => { setAcademicYear(id); setPage(1); };
+  const onClassroomChange = (id?: number) => { setClassroom(id); setPage(1); };
+  const onGenderChange = (gender?: number) => { setGender(gender); setPage(1); };
+  const onSearchChange = (search: string) => { setSearch(search); setPage(1); };
 
   const { data: studentsResponse, isLoading, error } = useStudents({
     page,
+    page_size: 10,
     search: search || undefined,
     academic_year: academicYear,
     classroom: classroom,
+    gender,
   });
 
   const { data: years = [] } = useAcademicYears();
   const { data: classes = [] } = useClassRooms();
   const { data: stats, isLoading: statsLoading } = useStudentStats();
-
-  useEffect(() => {
-    if (years.length > 0 && academicYear === undefined) {
-      const current = years.find((y: any) => y.is_current);
-      if (current) setAcademicYear(current.id);
-      else setAcademicYear(years[0].id);
-    }
-  }, [years, academicYear]);
 
   const students = studentsResponse?.results || [];
   const totalCount = studentsResponse?.count || 0;
@@ -102,13 +102,16 @@ export default function StudentsPage() {
             currentPage={page}
             onPageChange={setPage}
             search={search}
-            onSearchChange={setSearch}
+            onSearchChange={onSearchChange}
             academicYear={academicYear}
-            onAcademicYearChange={setAcademicYear}
+            onAcademicYearChange={onAcademicYearChange}
             classroom={classroom}
-            onClassroomChange={setClassroom}
+            onClassroomChange={onClassroomChange}
+            gender={gender}
+            onGenderChange={onGenderChange}
             years={years}
             classes={classes}
+            userRole={user?.role}
           />
         </CardContent>
       </Card>

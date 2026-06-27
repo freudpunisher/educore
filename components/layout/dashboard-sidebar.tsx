@@ -61,6 +61,8 @@ const navigation: NavItem[] = [
       { name: "Overview", href: "/dashboard/finances" },
       { name: "Invoices", href: "/dashboard/finances/invoices" },
       { name: "Payments", href: "/dashboard/finances/payments" },
+      { name: "Pricing", href: "/dashboard/finances/pricing" },
+      { name: "Surpluses", href: "/dashboard/finances/surpluses" },
     ]
   },
   { name: "Academics", href: "/dashboard/pedagogy", icon: BookOpen, roles: MODULE_ACCESS.Pedagogy },

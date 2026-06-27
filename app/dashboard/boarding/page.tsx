@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
@@ -146,6 +147,18 @@ type Bed = {
 export default function BoardingPage() {
   const [activeTab, setActiveTab] = useState("assignments");
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const canManage = user?.role === "boarding";
+  const allTabs = [
+    { value: "assignments", label: "Assignments" },
+    { value: "rooms", label: "Rooms" },
+    { value: "attendance", label: "Attendances" },
+    { value: "exits", label: "Exits" },
+    { value: "beds", label: "Beds" },
+  ];
+  const visibleTabs = user?.role === "receptionist"
+    ? allTabs.filter((t) => t.value === "assignments")
+    : allTabs;
 
   const [dashboard, setDashboard] = useState<BoardingDashboard | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -458,6 +471,13 @@ export default function BoardingPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Reset active tab if hidden by role filter
+  useEffect(() => {
+    if (!visibleTabs.find((t) => t.value === activeTab)) {
+      setActiveTab("assignments");
+    }
+  }, [visibleTabs, activeTab]);
+
   const filteredStudentOptions = useMemo(() => {
     if (!studentSearch) return students;
     const q = studentSearch.toLowerCase();
@@ -565,7 +585,7 @@ export default function BoardingPage() {
     {
       key: "id" as any,
       label: "Actions",
-      render: (_: any, item: Housing) => (
+      render: (_: any, item: Housing) => canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -581,7 +601,7 @@ export default function BoardingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+      ) : null,
     },
   ];
 
@@ -626,7 +646,7 @@ export default function BoardingPage() {
     {
       key: "id" as any,
       label: "Actions",
-      render: (_: any, item: Room) => (
+      render: (_: any, item: Room) => canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -642,7 +662,7 @@ export default function BoardingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+      ) : null,
     },
   ];
 
@@ -684,7 +704,7 @@ export default function BoardingPage() {
     {
       key: "id" as any,
       label: "Actions",
-      render: (_: any, item: Attendance) => (
+      render: (_: any, item: Attendance) => canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -700,7 +720,7 @@ export default function BoardingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+      ) : null,
     },
   ];
 
@@ -752,7 +772,7 @@ export default function BoardingPage() {
     {
       key: "id" as any,
       label: "Actions",
-      render: (_: any, item: ExitPermission) => (
+      render: (_: any, item: ExitPermission) => canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -768,7 +788,7 @@ export default function BoardingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+      ) : null,
     },
   ];
 
@@ -794,7 +814,7 @@ export default function BoardingPage() {
     {
       key: "id" as any,
       label: "Actions",
-      render: (_: any, item: Bed) => (
+      render: (_: any, item: Bed) => canManage ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -810,7 +830,7 @@ export default function BoardingPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      ),
+      ) : null,
     },
   ];
 
@@ -873,22 +893,12 @@ export default function BoardingPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1">
-            <TabsTrigger value="assignments" className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
-              Assignments
-            </TabsTrigger>
-            <TabsTrigger value="rooms" className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
-              Rooms
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
-              Attendances
-            </TabsTrigger>
-            <TabsTrigger value="exits" className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
-              Exits
-            </TabsTrigger>
-            <TabsTrigger value="beds" className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
-              Beds
-            </TabsTrigger>
+          <TabsList className="grid w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
+            {visibleTabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value} className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           {/* ── Assignments Tab ── */}
@@ -900,9 +910,11 @@ export default function BoardingPage() {
                   Students assigned to rooms and beds
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingHousing(null); setIsHousingModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Assignment
-              </Button>
+              {canManage && (
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingHousing(null); setIsHousingModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Assignment
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -963,9 +975,11 @@ export default function BoardingPage() {
                   Rooms and boarding capacity
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingRoom(null); setIsRoomModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Room
-              </Button>
+              {canManage && (
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingRoom(null); setIsRoomModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Room
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -1020,9 +1034,11 @@ export default function BoardingPage() {
                   Daily tracking of boarding attendances
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingAttendance(null); setIsAttendanceModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Attendance
-              </Button>
+              {canManage && (
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingAttendance(null); setIsAttendanceModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Attendance
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1074,9 +1090,11 @@ export default function BoardingPage() {
                   Boarding students exit requests and authorizations
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingExit(null); setIsExitModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Exit Request
-              </Button>
+              {canManage && (
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingExit(null); setIsExitModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Exit Request
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1125,9 +1143,11 @@ export default function BoardingPage() {
                   Manage individual beds across all rooms
                 </p>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingBed(null); setIsBedModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Bed
-              </Button>
+              {canManage && (
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={() => { setEditingBed(null); setIsBedModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Bed
+                </Button>
+              )}
             </div>
 
             <div className="flex gap-4">

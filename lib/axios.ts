@@ -10,10 +10,8 @@ const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.68:10000/
 const axiosInstance = axios.create({
   baseURL,
   // timeout: 15_000, // 15 seconds
+  // Do NOT set a default Content-Type — axios auto-detects FormData vs JSON
   headers: {
-    "Content-Type": "application/json",
-
-
     // You can add common headers here
   },
   // Important for cookies/auth when calling your own Next.js API routes

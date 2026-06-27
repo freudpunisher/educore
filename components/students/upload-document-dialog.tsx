@@ -117,6 +117,7 @@ export function UploadStudentDocumentDialog({ studentId }: UploadStudentDocument
                                 type="file"
                                 className="cursor-pointer"
                                 accept=".pdf,image/*"
+                                capture="environment"
                                 onChange={(e) => {
                                     const files = e.target.files;
                                     if (files) setValue("file", files);

@@ -19,6 +19,7 @@ import {
     ChevronsUpDown,
     Wallet,
     Clock,
+    FileText,
 } from "lucide-react"
 import { usePayments, useInvoices } from "@/hooks/use-finance"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -395,14 +396,26 @@ export default function PaymentsPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="py-5 pr-6 text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-indigo-500/10"
-                                                        onClick={() => handlePrintReceipt(payment)}
-                                                    >
-                                                        <Printer className="w-3.5 h-3.5 mr-1.5" /> Receipt
-                                                    </Button>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {payment.document && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-emerald-500/10"
+                                                                onClick={() => window.open(payment.document!, '_blank')}
+                                                            >
+                                                                <FileText className="w-3.5 h-3.5 mr-1.5" /> Document
+                                                            </Button>
+                                                        )}
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-indigo-500/10"
+                                                            onClick={() => handlePrintReceipt(payment)}
+                                                        >
+                                                            <Printer className="w-3.5 h-3.5 mr-1.5" /> Receipt
+                                                        </Button>
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
