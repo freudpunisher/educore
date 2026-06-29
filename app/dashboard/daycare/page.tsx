@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/lib/auth-context"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import {
@@ -81,6 +82,18 @@ export default function DaycarePage() {
     const [isLoadingRecords, setIsLoadingRecords] = useState(true)
     const [isLoadingHistory, setIsLoadingHistory] = useState(true)
     const [historyDate, setHistoryDate] = useState(today)
+    const [historyDateEnd, setHistoryDateEnd] = useState(today)
+    const [academicYears, setAcademicYears] = useState<{ id: number; name: string }[]>([])
+    const [historyAcademicYear, setHistoryAcademicYear] = useState("")
+    const allDaycareTabs = [
+        { value: "today", label: "Daily Records" },
+        { value: "history", label: "Daily Records History" },
+    ]
+    const { user } = useAuth()
+    const visibleDaycareTabs = user?.role === "receptionist"
+        ? allDaycareTabs.filter((t) => t.value === "history")
+        : allDaycareTabs
+    const [daycareTab, setDaycareTab] = useState(visibleDaycareTabs[0]?.value ?? "history")
 
     // Dialog States
     const [activeRecord, setActiveRecord] = useState<DailyRecord | null>(null)
@@ -98,11 +111,21 @@ export default function DaycarePage() {
         fetchDashboardStats()
         fetchDailyRecords()
         fetchActivities()
+        api.get<any>("academics/years/").then(r => {
+            const items = r.results || r || []
+            setAcademicYears(Array.isArray(items) ? items : [])
+        }).catch(() => {})
     }, [])
 
     useEffect(() => {
-        fetchHistoryRecords(historyDate)
-    }, [historyDate])
+        fetchHistoryRecords()
+    }, [historyDate, historyDateEnd, historyAcademicYear])
+
+    useEffect(() => {
+        if (!visibleDaycareTabs.find((t) => t.value === daycareTab)) {
+            setDaycareTab("history")
+        }
+    }, [visibleDaycareTabs, daycareTab])
 
     const fetchDashboardStats = async () => {
         setIsLoadingStats(true)
@@ -137,10 +160,14 @@ export default function DaycarePage() {
         }
     }
 
-    const fetchHistoryRecords = async (date: string) => {
+    const fetchHistoryRecords = async () => {
         setIsLoadingHistory(true)
         try {
-            const resp = await api.get<any>(`daycare/daily-records/?date=${date}`)
+            const params = new URLSearchParams()
+            if (historyDate) params.set("date_debut", historyDate)
+            if (historyDateEnd) params.set("date_fin", historyDateEnd)
+            if (historyAcademicYear) params.set("academic_year", historyAcademicYear)
+            const resp = await api.get<any>(`daycare/daily-records/?${params.toString()}`)
             setHistoryRecords(resp.results || resp)
         } catch {
             toast.error("Failed to load daily record history")
@@ -428,13 +455,15 @@ export default function DaycarePage() {
     return (
 
         <div className="space-y-6">
+            {user?.role !== "receptionist" && (
+                <>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">Daycare Management</h1>
                     <p className="text-muted-foreground">Monitor and manage daily daycare activities.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => { fetchDashboardStats(); fetchDailyRecords(); fetchHistoryRecords(historyDate); }}>
+                    <Button variant="outline" onClick={() => { fetchDashboardStats(); fetchDailyRecords(); fetchHistoryRecords(); }}>
                         Refresh
                     </Button>
                     <Button onClick={() => openAction("new")}>
@@ -517,11 +546,14 @@ export default function DaycarePage() {
                     </CardContent>
                 </Card>
             </div>
+            </>
+            )}
 
-            <Tabs defaultValue="today" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2 md:w-[420px]">
-                    <TabsTrigger value="today">Daily Records</TabsTrigger>
-                    <TabsTrigger value="history">Daily Records History</TabsTrigger>
+            <Tabs value={daycareTab} onValueChange={setDaycareTab} className="space-y-4">
+                <TabsList className="grid w-full md:w-[420px]" style={{ gridTemplateColumns: `repeat(${visibleDaycareTabs.length}, 1fr)` }}>
+                    {visibleDaycareTabs.map((tab) => (
+                        <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    ))}
                 </TabsList>
 
                 <TabsContent value="today" className="m-0">
@@ -556,25 +588,44 @@ export default function DaycarePage() {
 
                 <TabsContent value="history" className="m-0">
                     <Card>
-                        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                            <div>
-                                <CardTitle className="flex items-center gap-2">
-                                    <History className="h-5 w-5" />
-                                    Daily Records History
-                                </CardTitle>
-                                <CardDescription>Consult daycare records for a specific day.</CardDescription>
+                        <CardHeader>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <History className="h-5 w-5" />
+                                        Daily Records History
+                                    </CardTitle>
+                                    <CardDescription>Consult daycare records with filters.</CardDescription>
+                                </div>
                             </div>
-                            <div className="w-full md:w-[220px] space-y-2">
-                                <label htmlFor="history-date" className="text-sm font-medium">
-                                    Select a date
-                                </label>
-                                <Input
-                                    id="history-date"
-                                    type="date"
-                                    value={historyDate}
-                                    max={today}
-                                    onChange={(e) => setHistoryDate(e.target.value)}
-                                />
+                            <div className="flex flex-wrap items-end gap-3 mt-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">Academic Year</label>
+                                    <Select value={historyAcademicYear || "all"} onValueChange={(v) => setHistoryAcademicYear(v === "all" ? "" : v)}>
+                                        <SelectTrigger className="w-[200px]">
+                                            <SelectValue placeholder="All years" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All years</SelectItem>
+                                            {academicYears.map((ay) => (
+                                                <SelectItem key={ay.id} value={String(ay.id)}>{ay.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">From</label>
+                                    <Input type="date" value={historyDate} max={today} onChange={(e) => setHistoryDate(e.target.value)} className="w-[180px]" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium">To</label>
+                                    <Input type="date" value={historyDateEnd} max={today} onChange={(e) => setHistoryDateEnd(e.target.value)} className="w-[180px]" />
+                                </div>
+                                {(historyDate || historyDateEnd || historyAcademicYear) && (
+                                    <Button variant="ghost" size="sm" onClick={() => { setHistoryDate(""); setHistoryDateEnd(""); setHistoryAcademicYear(""); }}>
+                                        Clear filters
+                                    </Button>
+                                )}
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -585,7 +636,7 @@ export default function DaycarePage() {
                             ) : historyRecords.length === 0 ? (
                                 <div className="text-center p-8 text-muted-foreground">
                                     <History className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                    <p>No daycare record found for {formatDayLabel(historyDate)}.</p>
+                                    <p>No daycare records found for the selected filters.</p>
                                 </div>
                             ) : (
                                 <div className="overflow-x-auto">

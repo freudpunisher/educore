@@ -7,7 +7,7 @@ export const MODULE_ACCESS = {
   Students: [
     ...ALL_ROLES,
     "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "teacher", "transporter",
+    "receptionist", "accountant", "teacher",
     "restaurant", "daycare", "student_parent", "student",
   ],
   Attendance: [
@@ -51,7 +51,7 @@ export const MODULE_ACCESS = {
   ],
   Transport: [
     ...ALL_ROLES,
-    "director", "accountant", "receptionist", "transporter",
+    "director", "accountant", "receptionist", "transporter", "driver",
   ],
   Employees: [
     ...ALL_ROLES,
@@ -59,7 +59,7 @@ export const MODULE_ACCESS = {
   ],
   Restaurant: [
     ...ALL_ROLES,
-    "director", "accountant", "receptionist", "restaurant",
+    "director", "accountant", "restaurant",
   ],
   Daycare: [
     ...ALL_ROLES,
@@ -71,7 +71,7 @@ export const MODULE_ACCESS = {
   ],
   Storage: [
     ...ALL_ROLES,
-    "director", "accountant", "storage", "restaurant",
+    "director", "accountant", "storage",
   ],
   Rapports: [
     ...ALL_ROLES,
@@ -81,6 +81,10 @@ export const MODULE_ACCESS = {
   ],
   "Audit Logs": [
     "global_control", "system_admin",
+  ],
+  "Academic Planning": [
+    ...ALL_ROLES,
+    "director", "academic_principal", "discipline_principal",
   ],
   Settings: [
     "system_admin",

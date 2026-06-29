@@ -39,6 +39,7 @@ interface StudentDetailViewProps {
 
 const ROLE_TABS: Record<string, string[]> = {
     accountant: ["invoicing"],
+    receptionist: ["documents"],
 };
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -139,7 +140,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm font-bold text-foreground/70 bg-card/50 backdrop-blur px-4 py-2 rounded-2xl shadow-sm border border-border/50">
                                     <Activity className="h-4 w-4 text-emerald-500" />
-                                    <span className="capitalize">{student.gender === 1 ? "Female" : "Male"}</span>
+                                    <span className="capitalize">{student.gender === 1 ? "Male" : "Female"}</span>
                                 </div>
                             </div>
                         </div>

@@ -207,8 +207,8 @@ export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initi
                             filteredTypes.map((t: any) => (
                               <SelectItem key={t.id} value={t.id.toString()}>
                                 <div className="flex flex-col">
-                                  <span className="font-medium">{t.label} ({t.weight}%)</span>
-                                  <span className="text-[10px] text-muted-foreground font-mono">{t.code}</span>
+                                  <span className="font-medium">{t.label}</span>
+                                  <span className="text-[10px] text-muted-foreground font-mono">{t.code}{t.category_label ? ` — ${t.category_label}` : ''}</span>
                                 </div>
                               </SelectItem>
                             ))

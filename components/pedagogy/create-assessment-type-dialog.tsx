@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { useCreateAssessmentType } from "@/hooks/use-pedagogy"
+import { useCreateAssessmentType, useGradingCategories } from "@/hooks/use-pedagogy"
 import { assessmentTypeCreateSchema, AssessmentTypeCreate } from "@/types/pedagogy"
 import toast from "react-hot-toast"
 import { Loader2, Settings2 } from "lucide-react"
@@ -20,13 +20,14 @@ interface CreateAssessmentTypeDialogProps {
 
 export function CreateAssessmentTypeDialog({ isOpen, onClose, initialLevel = "all" }: CreateAssessmentTypeDialogProps) {
   const createMutation = useCreateAssessmentType()
+  const { data: categories = [], isLoading: loadingCategories } = useGradingCategories()
 
   const form = useForm<AssessmentTypeCreate>({
     resolver: zodResolver(assessmentTypeCreateSchema),
     defaultValues: {
       code: "",
       label: "",
-      weight: "1.00",
+      category: "",
       level: initialLevel,
     },
   })
@@ -51,7 +52,7 @@ export function CreateAssessmentTypeDialog({ isOpen, onClose, initialLevel = "al
             <DialogTitle>New Assessment Type</DialogTitle>
           </div>
           <DialogDescription>
-            Configure a new type of assessment (e.g. "Final Exam", "Daily Quiz") and assign it a weight for grading.
+            Configure a new type of assessment (e.g. "Final Exam", "Daily Quiz") and assign it to a grading category.
           </DialogDescription>
         </DialogHeader>
 
@@ -86,45 +87,53 @@ export function CreateAssessmentTypeDialog({ isOpen, onClose, initialLevel = "al
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight</FormLabel>
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Grading Category</FormLabel>
+                  <Select disabled={loadingCategories} onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="1.0" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingCategories ? "Loading..." : "Select category"} />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="level"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>School Level</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select level" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all">All Levels</SelectItem>
-                        <SelectItem value="preschool">Preschool</SelectItem>
-                        <SelectItem value="primary">Primary</SelectItem>
-                        <SelectItem value="middle">Middle School</SelectItem>
-                        <SelectItem value="high">High School</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {categories.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id.toString()}>{cat.label} ({cat.code})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="level"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>School Level</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select level" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      <SelectItem value="preschool">Preschool</SelectItem>
+                      <SelectItem value="primary">Primary</SelectItem>
+                      <SelectItem value="middle">Middle School</SelectItem>
+                      <SelectItem value="high">High School</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter className="mt-6">
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>

@@ -47,6 +47,7 @@ import { EnrollStudentDialog } from "./enroll-student-dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+const PAGE_SIZE = 10;
 const genderLabel = (g?: number) => (g === 1 ? "Male" : g === 0 ? "Female" : "Unknown");
 
 interface StudentsTableProps {
@@ -62,8 +63,11 @@ interface StudentsTableProps {
   onAcademicYearChange: (id?: number) => void;
   classroom?: number;
   onClassroomChange: (id?: number) => void;
+  gender?: number;
+  onGenderChange: (gender?: number) => void;
   years: any[];
   classes: any[];
+  userRole?: string;
 }
 
 export default function StudentsTable({
@@ -79,8 +83,11 @@ export default function StudentsTable({
   onAcademicYearChange,
   classroom,
   onClassroomChange,
+  gender,
+  onGenderChange,
   years,
   classes,
+  userRole,
 }: StudentsTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -189,7 +196,7 @@ export default function StudentsTable({
               View
             </Button>
 
-            {student.is_validated && student.registration_paid && (
+            {userRole === "academic_principal" && student.is_validated && (
               <Button
                 variant="outline"
                 size="sm"
@@ -274,6 +281,21 @@ export default function StudentsTable({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Gender Filter */}
+        <Select
+          value={gender !== undefined ? String(gender) : "all"}
+          onValueChange={(val) => onGenderChange(val === "all" ? undefined : Number(val))}
+        >
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder="All Genders" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Genders</SelectItem>
+            <SelectItem value="1">Male</SelectItem>
+            <SelectItem value="0">Female</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -328,8 +350,8 @@ export default function StudentsTable({
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div>
-          Showing {students.length > 0 ? (currentPage - 1) * 10 + 1 : 0} to{" "}
-          {Math.min(currentPage * 10, totalCount)} of {totalCount} students
+          Showing {students.length > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0} to{" "}
+          {Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} students
         </div>
         <div className="flex gap-2">
           <Button
@@ -344,7 +366,7 @@ export default function StudentsTable({
             variant="outline"
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage * 10 >= totalCount || isLoading}
+            disabled={currentPage * PAGE_SIZE >= totalCount || isLoading}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

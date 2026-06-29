@@ -16,11 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateStudent } from "@/hooks/use-create-student";
+import { useAcademicYears, useClassRooms, useEnrollStudent } from "@/hooks/use-academic-data";
 import { createStudentSchema, CreateStudentData } from "@/lib/schemas/student.Schema";
 import { StudentImageCapture } from "@/components/students/student-image-capture";
 import {
   ArrowLeft, Loader2, User, Users, Phone, Mail,
-  CalendarDays, UserCheck, ImageIcon
+  CalendarDays, UserCheck, ImageIcon, School
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
@@ -28,7 +29,11 @@ import { useState, useEffect } from "react";
 export default function NewStudentPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const canAssignClass = user?.role === "academic_principal";
   const createMutation = useCreateStudent();
+  const enrollMutation = useEnrollStudent();
+  const { data: years = [], isLoading: loadingYears } = useAcademicYears();
+  const { data: classrooms = [], isLoading: loadingClasses } = useClassRooms();
 
   useEffect(() => {
     if (!user?.can?.('users.manage')) {
@@ -36,6 +41,15 @@ export default function NewStudentPage() {
     }
   }, [user]);
   const [studentImage, setStudentImage] = useState<File | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedClass, setSelectedClass] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (years.length > 0 && selectedYear === null) {
+      const current = years.find((y: any) => y.is_current);
+      if (current) setSelectedYear(current.id);
+    }
+  }, [years, selectedYear]);
 
   const {
     register,
@@ -53,19 +67,29 @@ export default function NewStudentPage() {
     },
   });
 
-  const onSubmit = (data: CreateStudentData) => {
+  const onSubmit = async (data: CreateStudentData) => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, val]) => {
       if (val !== undefined && val !== "") formData.append(key, val as string);
     });
     if (studentImage) formData.append("image", studentImage);
-    createMutation.mutate(formData as any, {
-      onSuccess: () => {
-        reset();
-        router.push("/dashboard/students");
-      },
-    });
+    try {
+      const result: any = await createMutation.mutateAsync(formData as any);
+      if (canAssignClass && selectedYear && selectedClass) {
+        await enrollMutation.mutateAsync({
+          student: result.id,
+          academic_year: selectedYear,
+          class_room: selectedClass,
+        });
+      }
+      reset();
+      router.push("/dashboard/students");
+    } catch {
+      // errors handled by mutation onError toasts
+    }
   };
+
+  const isPending = createMutation.isPending || (canAssignClass && enrollMutation.isPending);
 
   return (
     <div className="max-w-7xl mx-auto py-10 px-4 space-y-6">
@@ -238,6 +262,61 @@ export default function NewStudentPage() {
           </CardContent>
         </Card>
 
+        {/* Enrollment — réservé au academic_principal */}
+        {canAssignClass && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <School className="h-4 w-4 text-primary" />
+                Enrollment
+              </CardTitle>
+              <CardDescription>Enroll the student in a class for the academic year.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Academic Year <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={selectedYear ? String(selectedYear) : ""}
+                    onValueChange={(v) => setSelectedYear(Number(v))}
+                    disabled={loadingYears}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingYears ? "Loading..." : "Select Year"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map((y: any) => (
+                        <SelectItem key={y.id} value={String(y.id)}>
+                          {y.start_year} - {y.end_year} {y.is_current ? "(Current)" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Class <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={selectedClass ? String(selectedClass) : ""}
+                    onValueChange={(v) => setSelectedClass(Number(v))}
+                    disabled={loadingClasses || !selectedYear}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingClasses ? "Loading..." : "Select Class"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classrooms.map((c: any) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name} ({c.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-2">
           <Button
@@ -247,11 +326,11 @@ export default function NewStudentPage() {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={createMutation.isPending} className="min-w-[140px]">
-            {createMutation.isPending ? (
+          <Button type="submit" disabled={isPending} className="min-w-[140px]">
+            {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
+                {createMutation.isPending ? "Creating..." : "Enrolling..."}
               </>
             ) : (
               "Create Student"
@@ -259,9 +338,20 @@ export default function NewStudentPage() {
           </Button>
         </div>
 
-        {createMutation.isError && (
+        {(createMutation.isError || enrollMutation.isError) && (
           <p className="text-center text-sm text-destructive font-medium">
-            Failed to create student. Please check the form and try again.
+            {(() => {
+              const errData = createMutation.error as any;
+              const fieldErrors = errData?.response?.data?.errors;
+              if (fieldErrors && typeof fieldErrors === "object") {
+                return Object.entries(fieldErrors)
+                  .map(([f, msgs]) =>
+                    Array.isArray(msgs) ? `${f}: ${(msgs as string[]).join(", ")}` : `${f}: ${msgs}`
+                  )
+                  .join(" | ");
+              }
+              return errData?.response?.data?.message || "Failed to create student";
+            })()}
           </p>
         )}
       </form>

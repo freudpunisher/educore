@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema, financeOverviewSchema } from "@/types/finance";
+import { paginatedInvoiceSchema, Invoice, paginatedPaymentSchema, financeOverviewSchema, paginatedSurplusSchema, paginatedRefundSchema } from "@/types/finance";
 
 export function useFinanceOverview() {
     return useQuery({
@@ -93,6 +93,68 @@ export function usePayments(params: PaymentQueryParams = { page: 1 }) {
             const { data } = await axiosInstance.get(`/finance/payments/`, { params });
             const rawData = data?.data || data;
             return paginatedPaymentSchema.parse(rawData);
+        },
+    });
+}
+
+export interface SurplusQueryParams {
+    page?: number;
+    student?: number;
+    search?: string;
+    academic_year?: string;
+}
+
+export function usePaymentSurpluses(params: SurplusQueryParams = { page: 1 }) {
+    return useQuery({
+        queryKey: ["finance", "surpluses", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/finance/payment-surpluses/", { params });
+            const rawData = data?.data || data;
+            return paginatedSurplusSchema.parse(rawData);
+        },
+    });
+}
+
+export function useSurplusRefunds(params: SurplusQueryParams = { page: 1 }) {
+    return useQuery({
+        queryKey: ["finance", "refunds", params],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/finance/surplus-refunds/", { params });
+            const rawData = data?.data || data;
+            return paginatedRefundSchema.parse(rawData);
+        },
+    });
+}
+
+export function useCreateRefund() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (formData: FormData) => {
+            const response = await axiosInstance.post("/finance/surplus-refunds/", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["finance", "surpluses"] });
+            queryClient.invalidateQueries({ queryKey: ["finance", "refunds"] });
+            queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
+        },
+    });
+}
+
+export function useCancelRefund() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (refundId: number) => {
+            const response = await axiosInstance.post(`/finance/surplus-refunds/${refundId}/cancel/`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["finance", "surpluses"] });
+            queryClient.invalidateQueries({ queryKey: ["finance", "refunds"] });
         },
     });
 }

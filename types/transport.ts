@@ -18,7 +18,7 @@ export const vehicleSimpleSchema = z.object({
 export type VehicleSimple = z.infer<typeof vehicleSimpleSchema>;
 
 export const vehicleCreateSchema = z.object({
-    registration: z.string().min(1, "Registration is required"),
+    registration: z.string().optional(),
     model: z.string().min(1, "Model is required"),
     capacity: z.number().min(1, "Capacity must be at least 1"),
     status: z.nativeEnum(VehicleSimpleStatusEnum).default(VehicleSimpleStatusEnum.Active),

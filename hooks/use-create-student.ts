@@ -9,22 +9,29 @@ export function useCreateStudent() {
 
   return useMutation({
     mutationFn: async (data: CreateStudentData | FormData) => {
-      const isFormData = data instanceof FormData;
-      const response = await axiosInstance.post("users/students/", data, {
-        headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
-      });
+      const response = await axiosInstance.post("users/students/", data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["students"], refetchType: "all" });
       toast.success("Student created successfully!");
     },
     onError: (error: any) => {
+      const errData = error?.response?.data;
       const message =
-        error?.response?.data?.message ||
-        error?.response?.data?.detail ||
+        errData?.message ||
+        errData?.detail ||
         "Error creating student";
-      toast.error(message);
+      const fieldErrors = errData?.errors;
+      const detail =
+        fieldErrors && typeof fieldErrors === "object"
+          ? Object.entries(fieldErrors)
+              .map(([field, msgs]) =>
+                Array.isArray(msgs) ? `${field}: ${msgs.join(", ")}` : `${field}: ${msgs}`
+              )
+              .join(" | ")
+          : null;
+      toast.error(detail || message);
     },
   });
 }

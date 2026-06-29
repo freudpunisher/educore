@@ -30,6 +30,8 @@ export type Student = z.infer<typeof studentListSchema>;
 export type EnrollmentInfo = z.infer<typeof enrollmentInfoSchema>;
 
 export type AcademicsEnrollmentsListRequest = {
+  page?: number;
+  page_size?: number;
   academic_year?: number;
   classroom?: number;
   /**

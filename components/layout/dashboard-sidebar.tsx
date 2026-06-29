@@ -28,6 +28,7 @@ import {
   Package,
   Home,
   Baby,
+  PenSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -61,9 +62,12 @@ const navigation: NavItem[] = [
       { name: "Overview", href: "/dashboard/finances" },
       { name: "Invoices", href: "/dashboard/finances/invoices" },
       { name: "Payments", href: "/dashboard/finances/payments" },
+      { name: "Pricing", href: "/dashboard/finances/pricing" },
+      { name: "Surpluses", href: "/dashboard/finances/surpluses" },
     ]
   },
   { name: "Academics", href: "/dashboard/pedagogy", icon: BookOpen, roles: MODULE_ACCESS.Pedagogy },
+  { name: "Academic Planning", href: "/dashboard/academic-planning", icon: PenSquare, roles: MODULE_ACCESS["Academic Planning"] },
   { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck, roles: MODULE_ACCESS["Course Tracking"] },
   { name: "Transport", href: "/dashboard/transport", icon: Truck, roles: MODULE_ACCESS.Transport },
   { name: "Rapports", href: "/dashboard/reports", icon: FileText, roles: MODULE_ACCESS.Rapports },

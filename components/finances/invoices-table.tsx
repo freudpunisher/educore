@@ -187,7 +187,21 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 setPaymentDate(new Date().toISOString().split("T")[0]);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || `Failed to process payment.`);
+                const errData = err.response?.data;
+                const fieldErrors = errData?.errors;
+                let msg = errData?.message || "Failed to process payment.";
+                if (fieldErrors && typeof fieldErrors === "object") {
+                    const detail = (
+                        fieldErrors.detail ||
+                        Object.entries(fieldErrors)
+                            .map(([field, msgs]) =>
+                                Array.isArray(msgs) ? `${field}: ${msgs.join(", ")}` : `${field}: ${msgs}`
+                            )
+                            .join(" | ")
+                    );
+                    if (detail) msg = detail;
+                }
+                toast.error(msg);
             }
         });
     };
@@ -335,8 +349,8 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                     setSelectedFile(null);
                                                     setPaymentInstitution("");
                                                     setPaymentReference("");
-                                                    setPaymentDate(new Date().toISOString().split("T")[0]);
-                                                    setIsDialogOpen(true);
+                                            setPaymentDate(new Date().toISOString().split("T")[0]);
+                                            setIsDialogOpen(true);
                                                 }}
                                             >
                                                 <DollarSign className="h-3 w-3 mr-1" />
@@ -492,6 +506,8 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                         <Input
                                             ref={fileInputRef}
                                             type="file"
+                                            accept="image/*,.pdf"
+                                            capture="environment"
                                             className="hidden"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
