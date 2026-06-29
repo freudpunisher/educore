@@ -20,7 +20,8 @@ export const assessmentTypeSchema = z.object({
   id: z.number(),
   code: z.string(),
   label: z.string(),
-  weight: z.string(),
+  category: z.number().nullable().optional(),
+  category_label: z.string().nullable().optional(),
   level: z.string().optional(),
 });
 
@@ -99,7 +100,7 @@ export type GradeCreate = z.infer<typeof gradeCreateSchema>;
 export const assessmentTypeCreateSchema = z.object({
   code: z.string().min(1, "Code is required"),
   label: z.string().min(1, "Label is required"),
-  weight: z.string().min(1, "Weight is required"),
+  category: z.string().min(1, "Category is required"),
   level: z.string().default("all"),
 });
 

@@ -82,6 +82,10 @@ export const MODULE_ACCESS = {
   "Audit Logs": [
     "global_control", "system_admin",
   ],
+  "Academic Planning": [
+    ...ALL_ROLES,
+    "director", "academic_principal", "discipline_principal",
+  ],
   Settings: [
     "system_admin",
   ],

@@ -42,6 +42,7 @@ import {
   useAllTeachers,
   useTeacherCourses,
   useAllCourses,
+  useCourseAssessmentPolicies,
 } from "@/hooks/use-pedagogy"
 import React, { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -104,6 +105,8 @@ export default function PedagogyPage() {
   const enrollments = enrollmentsData?.results || []
   const courses = coursesData?.results || []
   const allGrades = gradesData?.results || []
+  const courseIds = useMemo(() => courses.map((c: any) => c.id), [courses])
+  const { data: allPolicies = [] } = useCourseAssessmentPolicies(courseIds)
 
   const [isCreateAssessmentOpen, setIsCreateAssessmentOpen] = useState(false)
   const [activeCourseForAssessment, setActiveCourseForAssessment] = useState<number | undefined>(undefined)
@@ -123,6 +126,19 @@ export default function PedagogyPage() {
     }
   }, [terms, selectedTermId])
 
+  // Build policy lookup: { courseId: { assessmentTypeId: { weight, categoryCode } } }
+  const policyMap = useMemo(() => {
+    const map: Record<number, Record<number, { weight: number; categoryCode: string }>> = {}
+    allPolicies.forEach((p: any) => {
+      if (!map[p.course]) map[p.course] = {}
+      map[p.course][p.assessment_type] = {
+        weight: parseFloat(p.weight) || 0,
+        categoryCode: p.category_label || '',
+      }
+    })
+    return map
+  }, [allPolicies])
+
   const classStats = useMemo(() => {
     if (!selectedClassId || enrollments.length === 0) return null
 
@@ -139,68 +155,70 @@ export default function PedagogyPage() {
 
     const studentAverages = enrollments.map(enr => {
       const studentCoursesGrades = gradesByEnrollment[enr.id] || {}
-      const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
-      const hwCodes = ['HOMEWORK']
-      // Everything else is Classwork (CW)
 
       const coursePercentages = Object.entries(studentCoursesGrades).map(([courseId, courseGrades]) => {
         const course = courses.find(c => c.id === parseInt(courseId))
         if (!course) return null
 
-        const dwMax = parseFloat(String(course.max_points_dw || "35")) || 35
-        const examMax = parseFloat(String(course.max_points_exam || "35")) || 35
-        const totalMax = parseFloat(String(course.max_points_total || "0")) || (dwMax + examMax)
+        const coursePolicies = policyMap[parseInt(courseId)] || {}
+        const hasPolicies = Object.keys(coursePolicies).length > 0
 
-        let rawSum = 0
-        let percentage = 0
+        // Group grades by assessment_type to apply policy weights
+        const typeGroups: Record<string, { grades: any[]; weight: number }> = {}
+        const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
 
-        if (isHighSchool) {
-          // Weighted Logic for High School
-          const hwGrades = (courseGrades as any[]).filter(g => hwCodes.includes(g.assessment_type_code))
-          const examGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
-          const cwGrades = (courseGrades as any[]).filter(g => !hwCodes.includes(g.assessment_type_code) && !examCodes.includes(g.assessment_type_code))
+        for (const g of courseGrades as any[]) {
+          const atCode = g.assessment_type_code
+          const atId = g.assessment_type_detail?.id || g.assessment_type
+          const policy = coursePolicies[atId]
+          const weight = policy?.weight || 0
 
-          const hwAvg = hwGrades.length > 0 ? hwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / hwGrades.length : 100 // Default to 100 if no HW yet? No, 0.
-          const cwAvg = cwGrades.length > 0 ? cwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cwGrades.length : 0
-          const exAvg = examGrades.length > 0 ? examGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / examGrades.length : 0
-
-          // Weights: HW 15%, CW 35%, EX 50%
-          const weightedPct = (hwGrades.length > 0 ? (hwAvg * 0.15) : 0) + 
-                              (cwGrades.length > 0 ? (cwAvg * 0.35) : 0) + 
-                              (examGrades.length > 0 ? (exAvg * 0.50) : 0)
-          
-          // Re-normalize weights if some categories are missing
-          const totalWeight = (hwGrades.length > 0 ? 0.15 : 0) + 
-                             (cwGrades.length > 0 ? 0.35 : 0) + 
-                             (examGrades.length > 0 ? 0.50 : 0)
-          
-          percentage = totalWeight > 0 ? (weightedPct / totalWeight) : 0
-          rawSum = (percentage / 100) * totalMax
-        } else {
-          // Standard Logic for Primary/Middle
-          const cDwGrades = (courseGrades as any[]).filter(g => !examCodes.includes(g.assessment_type_code))
-          const cExGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
-
-          const dwAvgPct = cDwGrades.length > 0 
-            ? cDwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cDwGrades.length 
-            : 0
-          const exAvgPct = cExGrades.length > 0 
-            ? cExGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cExGrades.length 
-            : 0
-
-          const dwScore = (dwAvgPct / 100) * dwMax
-          const exScore = (exAvgPct / 100) * examMax
-          rawSum = dwScore + exScore
-          percentage = totalMax > 0 ? (rawSum / totalMax) * 100 : 0
+          if (!typeGroups[atCode]) {
+            typeGroups[atCode] = { grades: [], weight }
+          }
+          typeGroups[atCode].grades.push(g)
         }
+
+        // Compute weighted percentage using policies or fallback
+        let totalWeightedPct = 0
+        let totalActiveWeight = 0
+
+        if (hasPolicies) {
+          for (const [, group] of Object.entries(typeGroups)) {
+            if (group.grades.length === 0 || group.weight === 0) continue
+            const groupAvg = group.grades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / group.grades.length
+            totalWeightedPct += groupAvg * group.weight / 100
+            totalActiveWeight += group.weight
+          }
+        } else {
+          // Fallback: split grades into DW and Exam categories
+          const dwGrades = (courseGrades as any[]).filter((g: any) => !examCodes.includes(g.assessment_type_code))
+          const exGrades = (courseGrades as any[]).filter((g: any) => examCodes.includes(g.assessment_type_code))
+
+          if (dwGrades.length > 0) {
+            const dwAvg = dwGrades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / dwGrades.length
+            totalWeightedPct += dwAvg * (dwGrades.length)
+            totalActiveWeight += dwGrades.length
+          }
+          if (exGrades.length > 0) {
+            const exAvg = exGrades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / exGrades.length
+            totalWeightedPct += exAvg * (exGrades.length)
+            totalActiveWeight += exGrades.length
+          }
+        }
+
+        const percentage = totalActiveWeight > 0 ? (totalWeightedPct / totalActiveWeight) : 0
+        const totalMax = 100
+        const rawSum = (percentage / 100) * totalMax
 
         return {
           courseId: parseInt(courseId),
           percentage,
           rawSum,
-          totalMax
+          totalMax,
+          hasPolicies
         }
-      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number }[]
+      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number, hasPolicies: boolean }[]
 
       const avg = coursePercentages.length > 0 
         ? coursePercentages.reduce((acc, cp) => acc + cp.percentage, 0) / coursePercentages.length 
@@ -217,26 +235,22 @@ export default function PedagogyPage() {
 
       const isKindergarten = selectedClass?.level === 'preschool'
       
-      // Calculate GPA and Letter based on avg
       let letter = "F"
       let gpa = 0
       
       if (isKindergarten) {
-        // Kindergarten Scale: Qualitative acquisition levels
         if (avg >= 90) letter = "Expert";
         else if (avg >= 75) letter = "Mastered";
         else if (avg >= 50) letter = "Developing";
         else letter = "Emerging";
         gpa = 0
       } else if (isPrimary) {
-        // Elementary School Scale: A (>80), B (60-80), C (40-60), D (<40)
         if (avg >= 80) letter = "A";
         else if (avg >= 60) letter = "B";
         else if (avg >= 40) letter = "C";
         else letter = "D";
         gpa = 0
       } else {
-        // High School / Middle Scale (requested)
         if (avg >= 90) { letter = "A"; gpa = 4.0 }
         else if (avg >= 80) { letter = "B"; gpa = 3.0 }
         else if (avg >= 70) { letter = "C"; gpa = 2.0 }
@@ -266,16 +280,29 @@ export default function PedagogyPage() {
       totalCourses: courses.length,
       gradesByEnrollment
     }
-  }, [selectedClassId, selectedClass, enrollments, courses, allGrades])
+  }, [selectedClassId, selectedClass, enrollments, courses, allGrades, policyMap])
 
   // Grade distribution for chart
   const distribution = useMemo(() => {
-    const dist: Record<string, number> = { "A": 0, "B": 0, "C": 0, "D": 0, "F": 0 }
+    if (isHighSchool) {
+      const dist: Record<string, number> = { "A": 0, "B": 0, "C": 0, "D": 0, "F": 0 }
+      classStats?.studentAverages.forEach(s => {
+        if (dist[s.letter] !== undefined) dist[s.letter]++
+      })
+      return Object.keys(dist).map(key => ({ range: key, count: dist[key] }))
+    }
+    const ranges = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
+    const dist: Record<string, number> = Object.fromEntries(ranges.map(r => [r, 0]))
     classStats?.studentAverages.forEach(s => {
-      if (dist[s.letter] !== undefined) dist[s.letter]++
+      const avg = s.average
+      if (avg < 20) dist["0-20%"]++
+      else if (avg < 40) dist["20-40%"]++
+      else if (avg < 60) dist["40-60%"]++
+      else if (avg < 80) dist["60-80%"]++
+      else dist["80-100%"]++
     })
-    return Object.keys(dist).map(key => ({ range: key, count: dist[key] }))
-  }, [classStats])
+    return ranges.map(key => ({ range: key, count: dist[key] }))
+  }, [classStats, isHighSchool])
 
   const handleGenerateGroupReportCards = async () => {
     if (!selectedTermId || !selectedClassId) return
@@ -876,7 +903,7 @@ export default function PedagogyPage() {
                           const gradeInfo = student.grades[course.id]
                           const percentage = gradeInfo?.score || '0.0'
                           const rawSum = gradeInfo?.rawSum || 0
-                          const maxPoints = gradeInfo?.totalMax || (parseFloat(String(course.max_points_dw || "35")) + parseFloat(String(course.max_points_exam || "35"))) || 70
+                          const maxPoints = gradeInfo?.totalMax || 100
 
                           return (
                             <TableCell key={course.id} className="text-center">
@@ -1118,7 +1145,9 @@ export default function PedagogyPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Grade Distribution</CardTitle>
+                <CardTitle>
+                  {isHighSchool ? "Grade Distribution (A-F)" : "Class Performance Distribution"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>

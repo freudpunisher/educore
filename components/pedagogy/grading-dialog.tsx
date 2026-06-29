@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useEnrollments, useGrades, useCreateGrade } from "@/hooks/use-pedagogy"
+import { useEnrollments, useGrades, useCreateGrade, useAssessmentTypes } from "@/hooks/use-pedagogy"
 import { Loader2, Save, GraduationCap } from "lucide-react"
 import toast from "react-hot-toast"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +22,14 @@ interface GradingDialogProps {
 export function GradingDialog({ isOpen, onClose, assessment, classId, classLevel }: GradingDialogProps) {
   const { data: enrollmentsData, isLoading: loadingEnrollments } = useEnrollments(classId)
   const { data: existingGradesData, isLoading: loadingGrades } = useGrades(undefined, undefined, 1, undefined)
+  const { data: types = [] } = useAssessmentTypes()
   const createGradeMutation = useCreateGrade()
+
+  const assessmentType = useMemo(() => {
+    if (!assessment?.assessment_type) return null
+    return types.find((t: any) => t.id === assessment.assessment_type) || null
+  }, [types, assessment])
+  const categoryLabel = assessmentType?.category_label
 
   const [scores, setScores] = useState<Record<number, string>>({})
   const [comments, setComments] = useState<Record<number, string>>({})
@@ -92,7 +99,10 @@ export function GradingDialog({ isOpen, onClose, assessment, classId, classLevel
           </div>
           <DialogDescription className="flex items-center justify-between">
             <span>Enter scores for each student. Max Score: <strong>{assessment?.max_score}</strong></span>
-            <Badge variant="outline">{assessment?.assessment_type_label}</Badge>
+            <div className="flex gap-1">
+              {categoryLabel && <Badge variant="secondary">{categoryLabel}</Badge>}
+              <Badge variant="outline">{assessment?.assessment_type_label}</Badge>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
