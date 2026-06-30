@@ -77,7 +77,7 @@ export default function PedagogyPage() {
   }, [academicYears, selectedYearId])
 
   // Data fetching
-  const { data: classrooms = [], isLoading: classroomsLoading } = useClassRooms(classSearch)
+  const { data: classrooms = [], isLoading: classroomsLoading, isError: classroomsError } = useClassRooms(classSearch)
   const { data: teachers = [], isLoading: teachersLoading } = useAllTeachers()
   const { data: allCoursesData } = useAllCourses(1)
   const { data: teacherOverview, isLoading: teacherOverviewLoading } = useTeacherCourses(teacherToDetail)
@@ -428,6 +428,17 @@ export default function PedagogyPage() {
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <p className="text-muted-foreground font-bold animate-pulse">Loading pedagogical environment...</p>
+      </div>
+    )
+  }
+
+  if (classroomsError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <h3 className="mt-2 font-semibold text-lg">Failed to load classes</h3>
+        <p className="text-muted-foreground">Check that the backend server is running and accessible.</p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
       </div>
     )
   }
