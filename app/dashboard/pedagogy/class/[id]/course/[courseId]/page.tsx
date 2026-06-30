@@ -184,6 +184,7 @@ export default function CourseAssessmentsPage() {
         initialCourseId={parseInt(courseId)}
         initialTermId={termId}
         classLevel={classItem?.level}
+        classId={parseInt(classId)}
       />
 
       {/* Stats */}
@@ -374,6 +375,7 @@ export default function CourseAssessmentsPage() {
         initialCourseId={parseInt(courseId)}
         initialTermId={termId}
         classLevel={classItem?.level}
+        classId={parseInt(classId)}
       />
 
       <AlertDialog open={!!assessmentToDelete} onOpenChange={(open) => !open && setAssessmentToDelete(null)}>

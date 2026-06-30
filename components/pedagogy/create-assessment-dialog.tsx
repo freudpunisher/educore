@@ -20,11 +20,12 @@ interface CreateAssessmentDialogProps {
   initialCourseId?: number
   initialTermId?: number
   classLevel?: string
+  classId?: number
   assessment?: any // For editing
 }
 
-export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initialTermId, classLevel, assessment }: CreateAssessmentDialogProps) {
-  const { data: coursesData, isLoading: loadingCourses } = useCourses()
+export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initialTermId, classLevel, classId, assessment }: CreateAssessmentDialogProps) {
+  const { data: coursesData, isLoading: loadingCourses } = useCourses(classId)
   const { data: terms, isLoading: loadingTerms } = useTerms()
   const { data: types = [], isLoading: loadingTypes } = useAssessmentTypes()
   const createMutation = useCreateAssessment()
@@ -127,22 +128,31 @@ export function CreateAssessmentDialog({ isOpen, onClose, initialCourseId, initi
               <FormField
                 control={form.control}
                 name="course"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Course (Section)</FormLabel>
-                    <Select disabled={loadingCourses} onValueChange={(val) => field.onChange(parseInt(val))} value={field.value?.toString()}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {courses.map((c) => (
-                          <SelectItem key={c.id} value={c.id.toString()}>{c.name || c.code}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const selectedCourse = courses.find((c: any) => c.id === field.value)
+                  return (
+                    <FormItem>
+                      <FormLabel>Course (Section)</FormLabel>
+                      <Select
+                        disabled={loadingCourses || !!initialCourseId}
+                        onValueChange={(val) => field.onChange(parseInt(val))}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={selectedCourse ? `${selectedCourse.name || selectedCourse.code}` : "Select course"} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {courses.map((c: any) => (
+                            <SelectItem key={c.id} value={c.id.toString()}>{c.name || c.code}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
 
               <FormField
