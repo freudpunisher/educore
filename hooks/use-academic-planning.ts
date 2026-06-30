@@ -33,6 +33,34 @@ export function useUpdateCourseTeacher() {
 }
 
 // ──────────────────────────────────────────────
+//  Classroom Tutor Assignment
+// ──────────────────────────────────────────────
+export function useUpdateClassroomTutor() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ classroomId, tutor }: { classroomId: number; tutor: number | null }) => {
+      const { data } = await axiosInstance.patch(`/config/classrooms/${classroomId}/assign-tutor/`, {
+        tutor: tutor,
+      });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      toast.success("Tutor assigned to class");
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to assign tutor";
+      toast.error(message);
+    },
+  });
+}
+
+// ──────────────────────────────────────────────
 //  Academic Year CRUD
 // ──────────────────────────────────────────────
 export function useCreateAcademicYear() {
