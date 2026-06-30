@@ -27,6 +27,7 @@ import { useClassRooms, useAcademicYears } from "@/hooks/use-academic-data"
 import { useAllTeachers, useAllCourses, useTerms } from "@/hooks/use-pedagogy"
 import {
   useUpdateCourseTeacher,
+  useUpdateClassroomTutor,
   useCreateAcademicYear,
   useUpdateAcademicYear,
   useDeleteAcademicYear,
@@ -59,7 +60,7 @@ export default function AcademicPlanningPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-heading font-bold tracking-tight">Academic Planning</h1>
-          <p className="text-muted-foreground mt-1">Manage teacher assignments and academic calendar</p>
+          <p className="text-muted-foreground mt-1">Manage teacher assignments, class tutors and academic calendar</p>
         </div>
       </div>
 
@@ -72,6 +73,10 @@ export default function AcademicPlanningPage() {
           <TabsTrigger value="academic-year" className="gap-2">
             <Calendar className="w-4 h-4" />
             Academic Year Planning
+          </TabsTrigger>
+          <TabsTrigger value="tutor-assignment" className="gap-2">
+            <Users className="w-4 h-4" />
+            Class Tutor Assignment
           </TabsTrigger>
         </TabsList>
 
@@ -90,6 +95,13 @@ export default function AcademicPlanningPage() {
 
         <TabsContent value="academic-year">
           <AcademicYearPlanning years={years} loading={yearsLoading} />
+        </TabsContent>
+        <TabsContent value="tutor-assignment">
+          <TutorAssignment
+            classrooms={classrooms}
+            teachers={teachers}
+            loading={classroomsLoading || teachersLoading}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -440,6 +452,180 @@ function AcademicYearPlanning({ years, loading }: { years: any[]; loading: boole
                   isDeleting={deleteYear.isPending}
                 />
               ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────
+//  Class Tutor Assignment Tab
+// ──────────────────────────────────────────────
+function TutorAssignment({
+  classrooms,
+  teachers,
+  loading,
+}: {
+  classrooms: any[]
+  teachers: any[]
+  loading: boolean
+}) {
+  const { data: years = [] } = useAcademicYears()
+  const [selectedYearId, setSelectedYearId] = useState<number | undefined>(undefined)
+  const [search, setSearch] = useState("")
+  const updateTutor = useUpdateClassroomTutor()
+
+  useEffect(() => {
+    if (years.length > 0 && selectedYearId === undefined) {
+      const current = years.find((y: any) => y.is_current)
+      setSelectedYearId(current ? current.id : years[0].id)
+    }
+  }, [years, selectedYearId])
+
+  const filtered = classrooms.filter((c: any) =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.code.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const getTeacherName = (teacherId: number | null) => {
+    if (!teacherId) return null
+    const teacher = teachers.find((t: any) => t.id === teacherId)
+    return teacher?.user?.username || teacher?.username || `Teacher #${teacherId}`
+  }
+
+  const handleTutorChange = (classroomId: number, tutorId: string) => {
+    const value = tutorId === "none" ? null : parseInt(tutorId)
+    updateTutor.mutate({ classroomId, tutor: value })
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Academic Year</label>
+              <Select
+                value={selectedYearId?.toString() || ""}
+                onValueChange={(v) => setSelectedYearId(parseInt(v))}
+              >
+                <SelectTrigger className="w-[220px]">
+                  <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Select year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y: any) => (
+                    <SelectItem key={y.id} value={y.id.toString()}>
+                      {y.name || `${y.start_year}/${y.end_year}`} {y.is_current ? "(Current)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Search Class</label>
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or code..."
+                  className="pl-8"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Classes Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <GraduationCap className="w-5 h-5" />
+            Classes
+          </CardTitle>
+          <CardDescription>
+            {filtered.length} class{filtered.length !== 1 ? "es" : ""} found
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filtered.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No classes found
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Level</TableHead>
+                    <TableHead className="text-center">Places</TableHead>
+                    <TableHead className="text-center">Enrolled</TableHead>
+                    <TableHead>Current Tutor</TableHead>
+                    <TableHead>Assign Tutor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((cls: any) => (
+                    <TableRow key={cls.id}>
+                      <TableCell className="font-mono text-sm">{cls.code}</TableCell>
+                      <TableCell className="font-medium">{cls.name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">{cls.level}</Badge>
+                      </TableCell>
+                      <TableCell className="text-center">{cls.place}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={cls.enrollment_count >= cls.place ? "destructive" : "secondary"}>
+                          {cls.enrollment_count ?? 0}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {cls.tutor ? (
+                          <Badge variant="secondary" className="font-normal">
+                            {getTeacherName(cls.tutor)}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={cls.tutor?.toString() || "none"}
+                          onValueChange={(v) => handleTutorChange(cls.id, v)}
+                          disabled={updateTutor.isPending}
+                        >
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Select tutor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">— Unassign —</SelectItem>
+                            {teachers.map((t: any) => (
+                              <SelectItem key={t.id} value={t.id.toString()}>
+                                {t.user?.username || t.username || `Teacher #${t.id}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
