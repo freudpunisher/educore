@@ -35,7 +35,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
     account: z.number({ required_error: "Staff account is required" }),
-    meal: z.number({ required_error: "Meal is required" }),
+    meal: z.number({ required_error: "Meal plan is required" }),
     status: z.enum(["present", "absent", "excused"]).default("present"),
     notes: z.string().optional(),
 });
@@ -45,16 +45,20 @@ type StaffAttendanceFormValues = z.infer<typeof formSchema>;
 type StaffAttendanceRecord = Partial<Omit<StaffAttendanceFormValues, "account">> & {
     id: number;
     account?: number | null;
+    meal?: number | null;
+    meal_info?: { name: string; description: string; monthly_cost: string } | null;
 };
 
 export function CreateStaffAttendanceDialog({
     meals,
+    mealPlans = [],
     onSuccess,
     record,
     open: controlledOpen,
     onOpenChange,
 }: {
-    meals: { id: number; date: string; description?: string; mealTypeName?: string }[];
+    meals: { id: number; date: string; description?: string; mealTypeName?: string; meal_type_detail?: { name: string } | null; fees_detail?: { id: number; label: string; amount: string } | null }[];
+    mealPlans?: { id: number; name: string; monthly_cost: number | string }[];
     onSuccess: () => void;
     record?: StaffAttendanceRecord | null;
     open?: boolean;
@@ -62,7 +66,7 @@ export function CreateStaffAttendanceDialog({
 }) {
     const [internalOpen, setInternalOpen] = useState(false);
     const [accounts, setAccounts] = useState<
-        { id: number; user: { first_name: string; last_name: string; username: string } }[]
+        { id: number; user: { first_name: string; last_name: string; username: string }; role?: string }[]
     >([]);
     const [isLoading, setIsLoading] = useState(false);
     const open = controlledOpen ?? internalOpen;
@@ -83,11 +87,13 @@ export function CreateStaffAttendanceDialog({
 
     useEffect(() => {
         if (open) {
-            // Need an endpoint to fetch staff accounts. 
-            // In educore, usually 'users/accounts/' or 'users/staff/' 
-            // We saw parents endpoint earlier, let's try getting all accounts and filtering for staff, or just accounts.
             api.get<any>("users/accounts/").then((res) => {
-                setAccounts(Array.isArray(res) ? res : res.results || []);
+                const allAccounts = Array.isArray(res) ? res : res.results || [];
+                // Exclude students, parents, and superadmins
+                const staffAccounts = allAccounts.filter(
+                    (acc: any) => acc.role !== "student" && acc.role !== "student_parent" && acc.role !== "system_admin"
+                );
+                setAccounts(staffAccounts);
             }).catch(err => console.error("Error fetching accounts:", err));
         }
     }, [open]);
@@ -95,12 +101,21 @@ export function CreateStaffAttendanceDialog({
     useEffect(() => {
         if (!open) return;
 
-        form.reset({
-            account: record?.account ?? undefined,
-            meal: record?.meal ?? undefined,
-            status: record?.status ?? "present",
-            notes: record?.notes ?? "",
-        });
+        if (record?.id) {
+            form.reset({
+                account: record?.account ?? undefined,
+                meal: undefined,
+                status: record?.status ?? "present",
+                notes: record?.notes ?? "",
+            });
+        } else {
+            form.reset({
+                account: undefined,
+                meal: undefined,
+                status: "present",
+                notes: "",
+            });
+        }
     }, [form, open, record]);
 
     async function onSubmit(values: StaffAttendanceFormValues) {
@@ -118,7 +133,22 @@ export function CreateStaffAttendanceDialog({
             onSuccess();
         } catch (error: any) {
             console.error("Form Errors:", error);
-            const msg = typeof error?.response?.data === 'string' ? error.response.data : error?.response?.data?.detail || "Failed to record attendance";
+            const data = error?.response?.data;
+            console.error("Response data (full):", JSON.stringify(data, null, 2));
+            let msg = "Failed to record attendance";
+            if (typeof data === "string") {
+                msg = data;
+            } else if (data?.detail) {
+                msg = data.detail;
+            } else if (data?.message) {
+                msg = data.message;
+            } else if (data?.errors && typeof data.errors === "object") {
+                const err = Object.values(data.errors).flat().filter(Boolean)[0];
+                if (err) msg = String(err);
+            } else if (typeof data === "object") {
+                const err = Object.values(data).flat().filter(Boolean)[0];
+                if (err) msg = String(err);
+            }
             toast.error(msg);
         } finally {
             setIsLoading(false);
@@ -169,25 +199,35 @@ export function CreateStaffAttendanceDialog({
                             )}
                         />
 
+                        {record?.id ? (
+                            <FormItem>
+                                <FormLabel>Meal Plan</FormLabel>
+                                <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-sm text-slate-600 dark:text-slate-300">
+                                    {record.meal_info
+                                        ? `${record.meal_info.name} - BIF ${Number(record.meal_info.monthly_cost || 0).toFixed(0)}`
+                                        : "Plan #" + record.meal}
+                                </div>
+                            </FormItem>
+                        ) : (
                         <FormField
                             control={form.control}
                             name="meal"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Meal</FormLabel>
+                                    <FormLabel>Meal Plan</FormLabel>
                                     <Select
                                         onValueChange={(val) => field.onChange(Number(val))}
                                         value={field.value?.toString()}
                                     >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select meal" />
+                                                <SelectValue placeholder="Select meal plan" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {meals.map((m) => (
-                                                <SelectItem key={m.id} value={m.id.toString()}>
-                                                    {m.date} - {m.mealTypeName} {m.description ? `(${m.description})` : ''}
+                                            {mealPlans.map((mp) => (
+                                                <SelectItem key={mp.id} value={mp.id.toString()}>
+                                                    {mp.name} - BIF {Number(mp.monthly_cost || 0).toFixed(0)}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -196,6 +236,7 @@ export function CreateStaffAttendanceDialog({
                                 </FormItem>
                             )}
                         />
+                        )}
 
                         <FormField
                             control={form.control}

@@ -26,6 +26,7 @@ import {
   CheckCircle,
   PauseCircle,
   XCircle,
+  Trash2,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { CreateMealPlanDialog } from "@/components/canteen/create-meal-plan-dialog";
@@ -34,6 +35,7 @@ import { CreateSubscriptionDialog } from "@/components/canteen/create-subscripti
 import { CreatePreferenceDialog } from "@/components/canteen/create-preference-dialog";
 import { CreateStaffAttendanceDialog } from "@/components/canteen/create-staff-attendance-dialog";
 import { toast } from "sonner";
+import Swal from "sweetalert2";
 
 type CanteenDashboardKPI = {
   subscriptions: {
@@ -89,6 +91,7 @@ type Subscription = {
   total_amount_due: number;
   amount_paid: number;
   is_paid: boolean;
+  invoices_summary: { total: number; paid: number; last_paid_period: string | null } | null;
 };
 
 type StudentPreference = {
@@ -114,6 +117,7 @@ type Meal = {
   quantity_available: number;
   quantity_served: number;
   fees: number | null;
+  fees_detail: { id: number; label: string; amount: string } | null;
   meal_type_detail: { name: string; start_time: string; end_time: string } | null;
   availability_status: { available: number; total: number; served: number };
 };
@@ -262,6 +266,58 @@ export default function CanteenPage() {
     }
   };
 
+  const handleDeleteSubscription = async (id: number) => {
+    const result = await Swal.fire({
+      title: "Delete subscription?",
+      text: "This action cannot be undone. The subscription will be permanently removed.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await api.delete(`food/subscriptions/${id}/`);
+      Swal.fire("Deleted!", "The subscription has been permanently deleted.", "success");
+      fetchData();
+    } catch {
+      Swal.fire("Error!", "Failed to delete subscription.", "error");
+    }
+  };
+
+  const handleAttendanceAction = async (id: number, status: string) => {
+    try {
+      await api.patch(`food/attendance/${id}/`, { status });
+      toast.success(`Attendance ${status} successfully`);
+      fetchData();
+    } catch {
+      toast.error("Failed to update attendance");
+    }
+  };
+
+  const handleDeleteAttendance = async (id: number) => {
+    const result = await Swal.fire({
+      title: "Delete attendance?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it",
+      cancelButtonText: "Cancel",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await api.delete(`food/attendance/${id}/`);
+      Swal.fire("Deleted!", "Attendance record has been deleted.", "success");
+      fetchData();
+    } catch {
+      Swal.fire("Error!", "Failed to delete attendance.", "error");
+    }
+  };
+
   // Filter meal orders
   const filteredOrders = useMemo(() => {
     return orders
@@ -286,6 +342,7 @@ export default function CanteenPage() {
         amountPaid: order.amount_paid,
         status: order.status,
         isPaid: order.is_paid,
+        invoiceSummary: order.invoices_summary,
         periodCategory: PERIOD_CATEGORY_LABELS[(order as any).period_category] || "—",
       }));
   }, [orders, orderStatusFilter, orderSearchTerm]);
@@ -362,15 +419,19 @@ export default function CanteenPage() {
       key: "isPaid" as const,
       label: "Payment",
       sortable: true,
-      render: (value: boolean) => (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-          value
-            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-        }`}>
-          {value ? "Paid" : "Pending"}
-        </span>
-      ),
+      render: (_: boolean, row: any) => {
+        const s = row.invoiceSummary as { total: number; paid: number; last_paid_period: string | null } | null;
+        const allPaid = s ? s.paid >= s.total : !!row.isPaid;
+        return (
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+            allPaid
+              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+          }`}>
+            {allPaid ? "Paid" : "Pending"}
+          </span>
+        );
+      },
     },
     {
       key: "totalPrice" as const,
@@ -390,20 +451,22 @@ export default function CanteenPage() {
         const isActive = row.status === "active";
         return (
           <div className="flex items-center gap-1">
-            {/* Edit */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedOrderId(row.id);
-                setIsEditOrderOpen(true);
-              }}
-              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            {/* Edit — only for non-active */}
+            {!isActive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedOrderId(row.id);
+                  setIsEditOrderOpen(true);
+                }}
+                className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                title="Edit"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
 
             {/* Validate / Activate */}
             {!isActive && (
@@ -434,6 +497,22 @@ export default function CanteenPage() {
                 title="Pause"
               >
                 <PauseCircle className="h-4 w-4" />
+              </Button>
+            )}
+
+            {/* Delete (only if no invoices yet) */}
+            {!isActive && !row.invoiceSummary && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteSubscription(row.id);
+                }}
+                className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                title="Delete permanently"
+              >
+                <Trash2 className="h-4 w-4" />
               </Button>
             )}
 
@@ -656,22 +735,48 @@ export default function CanteenPage() {
       label: "Actions",
       sortable: false,
       render: (_: any, row: any) => {
-        if (!row.account) return <span className="text-slate-400">—</span>;
-
+        const isPresent = row.status === "present";
+        if (isPresent) return <span className="text-slate-400 text-xs">—</span>;
         return (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedAttendanceId(row.id);
-              setIsEditAttendanceOpen(true);
-            }}
-            className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            title="Edit staff attendance"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedAttendanceId(row.id);
+                setIsEditAttendanceOpen(true);
+              }}
+              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              title="Edit"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAttendanceAction(row.id, "present");
+              }}
+              className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+              title="Validate"
+            >
+              <CheckCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteAttendance(row.id);
+              }}
+              className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         );
       },
     },
@@ -1105,7 +1210,7 @@ export default function CanteenPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Meal Attendance</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Student and staff check-in records</p>
               </div>
-              <CreateStaffAttendanceDialog meals={meals} onSuccess={fetchData} />
+              <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
@@ -1172,6 +1277,7 @@ export default function CanteenPage() {
         />
         <CreateStaffAttendanceDialog
           meals={meals}
+          mealPlans={mealPlans}
           onSuccess={fetchData}
           record={selectedAttendance}
           open={isEditAttendanceOpen}
