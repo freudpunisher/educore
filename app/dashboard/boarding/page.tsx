@@ -893,16 +893,16 @@ export default function BoardingPage() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-1" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, 1fr)` }}>
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${visibleTabs.length}, minmax(0, 1fr))` }}>
             {visibleTabs.map((tab) => (
-              <TabsTrigger key={tab.value} value={tab.value} className="data-[state=active]:bg-purple-100 dark:data-[state=active]:bg-purple-950 text-xs sm:text-sm">
+              <TabsTrigger key={tab.value} value={tab.value}>
                 {tab.label}
               </TabsTrigger>
             ))}
           </TabsList>
 
           {/* ── Assignments Tab ── */}
-          <TabsContent value="assignments" className="space-y-6">
+          <TabsContent value="assignments" className="space-y-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Assignments</h2>
@@ -967,7 +967,7 @@ export default function BoardingPage() {
           </TabsContent>
 
           {/* ── Rooms Tab ── */}
-          <TabsContent value="rooms" className="space-y-6">
+          <TabsContent value="rooms" className="space-y-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Rooms</h2>
@@ -1026,7 +1026,7 @@ export default function BoardingPage() {
           </TabsContent>
 
           {/* ── Attendance Tab ── */}
-          <TabsContent value="attendance" className="space-y-6">
+          <TabsContent value="attendance" className="space-y-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Attendances</h2>
@@ -1082,7 +1082,7 @@ export default function BoardingPage() {
           </TabsContent>
 
           {/* ── Exit Permissions Tab ── */}
-          <TabsContent value="exits" className="space-y-6">
+          <TabsContent value="exits" className="space-y-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Authorized Exits</h2>
@@ -1135,7 +1135,7 @@ export default function BoardingPage() {
           </TabsContent>
 
           {/* ── Beds Tab ── */}
-          <TabsContent value="beds" className="space-y-6">
+          <TabsContent value="beds" className="space-y-4 pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Beds</h2>
