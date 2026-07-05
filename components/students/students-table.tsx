@@ -155,14 +155,14 @@ export default function StudentsTable({
     },
     {
       id: "enrollment_status",
-      header: "Current Enrollment",
+      header: "Current Class",
       cell: ({ row }) => {
         const info = row.original.enrollment_info;
         if (!info) {
           return (
             <div className="flex items-center gap-2 text-muted-foreground">
               <CircleSlash2 className="w-4 h-4" />
-              <span className="text-sm">Not Enrolled</span>
+              <span className="text-sm">Not assigned</span>
             </div>
           );
         }
@@ -204,7 +204,7 @@ export default function StudentsTable({
                 onClick={() => setOpenEnroll(true)}
                 className="h-8"
               >
-                {alreadyEnrolled ? "Already Enrolled" : "Enroll"}
+                {alreadyEnrolled ? "Already Assigned" : "Assign"}
               </Button>
             )}
 
