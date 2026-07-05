@@ -201,15 +201,12 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 const fieldErrors = errData?.errors;
                 let msg = errData?.message || "Failed to process payment.";
                 if (fieldErrors && typeof fieldErrors === "object") {
-                    const detail = (
-                        fieldErrors.detail ||
-                        Object.entries(fieldErrors)
-                            .map(([field, msgs]) =>
-                                Array.isArray(msgs) ? `${field}: ${msgs.join(", ")}` : `${field}: ${msgs}`
-                            )
-                            .join(" | ")
-                    );
-                    if (detail) msg = detail;
+                    const detail = Object.entries(fieldErrors)
+                        .map(([field, msgs]) =>
+                            Array.isArray(msgs) ? `${field}: ${msgs.join(", ")}` : `${field}: ${msgs}`
+                        )
+                        .join(" | ");
+                    if (detail) msg = `${msg}: ${detail}`;
                 }
                 toast.error(msg);
             }
