@@ -10,6 +10,7 @@ export enum VehicleSimpleStatusEnum {
 export const vehicleSimpleSchema = z.object({
     id: z.number(),
     registration: z.string().optional(),
+    plate_number: z.string().optional(),
     model: z.string().optional(),
     capacity: z.number().optional(),
     status: z.string().optional(),
