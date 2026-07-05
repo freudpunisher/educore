@@ -196,7 +196,7 @@ export default function StudentsTable({
               View
             </Button>
 
-            {userRole === "academic_principal" && student.is_validated && (
+            {userRole === "academic_principal" && student.is_validated && student.registration_paid && (
               <Button
                 variant="outline"
                 size="sm"
