@@ -29,6 +29,7 @@ import {
   Home,
   Baby,
   PenSquare,
+  BarChart3,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
@@ -47,6 +48,12 @@ type NavItem = {
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  {
+    name: "Director Dashboard",
+    href: "/dashboard/director",
+    icon: BarChart3,
+    roles: ["director"],
+  },
   { name: "Students", href: "/dashboard/students", icon: Users, roles: MODULE_ACCESS.Students },
   { name: "Employees", href: "/dashboard/employees", icon: Users, roles: MODULE_ACCESS.Employees },
   { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck, roles: MODULE_ACCESS.Attendance },
