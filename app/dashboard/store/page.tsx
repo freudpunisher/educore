@@ -41,6 +41,7 @@ import {
   ArrowUp,
   ArrowDown,
   Printer,
+  Power,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -81,6 +82,7 @@ type Product = {
   unit: number;
   unit_name: string;
   unit_symbol: string;
+  selling_price: string;
   minimum_stock: number;
   is_active: boolean;
 };
@@ -172,6 +174,12 @@ type ProductSale = {
   notes: string | null;
 };
 
+type AccountDetail = {
+  id: number;
+  user: { id: number; username: string; first_name: string; last_name: string };
+  role: string;
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function StorePage() {
@@ -204,6 +212,13 @@ export default function StorePage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingEntry, setEditingEntry] = useState<StockEntry | null>(null);
   const [editingDistribution, setEditingDistribution] = useState<Distribution | null>(null);
+  const [accounts, setAccounts] = useState<AccountDetail[]>([]);
+  const [currentRecipientType, setCurrentRecipientType] = useState("staff");
+  const [selectedRecipientId, setSelectedRecipientId] = useState(0);
+  const [selectedRecipientName, setSelectedRecipientName] = useState("");
+  const [currentBuyerType, setCurrentBuyerType] = useState("student");
+  const [selectedBuyerId, setSelectedBuyerId] = useState(0);
+  const [selectedBuyerName, setSelectedBuyerName] = useState("");
 
   // Filters
   const [inventorySearch, setInventorySearch] = useState("");
@@ -256,6 +271,14 @@ export default function StorePage() {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if ((isDistributionModalOpen || isSaleModalOpen) && accounts.length === 0) {
+      api.get<any>("users/accounts/")
+        .then((res) => setAccounts(Array.isArray(res) ? res : res.results || []))
+        .catch(() => toast.error("Failed to load accounts"));
+    }
+  }, [isDistributionModalOpen, isSaleModalOpen]);
+
   // ─── CRUD Handlers ────────────────────────────────────────────────────────
 
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -265,6 +288,7 @@ export default function StorePage() {
       name: fd.get("name"),
       category: parseInt(fd.get("category") as string),
       unit: parseInt(fd.get("unit") as string),
+      selling_price: fd.get("selling_price") || "0",
       minimum_stock: parseFloat(fd.get("minimum_stock") as string) || 0,
       is_active: fd.get("is_active") === "true",
     };
@@ -283,14 +307,13 @@ export default function StorePage() {
     }
   };
 
-  const handleDeleteProduct = async (id: number) => {
-    if (!confirm("Delete this product?")) return;
+  const handleToggleProductStatus = async (product: Product) => {
     try {
-      await api.delete(`store/stock/products/${id}/`);
-      toast.success("Product deleted");
+      await api.patch(`store/stock/products/${product.id}/`, { is_active: !product.is_active });
+      toast.success(`Product ${product.is_active ? "deactivated" : "activated"}`);
       fetchData();
     } catch {
-      toast.error("Failed to delete");
+      toast.error("Status update failed");
     }
   };
 
@@ -354,7 +377,7 @@ export default function StorePage() {
       product: parseInt(fd.get("product") as string),
       quantity: parseInt(fd.get("quantity") as string),
       recipient_type: fd.get("recipient_type"),
-      recipient_id: 1, // placeholder
+      recipient_id: parseInt(fd.get("recipient_id") as string) || 1,
       recipient_name: fd.get("recipient_name"),
       status: fd.get("status") || "active",
       notes: fd.get("notes") || null,
@@ -403,6 +426,7 @@ export default function StorePage() {
       unit_price: parseFloat(fd.get("unit_price") as string),
       buyer_name: fd.get("buyer_name"),
       buyer_type: fd.get("buyer_type"),
+      buyer_id: parseInt(fd.get("buyer_id") as string) || null,
       is_paid: fd.get("is_paid") === "true",
       notes: fd.get("notes") || null,
     };
@@ -499,7 +523,7 @@ export default function StorePage() {
     if (!adjustingInventory) return;
     const formData = new FormData(e.currentTarget);
     const quantity = parseFloat(formData.get("quantity") as string);
-    
+
     try {
       await api.patch(`store/stock/inventory/${adjustingInventory.id}/`, { quantity });
       toast.success("Inventory adjusted successfully");
@@ -629,25 +653,18 @@ export default function StorePage() {
       render: (v: string) => <span className="text-slate-600 dark:text-slate-300">{v || "—"}</span>,
     },
     {
-      key: "category_type" as const,
-      label: "Type",
-      sortable: true,
-      render: (v: string) => (
-        <span className={`px-2 py-1 rounded text-xs font-semibold capitalize ${v === "vivre"
-          ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300"
-          : "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300"
-          }`}>
-          {v === "vivre" ? "Food" : "Equipment"}
-        </span>
-      ),
-    },
-    {
       key: "unit_symbol" as const,
       label: "Unit",
       sortable: true,
       render: (v: string, item: Product) => (
         <span className="text-slate-600 dark:text-slate-300">{item.unit_name} ({v})</span>
       ),
+    },
+    {
+      key: "selling_price" as const,
+      label: "Selling Price",
+      sortable: true,
+      render: (v: string) => <span className="font-semibold text-slate-900 dark:text-white">{parseFloat(v).toLocaleString()} BIF</span>,
     },
     {
       key: "minimum_stock" as const,
@@ -673,8 +690,8 @@ export default function StorePage() {
             <DropdownMenuItem onClick={() => { setEditingProduct(item); setIsProductModalOpen(true); }}>
               <Pencil className="w-4 h-4 mr-2" /> Edit
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteProduct(item.id)}>
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
+            <DropdownMenuItem onClick={() => handleToggleProductStatus(item)} className={item.is_active ? "text-amber-600" : "text-green-600"}>
+              <Power className="w-4 h-4 mr-2" /> {item.is_active ? "Deactivate" : "Activate"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1369,6 +1386,10 @@ export default function StorePage() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label>Selling Price (BIF)</Label>
+              <Input name="selling_price" type="number" step="0.01" defaultValue={editingProduct?.selling_price ?? 0} required />
+            </div>
+            <div className="space-y-2">
               <Label>Minimum Stock Level</Label>
               <Input name="minimum_stock" type="number" step="0.1" defaultValue={editingProduct?.minimum_stock ?? 0} />
             </div>
@@ -1523,7 +1544,15 @@ export default function StorePage() {
                   </div>
                   <div className="space-y-2">
                     <Label>Recipient Type</Label>
-                    <Select name="recipient_type" defaultValue="staff">
+                    <Select
+                      name="recipient_type"
+                      defaultValue="staff"
+                      onValueChange={(val) => {
+                        setCurrentRecipientType(val);
+                        setSelectedRecipientId(0);
+                        setSelectedRecipientName("");
+                      }}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="staff">Staff</SelectItem>
@@ -1535,10 +1564,44 @@ export default function StorePage() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Recipient Name</Label>
-                  <Input name="recipient_name" required />
-                </div>
+                {["staff", "student"].includes(currentRecipientType) ? (
+                  <div className="space-y-2">
+                    <Label>Recipient</Label>
+                    <Select
+                      onValueChange={(val) => {
+                        const account = accounts.find((a) => a.id === parseInt(val));
+                        if (account) {
+                          setSelectedRecipientId(account.id);
+                          setSelectedRecipientName(
+                            [account.user.first_name, account.user.last_name].filter(Boolean).join(" ") || account.user.username
+                          );
+                        }
+                      }}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select recipient" /></SelectTrigger>
+                      <SelectContent>
+                        {accounts
+                          .filter((a) =>
+                            currentRecipientType === "staff"
+                              ? !["student", "student_parent", "none"].includes(a.role)
+                              : a.role === "student"
+                          )
+                          .map((a) => (
+                            <SelectItem key={a.id} value={String(a.id)}>
+                              {[a.user.first_name, a.user.last_name].filter(Boolean).join(" ") || a.user.username}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" name="recipient_id" value={selectedRecipientId} />
+                    <input type="hidden" name="recipient_name" value={selectedRecipientName} />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Recipient Name</Label>
+                    <Input name="recipient_name" required />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Expected Return</Label>
@@ -1585,13 +1648,55 @@ export default function StorePage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Buyer Name</Label>
-                <Input name="buyer_name" placeholder="e.g. Jean Dupont" required />
-              </div>
+              {["staff", "student"].includes(currentBuyerType) ? (
+                <div className="space-y-2">
+                  <Label>Buyer</Label>
+                  <Select
+                    onValueChange={(val) => {
+                      const account = accounts.find((a) => a.id === parseInt(val));
+                      if (account) {
+                        setSelectedBuyerId(account.id);
+                        setSelectedBuyerName(
+                          [account.user.first_name, account.user.last_name].filter(Boolean).join(" ") || account.user.username
+                        );
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select buyer" /></SelectTrigger>
+                    <SelectContent>
+                      {accounts
+                        .filter((a) =>
+                          currentBuyerType === "staff"
+                            ? !["student", "student_parent", "none"].includes(a.role)
+                            : a.role === "student"
+                        )
+                        .map((a) => (
+                          <SelectItem key={a.id} value={String(a.id)}>
+                            {[a.user.first_name, a.user.last_name].filter(Boolean).join(" ") || a.user.username}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="buyer_id" value={selectedBuyerId} />
+                  <input type="hidden" name="buyer_name" value={selectedBuyerName} />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Buyer Name</Label>
+                  <Input name="buyer_name" placeholder="e.g. Jean Dupont" required />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Buyer Type</Label>
-                <Select name="buyer_type" defaultValue="student">
+                <Select
+                  name="buyer_type"
+                  defaultValue="student"
+                  onValueChange={(val) => {
+                    setCurrentBuyerType(val);
+                    setSelectedBuyerId(0);
+                    setSelectedBuyerName("");
+                  }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="student">Student</SelectItem>
@@ -1679,11 +1784,11 @@ export default function StorePage() {
             <div className="space-y-2">
               <Label htmlFor="quantity">New Actual Quantity</Label>
               <div className="flex gap-2 items-center">
-                  <Input id="quantity" name="quantity" type="number" step="0.01" defaultValue={adjustingInventory?.quantity} required />
-                  <span className="text-sm text-slate-500 whitespace-nowrap">{adjustingInventory?.unit_symbol}</span>
+                <Input id="quantity" name="quantity" type="number" step="0.01" defaultValue={adjustingInventory?.quantity} required />
+                <span className="text-sm text-slate-500 whitespace-nowrap">{adjustingInventory?.unit_symbol}</span>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                The current quantity is <strong>{adjustingInventory?.quantity} {adjustingInventory?.unit_symbol}</strong>. <br/>
+                The current quantity is <strong>{adjustingInventory?.quantity} {adjustingInventory?.unit_symbol}</strong>. <br />
                 Enter a lower number to report a loss, or a higher number to correct an unjustified stock excess.
               </p>
             </div>
