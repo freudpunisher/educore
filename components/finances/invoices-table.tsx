@@ -153,8 +153,17 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
         printWindow.document.close();
     };
 
+    const [fileError, setFileError] = useState(false);
+
     const handleConfirmPayment = () => {
         if (!selectedInvoice || !paymentAmount) return;
+
+        if (paymentMode !== "1" && !selectedFile) {
+            setFileError(true);
+            toast.error("Proof document is required for this payment mode.");
+            return;
+        }
+        setFileError(false);
 
         const formData = new FormData();
         formData.append("invoice", selectedInvoice.id.toString());
@@ -182,6 +191,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 setPaymentAmount("");
                 setPaymentMode("1");
                 setSelectedFile(null);
+                setFileError(false);
                 setPaymentInstitution("");
                 setPaymentReference("");
                 setPaymentDate(new Date().toISOString().split("T")[0]);
@@ -347,6 +357,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                     setPaymentAmount(invoice.balance.toString());
                                                     setPaymentMode("1");
                                                     setSelectedFile(null);
+                                                    setFileError(false);
                                                     setPaymentInstitution("");
                                                     setPaymentReference("");
                                             setPaymentDate(new Date().toISOString().split("T")[0]);
@@ -431,6 +442,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     value={paymentMode}
                                     onValueChange={(val) => {
                                         setPaymentMode(val);
+                                        setFileError(false);
                                         if (val === "1") {
                                             setSelectedFile(null);
                                             setPaymentInstitution("");
@@ -495,14 +507,14 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Proof Document (Optional)</Label>
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className={cn(
-                                            "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all gap-2",
-                                            selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
-                                        )}
-                                    >
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Proof Document <span className="text-destructive">(Required)</span></Label>
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={cn(
+                                        "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all gap-2",
+                                        selectedFile ? "border-primary bg-primary/5" : fileError ? "border-destructive bg-destructive/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
+                                    )}
+                                >
                                         <Input
                                             ref={fileInputRef}
                                             type="file"
