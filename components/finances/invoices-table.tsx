@@ -4,7 +4,7 @@ import { Invoice } from "@/types/finance";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload, Landmark } from "lucide-react";
+import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload, Landmark, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -154,13 +154,13 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
     };
 
     const [fileError, setFileError] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
 
     const handleConfirmPayment = () => {
         if (!selectedInvoice || !paymentAmount) return;
 
         if (paymentMode !== "1" && !selectedFile) {
             setFileError(true);
-            toast.error("Proof document is required for this payment mode.");
             return;
         }
         setFileError(false);
@@ -192,23 +192,25 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 setPaymentMode("1");
                 setSelectedFile(null);
                 setFileError(false);
+                setPaymentError(null);
                 setPaymentInstitution("");
                 setPaymentReference("");
                 setPaymentDate(new Date().toISOString().split("T")[0]);
             },
             onError: (err: any) => {
                 const errData = err.response?.data;
-                const fieldErrors = errData?.errors;
+                const errors = errData?.errors || errData;
                 let msg = errData?.message || "Failed to process payment.";
-                if (fieldErrors && typeof fieldErrors === "object") {
-                    const detail = Object.entries(fieldErrors)
+                if (errors && typeof errors === "object" && !Array.isArray(errors)) {
+                    const details = Object.entries(errors)
+                        .filter(([, v]) => v)
                         .map(([field, msgs]) =>
-                            Array.isArray(msgs) ? `${field}: ${msgs.join(", ")}` : `${field}: ${msgs}`
+                            Array.isArray(msgs) ? msgs.join(", ") : String(msgs)
                         )
-                        .join(" | ");
-                    if (detail) msg = `${msg}: ${detail}`;
+                        .filter(Boolean);
+                    if (details.length > 0) msg = details.join(" | ");
                 }
-                toast.error(msg);
+                setPaymentError(msg);
             }
         });
     };
@@ -347,7 +349,6 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                 )}
                                                 onClick={() => {
                                                     if (isBlocked) {
-                                                        toast.error(`Please pay high-priority invoice (${blockingInvoice.fees_detail?.label}) first.`);
                                                         return;
                                                     }
                                                     setSelectedInvoice(invoice);
@@ -355,6 +356,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                     setPaymentMode("1");
                                                     setSelectedFile(null);
                                                     setFileError(false);
+                                                    setPaymentError(null);
                                                     setPaymentInstitution("");
                                                     setPaymentReference("");
                                             setPaymentDate(new Date().toISOString().split("T")[0]);
@@ -390,7 +392,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 </TableBody>
             </Table>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(v) => { setIsDialogOpen(v); if (!v) setPaymentError(null); }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Confirm Payment</DialogTitle>
@@ -440,6 +442,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     onValueChange={(val) => {
                                         setPaymentMode(val);
                                         setFileError(false);
+                                        setPaymentError(null);
                                         if (val === "1") {
                                             setSelectedFile(null);
                                             setPaymentInstitution("");
@@ -547,6 +550,13 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                 <span className="font-medium truncate">{selectedInvoice?.period_name || "N/A"}</span>
                             </div>
                         </div>
+
+                        {paymentError && (
+                            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                                <p className="text-sm font-medium text-destructive">{paymentError}</p>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter>
