@@ -81,6 +81,10 @@ export function useTransportSubscriptions(params?: {
     search?: string;
     status?: string;
     student?: string | number;
+    plate?: string;
+    driver?: string | number;
+    itinerary?: string | number;
+    academic_year?: string | number;
 }) {
     return useQuery({
         queryKey: ["transport-subscriptions", params],

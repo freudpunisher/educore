@@ -142,6 +142,7 @@ type Attendance = {
 export default function CanteenPage() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Data state
   const [dashboardKPI, setDashboardKPI] = useState<CanteenDashboardKPI | null>(null);
@@ -177,45 +178,65 @@ export default function CanteenPage() {
 
   const fetchData = async () => {
     setIsLoading(true);
-    try {
-      const params = selectedYear ? { academic_year: selectedYear } : {};
-      const [kpiRes, plansRes, itemsRes, ordersRes, prefsRes, typesRes, mealsRes, attendanceRes] = await Promise.all([
-        api.get<CanteenDashboardKPI>("food/dashboard-meal/", { params }),
-        api.get<any>("food/meal-plans/"),
-        api.get<any>("food/food-items/"),
-        api.get<any>("food/subscriptions/", { params }),
-        api.get<any>("food/student-preferences/", { params }),
-        api.get<any>("food/meal-types/"),
-        api.get<any>("food/meals/", { params }),
-        api.get<any>("food/attendance/", { params }),
-      ]);
+    setError(null);
 
-      setDashboardKPI(kpiRes);
-      setMealPlans(Array.isArray(plansRes) ? plansRes : plansRes.results || []);
-      setFoodItems(Array.isArray(itemsRes) ? itemsRes : itemsRes.results || []);
-      setOrders(Array.isArray(ordersRes) ? ordersRes : ordersRes.results || []);
-      setPreferences(Array.isArray(prefsRes) ? prefsRes : prefsRes.results || []);
-      setMealTypes(Array.isArray(typesRes) ? typesRes : typesRes.results || []);
-      setMeals(Array.isArray(mealsRes) ? mealsRes : mealsRes.results || []);
-      setAttendance(Array.isArray(attendanceRes) ? attendanceRes : attendanceRes.results || []);
-    } catch (error) {
-      console.error("Error fetching canteen data:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    const params = selectedYear ? { academic_year: selectedYear } : {};
+
+    const safeFetch = async <T,>(url: string, opts?: { params?: any }): Promise<T | null> => {
+      try {
+        return await api.get<T>(url, opts?.params);
+      } catch (e) {
+        console.error(`Failed to fetch ${url}:`, e);
+        return null;
+      }
+    };
+
+    const [kpiRes, plansRes, itemsRes, ordersRes, prefsRes, typesRes, mealsRes, attendanceRes] = await Promise.all([
+      safeFetch<CanteenDashboardKPI>("food/dashboard-meal/", { params }),
+      safeFetch<any>("food/meal-plans/"),
+      safeFetch<any>("food/food-items/"),
+      safeFetch<any>("food/subscriptions/", { params }),
+      safeFetch<any>("food/student-preferences/", { params }),
+      safeFetch<any>("food/meal-types/"),
+      safeFetch<any>("food/meals/", { params }),
+      safeFetch<any>("food/attendance/", { params }),
+    ]);
+
+    let hasError = false;
+
+    if (kpiRes) setDashboardKPI(kpiRes);
+    else hasError = true;
+
+    setMealPlans(Array.isArray(plansRes) ? plansRes : plansRes?.results || []);
+    setFoodItems(Array.isArray(itemsRes) ? itemsRes : itemsRes?.results || []);
+    setOrders(Array.isArray(ordersRes) ? ordersRes : ordersRes?.results || []);
+    setPreferences(Array.isArray(prefsRes) ? prefsRes : prefsRes?.results || []);
+    setMealTypes(Array.isArray(typesRes) ? typesRes : typesRes?.results || []);
+    setMeals(Array.isArray(mealsRes) ? mealsRes : mealsRes?.results || []);
+    setAttendance(Array.isArray(attendanceRes) ? attendanceRes : attendanceRes?.results || []);
+
+    if (hasError) setError("Some data failed to load. Displaying available information.");
+    setIsLoading(false);
   };
 
   useEffect(() => {
-    api.get<any>("academics/years/").then((res) => {
-      const years = Array.isArray(res) ? res : res.results || [];
-      setAcademicYears(years);
-      const current = years.find((y: any) => y.is_current);
-      if (current) {
-        setSelectedYear(current.id.toString());
-      } else if (years.length > 0) {
-        setSelectedYear(years[0].id.toString());
-      }
-    });
+    api.get<any>("academics/years/")
+      .then((res) => {
+        const years = Array.isArray(res) ? res : res.results || [];
+        setAcademicYears(years);
+        const current = years.find((y: any) => y.is_current);
+        if (current) {
+          setSelectedYear(current.id.toString());
+        } else if (years.length > 0) {
+          setSelectedYear(years[0].id.toString());
+        } else {
+          fetchData();
+        }
+      })
+      .catch(() => {
+        toast.error("Failed to load academic years");
+        fetchData();
+      });
   }, []);
 
   useEffect(() => {
@@ -696,6 +717,13 @@ export default function CanteenPage() {
             </Select>
           </div>
         </div>
+
+        {/* Error banner */}
+        {error && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950 p-4 text-amber-800 dark:text-amber-200 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* KPI Cards - Always Visible */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

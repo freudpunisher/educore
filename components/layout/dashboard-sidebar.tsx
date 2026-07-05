@@ -28,9 +28,11 @@ import {
   Package,
   Home,
   Baby,
+  PenSquare,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
+import { MODULE_ACCESS } from "@/constants/menu-access"
 
 type NavItem = {
   name: string
@@ -40,46 +42,46 @@ type NavItem = {
   children?: {
     name: string
     href: string
-    roles?: string[]
   }[]
 }
 
 const navigation: NavItem[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Students", href: "/dashboard/students", icon: Users },
-  { name: "Employees", href: "/dashboard/employees", icon: Users },
-  { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck },
-  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert },
-  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
-  { name: "Timetable", href: "/dashboard/timetable", icon: Clock },
-  { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone },
+  { name: "Students", href: "/dashboard/students", icon: Users, roles: MODULE_ACCESS.Students },
+  { name: "Employees", href: "/dashboard/employees", icon: Users, roles: MODULE_ACCESS.Employees },
+  { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck, roles: MODULE_ACCESS.Attendance },
+  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert, roles: MODULE_ACCESS.Behavior },
+  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar, roles: MODULE_ACCESS.Calendar },
+  { name: "Timetable", href: "/dashboard/timetable", icon: Clock, roles: MODULE_ACCESS.Timetable },
+  { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone, roles: MODULE_ACCESS.Announcements },
   {
     name: "Finances",
     icon: DollarSign,
+    roles: MODULE_ACCESS.Finances,
     children: [
       { name: "Overview", href: "/dashboard/finances" },
       { name: "Invoices", href: "/dashboard/finances/invoices" },
       { name: "Payments", href: "/dashboard/finances/payments" },
+      { name: "Pricing", href: "/dashboard/finances/pricing" },
+      { name: "Surpluses", href: "/dashboard/finances/surpluses" },
     ]
   },
-  { name: "Pedagogy", href: "/dashboard/pedagogy", icon: BookOpen },
-  { name: "Rapports", href: "/dashboard/reports", icon: FileText, roles: ["global_control", "system_admin", "director"] },
-
-  { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck },
-
-
-  { name: "Transport", href: "/dashboard/transport", icon: Truck },
-  { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed },
-  { name: "Storage", href: "/dashboard/store", icon: Package },
-  { name: "Boarding", href: "/dashboard/boarding", icon: Home },
-  { name: "Daycare", href: "/dashboard/daycare", icon: Baby },
+  { name: "Academics", href: "/dashboard/pedagogy", icon: BookOpen, roles: MODULE_ACCESS.Pedagogy },
+  { name: "Academic Planning", href: "/dashboard/academic-planning", icon: PenSquare, roles: MODULE_ACCESS["Academic Planning"] },
+  { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck, roles: MODULE_ACCESS["Course Tracking"] },
+  { name: "Transport", href: "/dashboard/transport", icon: Truck, roles: MODULE_ACCESS.Transport },
+  { name: "Rapports", href: "/dashboard/reports", icon: FileText, roles: MODULE_ACCESS.Rapports },
+  { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed, roles: MODULE_ACCESS.Restaurant },
+  { name: "Storage", href: "/dashboard/store", icon: Package, roles: MODULE_ACCESS.Storage },
+  { name: "Boarding", href: "/dashboard/boarding", icon: Home, roles: MODULE_ACCESS.Boarding },
+  { name: "Daycare", href: "/dashboard/daycare", icon: Baby, roles: MODULE_ACCESS.Daycare },
   { 
     name: "Audit Logs", 
     href: "/dashboard/audit-logs", 
     icon: FileText,
-    roles: ["global_control", "system_admin"] 
+    roles: MODULE_ACCESS["Audit Logs"],
   },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: MODULE_ACCESS.Settings },
 ]
 
 function SidebarItem({
@@ -183,17 +185,6 @@ export function DashboardSidebar() {
 
   const filteredNavigation = navigation
     .filter((item) => !item.roles || (user?.role && item.roles.includes(user.role)))
-    .map((item) => {
-      if (item.children) {
-        return {
-          ...item,
-          children: item.children.filter(
-            (child) => !child.roles || (user?.role && child.roles.includes(user.role))
-          ),
-        }
-      }
-      return item
-    })
     .filter((item) => !item.children || item.children.length > 0 || item.href)
 
   return (

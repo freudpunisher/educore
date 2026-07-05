@@ -1,32 +1,172 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Users, DollarSign, BookOpen, TrendingUp, Truck, Receipt, Wallet, BarChart3, ClipboardList } from "lucide-react"
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Users, DollarSign, BookOpen, TrendingUp, Truck, Receipt,
+  Wallet, BarChart3, ClipboardList, Bus, Home, UtensilsCrossed, Baby,
+  Building2,
+} from "lucide-react"
+import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts"
 import { useDashboard, DashboardData } from "@/hooks/use-dashboard"
 import { KpiGrid, KpiCardData } from "@/components/dashboard/kpi-grid"
 import { DashboardChart } from "@/components/dashboard/dashboard-chart"
 import { RecentActivity, ActivityItem } from "@/components/dashboard/recent-activity"
 import { QuickActions } from "@/components/dashboard/quick-actions"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
-const enrollmentData = [
-  { month: "Jan", students: 1100 },
-  { month: "Feb", students: 1150 },
-  { month: "Mar", students: 1180 },
-  { month: "Apr", students: 1200 },
-  { month: "May", students: 1220 },
-  { month: "Jun", students: 1234 },
-]
+function getRoleBasedChartData(role: string | undefined): {
+  title: string
+  description: string
+  data: { month: string; value: number }[]
+} | null {
+  if (!role) return null
+
+  const charts: Record<string, { title: string; description: string; data: { month: string; value: number }[] }> = {
+    ACADEMIC: {
+      title: "Enrollment Trends",
+      description: "Student population growth over the last term",
+      data: [
+        { month: "Jan", value: 1100 }, { month: "Feb", value: 1150 },
+        { month: "Mar", value: 1180 }, { month: "Apr", value: 1200 },
+        { month: "May", value: 1220 }, { month: "Jun", value: 1234 },
+      ],
+    },
+    DISCIPLINE: {
+      title: "Attendance Overview",
+      description: "Monthly attendance records",
+      data: [
+        { month: "Jan", value: 980 }, { month: "Feb", value: 1020 },
+        { month: "Mar", value: 1050 }, { month: "Apr", value: 1100 },
+        { month: "May", value: 1080 }, { month: "Jun", value: 1120 },
+      ],
+    },
+    FINANCE: {
+      title: "Revenue Trends",
+      description: "Monthly invoiced amounts (BIF)",
+      data: [
+        { month: "Jan", value: 8500000 }, { month: "Feb", value: 9200000 },
+        { month: "Mar", value: 8800000 }, { month: "Apr", value: 10500000 },
+        { month: "May", value: 11200000 }, { month: "Jun", value: 9800000 },
+      ],
+    },
+    HR: {
+      title: "Staff Growth",
+      description: "Active personnel over time",
+      data: [
+        { month: "Jan", value: 45 }, { month: "Feb", value: 48 },
+        { month: "Mar", value: 50 }, { month: "Apr", value: 52 },
+        { month: "May", value: 55 }, { month: "Jun", value: 58 },
+      ],
+    },
+    DIRECTOR: {
+      title: "Enrollment Trends",
+      description: "Student population growth over the last term",
+      data: [
+        { month: "Jan", value: 1100 }, { month: "Feb", value: 1150 },
+        { month: "Mar", value: 1180 }, { month: "Apr", value: 1200 },
+        { month: "May", value: 1220 }, { month: "Jun", value: 1234 },
+      ],
+    },
+    SUPER_ADMIN: {
+      title: "Enrollment Trends",
+      description: "Student population growth over the last term",
+      data: [
+        { month: "Jan", value: 1100 }, { month: "Feb", value: 1150 },
+        { month: "Mar", value: 1180 }, { month: "Apr", value: 1200 },
+        { month: "May", value: 1220 }, { month: "Jun", value: 1234 },
+      ],
+    },
+    TEACHER: {
+      title: "Class Performance",
+      description: "Average assessment scores over the last term",
+      data: [
+        { month: "Jan", value: 72 }, { month: "Feb", value: 75 },
+        { month: "Mar", value: 78 }, { month: "Apr", value: 80 },
+        { month: "May", value: 82 }, { month: "Jun", value: 85 },
+      ],
+    },
+    TRANSPORTER: {
+      title: "Transport Usage",
+      description: "Students using transport services",
+      data: [
+        { month: "Jan", value: 320 }, { month: "Feb", value: 340 },
+        { month: "Mar", value: 355 }, { month: "Apr", value: 370 },
+        { month: "May", value: 385 }, { month: "Jun", value: 400 },
+      ],
+    },
+    RESTAURANT: {
+      title: "Meal Service Trends",
+      description: "Daily meals served per month",
+      data: [
+        { month: "Jan", value: 2400 }, { month: "Feb", value: 2550 },
+        { month: "Mar", value: 2600 }, { month: "Apr", value: 2700 },
+        { month: "May", value: 2750 }, { month: "Jun", value: 2800 },
+      ],
+    },
+    DAYCARE: {
+      title: "Daycare Attendance",
+      description: "Children attending daycare per month",
+      data: [
+        { month: "Jan", value: 85 }, { month: "Feb", value: 90 },
+        { month: "Mar", value: 92 }, { month: "Apr", value: 95 },
+        { month: "May", value: 98 }, { month: "Jun", value: 100 },
+      ],
+    },
+    BOARDING: {
+      title: "Boarding Occupancy",
+      description: "Students in boarding per month",
+      data: [
+        { month: "Jan", value: 150 }, { month: "Feb", value: 155 },
+        { month: "Mar", value: 160 }, { month: "Apr", value: 158 },
+        { month: "May", value: 162 }, { month: "Jun", value: 165 },
+      ],
+    },
+    STORAGE: {
+      title: "Inventory Trends",
+      description: "Stock entries over the last term",
+      data: [
+        { month: "Jan", value: 45 }, { month: "Feb", value: 52 },
+        { month: "Mar", value: 38 }, { month: "Apr", value: 60 },
+        { month: "May", value: 55 }, { month: "Jun", value: 48 },
+      ],
+    },
+    STUDENT: {
+      title: "My Progress",
+      description: "Average grade trend over the last term",
+      data: [
+        { month: "Jan", value: 68 }, { month: "Feb", value: 72 },
+        { month: "Mar", value: 75 }, { month: "Apr", value: 78 },
+        { month: "May", value: 80 }, { month: "Jun", value: 82 },
+      ],
+    },
+    PARENT: {
+      title: "Academic Overview",
+      description: "Children's average performance",
+      data: [
+        { month: "Jan", value: 70 }, { month: "Feb", value: 73 },
+        { month: "Mar", value: 76 }, { month: "Apr", value: 78 },
+        { month: "May", value: 81 }, { month: "Jun", value: 83 },
+      ],
+    },
+  }
+
+  return charts[role] ?? null
+}
 
 function formatFbu(amount: number | string): string {
   if (typeof amount === 'string') return amount
   return new Intl.NumberFormat("fr-BI").format(amount) + " BIF"
 }
 
-// Construire les KPIs dynamiquement selon le rôle
 function buildKpiCards(dashboardData: DashboardData | undefined, isDashboardLoading: boolean): KpiCardData[] {
   if (!dashboardData) {
     return []
@@ -42,6 +182,54 @@ function buildKpiCards(dashboardData: DashboardData | undefined, isDashboardLoad
       icon: <Users className="w-5 h-5 text-blue-600" />,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
+    })
+  }
+
+  if (dashboardData.transport) {
+    const t = dashboardData.transport
+    cards.push({
+      title: "Transport",
+      value: isDashboardLoading ? null : String(t.total_students ?? "—"),
+      sub: `${t.total_vehicles ?? 0} vehicles · ${t.total_drivers ?? 0} drivers · ${t.total_itineraries ?? 0} routes`,
+      icon: <Bus className="w-5 h-5 text-orange-600" />,
+      color: "text-orange-600",
+      bgColor: "bg-orange-500/10",
+    })
+  }
+
+  if (dashboardData.boarding) {
+    const b = dashboardData.boarding
+    cards.push({
+      title: "Boarding",
+      value: isDashboardLoading ? null : String(b.total_students ?? "—"),
+      sub: `${b.total_rooms ?? 0} rooms · ${b.occupied_beds ?? 0}/${b.total_beds ?? 0} beds occupied`,
+      icon: <Building2 className="w-5 h-5 text-indigo-600" />,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-500/10",
+    })
+  }
+
+  if (dashboardData.daycare) {
+    const d = dashboardData.daycare
+    cards.push({
+      title: "Daycare",
+      value: isDashboardLoading ? null : String(d.total_children ?? "—"),
+      sub: `${d.total_records ?? 0} records`,
+      icon: <Baby className="w-5 h-5 text-pink-600" />,
+      color: "text-pink-600",
+      bgColor: "bg-pink-500/10",
+    })
+  }
+
+  if (dashboardData.restaurant) {
+    const r = dashboardData.restaurant
+    cards.push({
+      title: "Restaurant",
+      value: isDashboardLoading ? null : String(r.total_subscribers ?? "—"),
+      sub: `${r.total_meals_served ?? 0} meals served`,
+      icon: <UtensilsCrossed className="w-5 h-5 text-amber-600" />,
+      color: "text-amber-600",
+      bgColor: "bg-amber-500/10",
     })
   }
 
@@ -121,42 +309,127 @@ function buildKpiCards(dashboardData: DashboardData | undefined, isDashboardLoad
   return cards
 }
 
-// Données d'activité statiques (peuvent être remplacées par des données dynamiques)
 const defaultActivities: ActivityItem[] = [
-  { 
-    action: "New student enrolled", 
-    name: "Sophie Martin", 
-    time: "2 hours ago", 
-    color: "bg-emerald-500", 
-    icon: <Users className="w-5 h-5" /> 
-  },
-  { 
-    action: "Payment received", 
-    name: "Dubois Family", 
-    time: "4 hours ago", 
-    color: "bg-amber-500", 
-    icon: <DollarSign className="w-5 h-5" /> 
-  },
-  { 
-    action: "Grade added", 
-    name: "Class 5th A", 
-    time: "6 hours ago", 
-    color: "bg-indigo-500", 
-    icon: <BookOpen className="w-5 h-5" /> 
-  },
-  { 
-    action: "Transport scheduled", 
-    name: "North Route", 
-    time: "8 hours ago", 
-    color: "bg-primary", 
-    icon: <Truck className="w-5 h-5" /> 
-  },
+  { action: "New student enrolled", name: "Sophie Martin", time: "2 hours ago", color: "bg-emerald-500", icon: <Users className="w-5 h-5" /> },
+  { action: "Payment received", name: "Dubois Family", time: "4 hours ago", color: "bg-amber-500", icon: <DollarSign className="w-5 h-5" /> },
+  { action: "Grade added", name: "Class 5th A", time: "6 hours ago", color: "bg-indigo-500", icon: <BookOpen className="w-5 h-5" /> },
+  { action: "Transport scheduled", name: "North Route", time: "8 hours ago", color: "bg-primary", icon: <Truck className="w-5 h-5" /> },
 ]
+
+function getRoleBasedActivities(role: string | undefined): ActivityItem[] {
+  if (!role) return defaultActivities
+
+  const activities: Record<string, ActivityItem[]> = {
+    ACADEMIC: [
+      { action: "New student enrolled", name: "Sophie Martin", time: "2 hours ago", color: "bg-emerald-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Grade submitted", name: "Class 5th A - Mathematics", time: "3 hours ago", color: "bg-indigo-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Course updated", name: "Science Curriculum v2", time: "5 hours ago", color: "bg-blue-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Schedule modified", name: "4th B - Class section", time: "7 hours ago", color: "bg-primary", icon: <Users className="w-5 h-5" /> },
+    ],
+    DISCIPLINE: [
+      { action: "Attendance recorded", name: "Class 3rd A - 28/30 present", time: "2 hours ago", color: "bg-emerald-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Incident reported", name: "Class 5th B - Minor infraction", time: "4 hours ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Discipline review", name: "Weekly behavior summary", time: "6 hours ago", color: "bg-indigo-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Parent meeting", name: "M. Dubois - Scheduled", time: "8 hours ago", color: "bg-primary", icon: <Users className="w-5 h-5" /> },
+    ],
+    FINANCE: [
+      { action: "Payment received", name: "Dubois Family - 250,000 BIF", time: "1 hour ago", color: "bg-emerald-500", icon: <DollarSign className="w-5 h-5" /> },
+      { action: "Invoice generated", name: "Martin Family - Term 3", time: "3 hours ago", color: "bg-amber-500", icon: <Receipt className="w-5 h-5" /> },
+      { action: "Overdue reminder", name: "5 unpaid invoices pending", time: "4 hours ago", color: "bg-red-500", icon: <Wallet className="w-5 h-5" /> },
+      { action: "Expense recorded", name: "School supplies - 50,000 BIF", time: "6 hours ago", color: "bg-purple-500", icon: <TrendingUp className="w-5 h-5" /> },
+    ],
+    HR: [
+      { action: "New hire onboarded", name: "Marie Claire - Teacher", time: "1 day ago", color: "bg-emerald-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Leave approved", name: "Jean Pascal - 3 days", time: "2 days ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Contract renewed", name: "5 staff contracts updated", time: "3 days ago", color: "bg-indigo-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Payroll processed", name: "Monthly salaries - March", time: "5 days ago", color: "bg-primary", icon: <DollarSign className="w-5 h-5" /> },
+    ],
+    DIRECTOR: [
+      { action: "New student enrolled", name: "Sophie Martin", time: "2 hours ago", color: "bg-emerald-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Payment received", name: "Dubois Family - 250,000 BIF", time: "4 hours ago", color: "bg-amber-500", icon: <DollarSign className="w-5 h-5" /> },
+      { action: "Grade added", name: "Class 5th A - Midterms", time: "6 hours ago", color: "bg-indigo-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Transport update", name: "North Route - Schedule change", time: "8 hours ago", color: "bg-primary", icon: <Truck className="w-5 h-5" /> },
+    ],
+    SUPER_ADMIN: [
+      { action: "System backup", name: "Daily backup completed", time: "1 hour ago", color: "bg-emerald-500", icon: <TrendingUp className="w-5 h-5" /> },
+      { action: "User account created", name: "New teacher account", time: "3 hours ago", color: "bg-amber-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Configuration change", name: "Academic year updated", time: "5 hours ago", color: "bg-indigo-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Audit log review", name: "Weekly security check", time: "7 hours ago", color: "bg-primary", icon: <BarChart3 className="w-5 h-5" /> },
+    ],
+    TEACHER: [
+      { action: "Grade submitted", name: "Class 5th A - Mathematics", time: "1 hour ago", color: "bg-emerald-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Attendance taken", name: "Class 3rd B - 25/27 present", time: "3 hours ago", color: "bg-amber-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Lesson plan updated", name: "Week 12 - Science", time: "5 hours ago", color: "bg-indigo-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Assessment created", name: "Mid-term exam - Physics", time: "7 hours ago", color: "bg-primary", icon: <TrendingUp className="w-5 h-5" /> },
+    ],
+    TRANSPORTER: [
+      { action: "Route completed", name: "North Route - On time", time: "1 hour ago", color: "bg-emerald-500", icon: <Truck className="w-5 h-5" /> },
+      { action: "Vehicle maintenance", name: "Bus #12 - Oil change", time: "3 hours ago", color: "bg-amber-500", icon: <Bus className="w-5 h-5" /> },
+      { action: "Driver assigned", name: "Pierre N. - South Route", time: "5 hours ago", color: "bg-indigo-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Itinerary updated", name: "East Route - New stop", time: "7 hours ago", color: "bg-primary", icon: <TrendingUp className="w-5 h-5" /> },
+    ],
+    RESTAURANT: [
+      { action: "Meals prepared", name: "450 lunches served today", time: "2 hours ago", color: "bg-emerald-500", icon: <UtensilsCrossed className="w-5 h-5" /> },
+      { action: "Menu updated", name: "Next week's menu posted", time: "4 hours ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Subscription renewed", name: "15 new meal subscriptions", time: "6 hours ago", color: "bg-indigo-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Inventory restocked", name: "Kitchen supplies delivered", time: "8 hours ago", color: "bg-primary", icon: <TrendingUp className="w-5 h-5" /> },
+    ],
+    DAYCARE: [
+      { action: "Child checked in", name: "Lucas M. - 08:15 AM", time: "2 hours ago", color: "bg-emerald-500", icon: <Baby className="w-5 h-5" /> },
+      { action: "Child checked out", name: "Emma K. - 04:30 PM", time: "1 hour ago", color: "bg-amber-500", icon: <Baby className="w-5 h-5" /> },
+      { action: "Activity report", name: "Daily activities summary", time: "3 hours ago", color: "bg-indigo-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "New enrollment", name: "Child registered for daycare", time: "5 hours ago", color: "bg-primary", icon: <Users className="w-5 h-5" /> },
+    ],
+    BOARDING: [
+      { action: "Student checked in", name: "Dormitory A - 2 new arrivals", time: "2 hours ago", color: "bg-emerald-500", icon: <Building2 className="w-5 h-5" /> },
+      { action: "Room inspection", name: "Dormitory B - All clear", time: "4 hours ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Bed assigned", name: "Room 12 - Bed 4 assigned", time: "6 hours ago", color: "bg-indigo-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Maintenance request", name: "Room 8 - Light fixture", time: "8 hours ago", color: "bg-primary", icon: <Home className="w-5 h-5" /> },
+    ],
+    STORAGE: [
+      { action: "Stock received", name: "School supplies - 50 units", time: "2 hours ago", color: "bg-emerald-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Inventory count", name: "Weekly stock verification", time: "4 hours ago", color: "bg-amber-500", icon: <BarChart3 className="w-5 h-5" /> },
+      { action: "Item dispatched", name: "Science lab - 10 kits", time: "6 hours ago", color: "bg-indigo-500", icon: <TrendingUp className="w-5 h-5" /> },
+      { action: "Reorder alert", name: "Printer paper - Low stock", time: "8 hours ago", color: "bg-primary", icon: <Wallet className="w-5 h-5" /> },
+    ],
+    STUDENT: [
+      { action: "Grade published", name: "Mathematics - 85%", time: "2 hours ago", color: "bg-emerald-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Class scheduled", name: "Science - Tomorrow 10 AM", time: "4 hours ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Assignment due", name: "History essay - Next Friday", time: "6 hours ago", color: "bg-indigo-500", icon: <TrendingUp className="w-5 h-5" /> },
+      { action: "Attendance recorded", name: "Present - All classes", time: "8 hours ago", color: "bg-primary", icon: <Users className="w-5 h-5" /> },
+    ],
+    PARENT: [
+      { action: "Grade published", name: "Sophie - Mathematics 85%", time: "2 hours ago", color: "bg-emerald-500", icon: <BookOpen className="w-5 h-5" /> },
+      { action: "Payment reminder", name: "Tuition fee - Term 3", time: "4 hours ago", color: "bg-amber-500", icon: <DollarSign className="w-5 h-5" /> },
+      { action: "Attendance report", name: "Sophie - All present this week", time: "6 hours ago", color: "bg-indigo-500", icon: <Users className="w-5 h-5" /> },
+      { action: "School event", name: "Parent-teacher meeting - Friday", time: "8 hours ago", color: "bg-primary", icon: <ClipboardList className="w-5 h-5" /> },
+    ],
+    BODY_CONTROL: [
+      { action: "Audit report generated", name: "Finance review - March", time: "2 hours ago", color: "bg-emerald-500", icon: <BarChart3 className="w-5 h-5" /> },
+      { action: "Compliance check", name: "Transport regulations - Passed", time: "4 hours ago", color: "bg-amber-500", icon: <ClipboardList className="w-5 h-5" /> },
+      { action: "Data verification", name: "Student records - 100% accurate", time: "6 hours ago", color: "bg-indigo-500", icon: <Users className="w-5 h-5" /> },
+      { action: "Institutional review", name: "Quarterly performance report", time: "8 hours ago", color: "bg-primary", icon: <TrendingUp className="w-5 h-5" /> },
+    ],
+  }
+
+  return activities[role] ?? defaultActivities
+}
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
-  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard()
+  const [academicYearId, setAcademicYearId] = useState<number | undefined>(undefined)
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard(academicYearId)
+
+  const isBodyControl = user?.role === "body_control"
+
+  // Auto-select current academic year for body_control
+  useEffect(() => {
+    if (isBodyControl && dashboardData?.academic_years && !academicYearId) {
+      const current = dashboardData.academic_years.find((y) => y.is_current)
+      if (current) setAcademicYearId(current.id)
+    }
+  }, [isBodyControl, dashboardData?.academic_years, academicYearId])
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -177,6 +450,9 @@ export default function DashboardPage() {
 
   const kpiCards = buildKpiCards(dashboardData, isDashboardLoading)
   const financeStats = dashboardData?.finance
+  const financeByTerm = dashboardData?.finance_by_term
+  const chartConfig = getRoleBasedChartData(dashboardData?.role)
+  const activities = getRoleBasedActivities(dashboardData?.role)
 
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
@@ -193,20 +469,41 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
-        <QuickActions
-          actions={[
-            {
-              label: "Academic Report",
-              icon: <BookOpen className="w-4 h-4" />,
-              variant: "outline",
-            },
-            {
-              label: "Financial Summary",
-              icon: <TrendingUp className="w-4 h-4" />,
-              variant: "default",
-            },
-          ]}
-        />
+        <div className="flex items-center gap-3">
+          {isBodyControl && dashboardData?.academic_years && (
+            <Select
+              value={academicYearId?.toString() ?? ""}
+              onValueChange={(v) => setAcademicYearId(Number(v))}
+            >
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="Academic year" />
+              </SelectTrigger>
+              <SelectContent>
+                {dashboardData.academic_years.map((y) => (
+                  <SelectItem key={y.id} value={y.id.toString()}>
+                    {y.label}{y.is_current ? " (Current)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <QuickActions
+            actions={[
+              {
+                label: "Academic Report",
+                icon: <BookOpen className="w-4 h-4" />,
+                variant: "outline",
+                href: "/dashboard/reports",
+              },
+              {
+                label: "Financial Summary",
+                icon: <TrendingUp className="w-4 h-4" />,
+                variant: "default",
+                href: "/dashboard/finances",
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* KPI Grid - Dynamic */}
@@ -216,35 +513,63 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className="grid gap-8 md:grid-cols-2">
-        <Card className="border-none shadow-xl shadow-primary/5">
-          <CardHeader>
-            <CardTitle>Enrollment Trends</CardTitle>
-            <CardDescription>Student population growth over the last term</CardDescription>
-          </CardHeader>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={enrollmentData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
-                <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ fontWeight: 'bold' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="students"
-                  stroke="oklch(var(--primary))"
-                  strokeWidth={4}
-                  dot={{ r: 6, fill: "oklch(var(--primary))", strokeWidth: 0 }}
-                  activeDot={{ r: 8, strokeWidth: 0, fill: "oklch(var(--accent))" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
+        {isBodyControl && financeByTerm && financeByTerm.length > 0 ? (
+          <Card className="border-none shadow-xl shadow-primary/5 md:col-span-2">
+            <CardHeader>
+              <CardTitle>Finance by Trimester</CardTitle>
+              <CardDescription>
+                Invoiced, paid, and balance per term — {dashboardData?.selected_academic_year}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={380}>
+                <BarChart data={financeByTerm}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
+                  <XAxis dataKey="term_name" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
+                  <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => new Intl.NumberFormat("fr-BI", { notation: "compact" }).format(v)} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)" }}
+                    formatter={(value: any) => [formatFbu(value), ""]}
+                  />
+                  <Legend />
+                  <Bar dataKey="total_invoiced" name="Invoiced" fill="oklch(var(--primary))" radius={[4, 4, 0, 0]} barSize={40} />
+                  <Bar dataKey="total_paid" name="Collected" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={40} />
+                  <Bar dataKey="balance" name="Balance" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        ) : chartConfig ? (
+          <Card className="border-none shadow-xl shadow-primary/5">
+            <CardHeader>
+              <CardTitle>{chartConfig.title}</CardTitle>
+              <CardDescription>{chartConfig.description}</CardDescription>
+            </CardHeader>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={chartConfig.data}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
+                  <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="oklch(var(--primary))"
+                    strokeWidth={4}
+                    dot={{ r: 6, fill: "oklch(var(--primary))", strokeWidth: 0 }}
+                    activeDot={{ r: 8, strokeWidth: 0, fill: "oklch(var(--accent))" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        ) : null}
 
-        {financeStats && (
+        {financeStats && !isBodyControl && (
           <DashboardChart
             title="Finance Overview"
             description="Invoiced vs Collected vs Balance (BIF)"
@@ -257,10 +582,23 @@ export default function DashboardPage() {
             formatter={formatFbu}
           />
         )}
+        {isBodyControl && financeStats && (
+          <DashboardChart
+            title="Finance Overview"
+            description="Overall invoiced vs collected vs balance (BIF)"
+            data={[
+              { name: "Invoiced", amount: financeStats?.total_invoiced ?? 0 },
+              { name: "Collected", amount: financeStats?.total_paid ?? 0 },
+              { name: "Balance", amount: financeStats?.balance ?? 0 },
+            ]}
+            isLoading={isDashboardLoading}
+            formatter={formatFbu}
+          />
+        )}
       </div>
 
       {/* Recent Activity */}
-      <RecentActivity activities={defaultActivities} />
+      <RecentActivity activities={activities} />
     </div>
   )
 }

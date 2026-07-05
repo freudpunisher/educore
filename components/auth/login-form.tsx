@@ -53,7 +53,22 @@ export function LoginForm() {
               <Alert variant="destructive" className="rounded-2xl border-none bg-destructive/10 text-destructive animate-in shake duration-500">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="font-bold">
-                  {(loginMutation.error as any)?.response?.data?.detail || "Incorrect username or password"}
+                  {(() => {
+                    const err: any = loginMutation.error;
+                    const status = err?.response?.status;
+                    const backendMsg = err?.response?.data?.message;
+                    const backendDetail = err?.response?.data?.errors?.non_field_errors?.[0];
+
+                    if (backendMsg) return backendMsg;
+                    if (backendDetail) return backendDetail;
+
+                    if (status === 401) return "Invalid username or password";
+                    if (status === 403) return "Access denied";
+                    if (status === 429) return "Too many attempts. Try again later.";
+                    if (status >= 500) return "Server error. Try again later.";
+
+                    return "Connection failed. Check your network.";
+                  })()}
                 </AlertDescription>
               </Alert>
             )}

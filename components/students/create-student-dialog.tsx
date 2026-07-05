@@ -74,13 +74,17 @@ export function CreateStudentDialog() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Nom & Prénom */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>First Name *</Label>
               <Input placeholder="Jane" {...register("first_name")} />
               {errors.first_name && (
                 <p className="text-sm text-destructive">{errors.first_name.message}</p>
               )}
+            </div>
+            <div className="space-y-2">
+              <Label>Middle Name</Label>
+              <Input placeholder="(optional)" {...register("middle_name")} />
             </div>
             <div className="space-y-2">
               <Label>Last Name *</Label>

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 export const createStudentSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
+  middle_name: z.string().optional().or(z.literal("")),
   last_name: z.string().min(1, "Last name is required"),
   gender: z.enum(["0", "1"], {
     required_error: "Gender is required",
@@ -22,7 +23,9 @@ export const createStudentSchema = z.object({
     ),
   parent_email: z
     .string()
-    .email("Invalid parent email"),
+    .email("Invalid parent email")
+    .optional()
+    .or(z.literal("")),
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;

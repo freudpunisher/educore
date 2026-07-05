@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuth } from "@/lib/auth-context"
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +50,7 @@ const mockEnrollments = [
 ]
 
 export default function AcademicYearsPage() {
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("")
     const [academicYears, setAcademicYears] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -198,6 +200,7 @@ export default function AcademicYearsPage() {
                     <h1 className="text-4xl font-heading font-bold text-foreground tracking-tight">Academic Years</h1>
                     <p className="text-muted-foreground font-medium mt-1">Manage institutional periods and track seasonal enrollments</p>
                 </div>
+                {user?.can?.('academics.manage') && (
                 <Button
                     onClick={() => setShowCreateDialog(true)}
                     className="h-12 px-6 rounded-xl font-bold shadow-lg shadow-primary/20"
@@ -205,6 +208,7 @@ export default function AcademicYearsPage() {
                     <Plus className="w-4 h-4 mr-2" />
                     New Academic Year
                 </Button>
+                )}
             </div>
 
             {/* Main Content */}

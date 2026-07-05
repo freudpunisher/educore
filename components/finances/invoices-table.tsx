@@ -4,7 +4,7 @@ import { Invoice } from "@/types/finance";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload } from "lucide-react";
+import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload, Landmark, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePayInvoice } from "@/hooks/use-finance";
+import { useFinancialInstitutions } from "@/hooks/use-financial-institutions";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -23,11 +24,15 @@ interface InvoicesTableProps {
 
 export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
     const payMutation = usePayInvoice();
+    const { data: institutions } = useFinancialInstitutions();
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState<string>("");
     const [paymentMode, setPaymentMode] = useState<string>("1");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [paymentInstitution, setPaymentInstitution] = useState<string>("");
+    const [paymentReference, setPaymentReference] = useState<string>("");
+    const [paymentDate, setPaymentDate] = useState<string>(new Date().toISOString().split("T")[0]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePrint = (invoice: Invoice) => {
@@ -148,8 +153,17 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
         printWindow.document.close();
     };
 
+    const [fileError, setFileError] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+
     const handleConfirmPayment = () => {
         if (!selectedInvoice || !paymentAmount) return;
+
+        if (paymentMode !== "1" && !selectedFile) {
+            setFileError(true);
+            return;
+        }
+        setFileError(false);
 
         const formData = new FormData();
         formData.append("invoice", selectedInvoice.id.toString());
@@ -158,6 +172,15 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
         formData.append("payment_mode", paymentMode);
         if (selectedFile) {
             formData.append("document", selectedFile);
+        }
+        if (paymentInstitution) {
+            formData.append("institution", paymentInstitution);
+        }
+        if (paymentReference) {
+            formData.append("payment_reference", paymentReference);
+        }
+        if (paymentDate) {
+            formData.append("payment_date", paymentDate);
         }
 
         payMutation.mutate(formData, {
@@ -168,9 +191,26 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 setPaymentAmount("");
                 setPaymentMode("1");
                 setSelectedFile(null);
+                setFileError(false);
+                setPaymentError(null);
+                setPaymentInstitution("");
+                setPaymentReference("");
+                setPaymentDate(new Date().toISOString().split("T")[0]);
             },
             onError: (err: any) => {
-                toast.error(err.response?.data?.message || `Failed to process payment.`);
+                const errData = err.response?.data;
+                const errors = errData?.errors || errData;
+                let msg = errData?.message || "Failed to process payment.";
+                if (errors && typeof errors === "object" && !Array.isArray(errors)) {
+                    const details = Object.entries(errors)
+                        .filter(([, v]) => v)
+                        .map(([field, msgs]) =>
+                            Array.isArray(msgs) ? msgs.join(", ") : String(msgs)
+                        )
+                        .filter(Boolean);
+                    if (details.length > 0) msg = details.join(" | ");
+                }
+                setPaymentError(msg);
             }
         });
     };
@@ -309,14 +349,18 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                 )}
                                                 onClick={() => {
                                                     if (isBlocked) {
-                                                        toast.error(`Please pay high-priority invoice (${blockingInvoice.fees_detail?.label}) first.`);
                                                         return;
                                                     }
                                                     setSelectedInvoice(invoice);
-                                                    setPaymentAmount(invoice.amount.toString());
+                                                    setPaymentAmount(invoice.balance.toString());
                                                     setPaymentMode("1");
                                                     setSelectedFile(null);
-                                                    setIsDialogOpen(true);
+                                                    setFileError(false);
+                                                    setPaymentError(null);
+                                                    setPaymentInstitution("");
+                                                    setPaymentReference("");
+                                            setPaymentDate(new Date().toISOString().split("T")[0]);
+                                            setIsDialogOpen(true);
                                                 }}
                                             >
                                                 <DollarSign className="h-3 w-3 mr-1" />
@@ -348,7 +392,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 </TableBody>
             </Table>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(v) => { setIsDialogOpen(v); if (!v) setPaymentError(null); }}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Confirm Payment</DialogTitle>
@@ -384,7 +428,10 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     />
                                 </div>
                                 <p className="text-[15px] text-muted-foreground">
-                                    Total due: <span className="font-bold">{Number(selectedInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+                                    Total: <span className="font-bold">{Number(selectedInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+                                    {Number(selectedInvoice?.balance || 0) < Number(selectedInvoice?.amount || 0) && (
+                                        <> &middot; Remaining: <span className="font-bold text-destructive">{Number(selectedInvoice?.balance || 0).toLocaleString("en-US")} FBU</span></>
+                                    )}
                                 </p>
                             </div>
 
@@ -394,7 +441,13 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                     value={paymentMode}
                                     onValueChange={(val) => {
                                         setPaymentMode(val);
-                                        if (val === "1") setSelectedFile(null);
+                                        setFileError(false);
+                                        setPaymentError(null);
+                                        if (val === "1") {
+                                            setSelectedFile(null);
+                                            setPaymentInstitution("");
+                                            setPaymentReference("");
+                                        }
                                     }}
                                 >
                                     <SelectTrigger id="paymentMode" className="h-11 border-primary/20">
@@ -412,32 +465,76 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         </div>
 
                         {paymentMode !== "1" && (
-                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Proof Document (Optional)</Label>
+                            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paymentInstitution" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Institution</Label>
+                                        <Select
+                                            value={paymentInstitution}
+                                            onValueChange={setPaymentInstitution}
+                                        >
+                                            <SelectTrigger id="paymentInstitution" className="h-11 border-primary/20">
+                                                <SelectValue placeholder="Select institution" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {institutions?.map((inst) => (
+                                                    <SelectItem key={inst.id} value={inst.id.toString()}>
+                                                        {inst.acronyms} - {inst.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="paymentReference" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Reference</Label>
+                                        <Input
+                                            id="paymentReference"
+                                            value={paymentReference}
+                                            onChange={(e) => setPaymentReference(e.target.value)}
+                                            placeholder="Check no., transaction ID..."
+                                            className="h-11 border-primary/20"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="paymentDate" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Payment Date</Label>
+                                    <Input
+                                        id="paymentDate"
+                                        type="date"
+                                        value={paymentDate}
+                                        onChange={(e) => setPaymentDate(e.target.value)}
+                                        className="h-11 border-primary/20 w-full md:w-1/2"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Proof Document <span className="text-destructive">(Required)</span></Label>
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
                                     className={cn(
                                         "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer transition-all gap-2",
-                                        selectedFile ? "border-primary bg-primary/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
+                                        selectedFile ? "border-primary bg-primary/5" : fileError ? "border-destructive bg-destructive/5" : "border-muted-foreground/20 hover:border-primary/50 hover:bg-muted/30"
                                     )}
                                 >
-                                    <Input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) setSelectedFile(file);
-                                        }}
-                                    />
-                                    <Upload className={cn("h-6 w-6", selectedFile ? "text-primary" : "text-muted-foreground")} />
-                                    <div className="text-center">
-                                        <p className="text-sm font-bold">
-                                            {selectedFile ? selectedFile.name : "Click to upload document"}
-                                        </p>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
-                                            {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "PDF, JPG, PNG allowed"}
-                                        </p>
+                                        <Input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            capture="environment"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) setSelectedFile(file);
+                                            }}
+                                        />
+                                        <Upload className={cn("h-6 w-6", selectedFile ? "text-primary" : "text-muted-foreground")} />
+                                        <div className="text-center">
+                                            <p className="text-sm font-bold">
+                                                {selectedFile ? selectedFile.name : "Click to upload document"}
+                                            </p>
+                                            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
+                                                {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : "PDF, JPG, PNG allowed"}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -450,9 +547,16 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
                                 <Badge variant="outline" className="rounded-md px-1 py-0 h-4 uppercase text-[9px] font-bold">Period</Badge>
-                                <span className="font-medium truncate">{selectedInvoice?.fees_detail?.period_name || "N/A"}</span>
+                                <span className="font-medium truncate">{selectedInvoice?.period_name || "N/A"}</span>
                             </div>
                         </div>
+
+                        {paymentError && (
+                            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 flex items-start gap-3">
+                                <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                                <p className="text-sm font-medium text-destructive">{paymentError}</p>
+                            </div>
+                        )}
                     </div>
 
                     <DialogFooter>

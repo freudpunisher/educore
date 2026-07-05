@@ -20,6 +20,7 @@ export function useCourses(classId?: number, academicYearId?: number, page: numb
       const { data } = await axiosInstance.get(url);
       return data;
     },
+    enabled: !!classId,
   });
 }
 
@@ -43,6 +44,7 @@ export function useGrades(enrollmentId?: number, academicYearId?: number, termId
       const parsed = paginatedGradeSchema.parse(data);
       return parsed;
     },
+    enabled: !!classId,
   });
 }
 
@@ -65,6 +67,16 @@ export function useAssessments(courseId?: number, academicYearId?: number, page:
       return parsed;
     },
     enabled: courseId !== undefined ? !!courseId : true,
+  });
+}
+
+export function useGradingCategories() {
+  return useQuery({
+    queryKey: ["grading-categories"],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/academics/grading-categories/");
+      return data?.results || data || [];
+    },
   });
 }
 
@@ -165,6 +177,7 @@ export function useEnrollments(classId?: number, academicYearId?: number) {
       const parsed = paginatedEnrollmentListSchema.parse(data);
       return parsed;
     },
+    enabled: !!classId,
   });
 }
 
@@ -188,7 +201,7 @@ export function useReportCards(academicYearId?: number, classId?: number, termId
       const parsed = paginatedReportCardSchema.parse(data);
       return parsed;
     },
-    enabled: !!academicYearId || !!classId,
+    enabled: !!classId,
   });
 }
 
@@ -281,9 +294,139 @@ export function useDownloadReportCardPDF() {
   return useMutation({
     mutationFn: async (reportCardId: number) => {
       const response = await axiosInstance.get(`/academics/report-cards/${reportCardId}/download_pdf/`, {
-        responseType: 'blob', // Important for file downloads
+        responseType: 'blob',
       });
       return response.data;
     },
+  });
+}
+
+export function useAllTeachers() {
+  return useQuery({
+    queryKey: ["teachers"],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get("users/accounts/?role=teacher");
+      const data = raw?.results || raw || [];
+      return data;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useTeacherCourses(teacherId: number | null) {
+  return useQuery({
+    queryKey: ["teacher-courses", teacherId],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(`users/accounts/${teacherId}/teacher-courses/`);
+      const payload = raw?.data || raw;
+      return payload;
+    },
+    enabled: !!teacherId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useAllCourses(page: number = 1, search?: string) {
+  return useQuery({
+    queryKey: ["all-courses", page, search],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      params.append("page", page.toString());
+      const { data } = await axiosInstance.get(`/config/courses/?${params.toString()}`);
+      return data;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useCourseAssessmentPolicies(courseIds?: number[]) {
+  return useQuery({
+    queryKey: ["course-assessment-policies", courseIds],
+    queryFn: async () => {
+      if (!courseIds || courseIds.length === 0) return [];
+      const params = courseIds.map(id => `course=${id}`).join("&");
+      const { data: raw } = await axiosInstance.get(`/academics/course-assessment-policies/?${params}`);
+      return raw?.results || raw || [];
+    },
+    enabled: !!courseIds && courseIds.length > 0,
+  });
+}
+
+export function useCourseGradingPolicy(courseId?: number) {
+  return useQuery({
+    queryKey: ["course-grading-policy", courseId],
+    queryFn: async () => {
+      if (!courseId) return null;
+      const { data: raw } = await axiosInstance.get(`/academics/course-grading-policies/?course=${courseId}`);
+      const results = raw?.results || raw || [];
+      return results[0] || null;
+    },
+    enabled: !!courseId,
+  });
+}
+
+export function useGradingCategoryReport(enrollment: number, course: number, term: number) {
+  return useQuery({
+    queryKey: ["grading-report", enrollment, course, term],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(
+        `/academics/grade-calculations/course_report/?enrollment=${enrollment}&course=${course}&term=${term}`
+      );
+      return raw?.data || raw;
+    },
+    enabled: !!enrollment && !!course && !!term,
+  });
+}
+
+export function useTermReportCard(enrollmentId?: number, termId?: number) {
+  return useQuery({
+    queryKey: ["term-report-card", enrollmentId, termId],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(
+        `/academics/report-card-service/term/${enrollmentId}/${termId}/`
+      );
+      return raw?.data || raw;
+    },
+    enabled: !!enrollmentId && !!termId,
+  });
+}
+
+export function useYearReportCard(enrollmentId?: number) {
+  return useQuery({
+    queryKey: ["year-report-card", enrollmentId],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(
+        `/academics/report-card-service/year/${enrollmentId}/`
+      );
+      return raw?.data || raw;
+    },
+    enabled: !!enrollmentId,
+  });
+}
+
+export function useClassRanking(classId?: number, termId?: number) {
+  return useQuery({
+    queryKey: ["class-ranking", classId, termId],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(
+        `/academics/rankings/class/${classId}/${termId}/`
+      );
+      return raw?.data || raw;
+    },
+    enabled: !!classId && !!termId,
+  });
+}
+
+export function useStudentTermGrades(enrollment: number, term: number) {
+  return useQuery({
+    queryKey: ["student-term-grades", enrollment, term],
+    queryFn: async () => {
+      const { data: raw } = await axiosInstance.get(
+        `/academics/grade-calculations/term_grades/?enrollment=${enrollment}&term=${term}`
+      );
+      return raw?.data || raw;
+    },
+    enabled: !!enrollment && !!term,
   });
 }

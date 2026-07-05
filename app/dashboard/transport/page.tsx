@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DataTable } from "@/components/ui/data-table";
@@ -22,6 +22,8 @@ import {
   CheckCircle,
   XCircle,
   Power,
+  Printer,
+  Download,
 } from "lucide-react";
 
 import {
@@ -33,9 +35,12 @@ import {
 } from "@/lib/mock/transport";
 import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
+import { useAuth } from "@/lib/auth-context";
 import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum, PeriodCategory, PeriodCategoryLabels } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -59,6 +64,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const formatDate = (value?: string | Date | null) => {
   if (!value) return "Not set";
@@ -90,8 +97,29 @@ const isLicenseExpiringSoon = (expirationDate?: string | null) => {
   return daysUntilExpiration >= 0 && daysUntilExpiration <= 30;
 };
 
+const TABS = [
+  { value: "subscriptions", label: "Subscriptions" },
+  { value: "checkins", label: "Check-ins" },
+  { value: "itineraries", label: "Routes" },
+  { value: "drivers", label: "Drivers" },
+  { value: "vehicles", label: "Vehicles" },
+] as const;
+
+const ROLE_TABS: Record<string, string[]> = {
+  receptionist: ["subscriptions"],
+  driver: ["subscriptions", "checkins", "itineraries", "vehicles"],
+};
+
 export default function TransportDashboard() {
+  const { user } = useAuth();
+  const allowedTabs = (user?.role && ROLE_TABS[user.role]) || TABS.map((t) => t.value);
   const [activeTab, setActiveTab] = useState("subscriptions");
+
+  useEffect(() => {
+    if (!allowedTabs.includes(activeTab)) {
+      setActiveTab(allowedTabs[0] || "subscriptions");
+    }
+  }, [allowedTabs, activeTab]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchSubscription, setSearchSubscription] = useState("");
   const [filterSubscriptionStatus, setFilterSubscriptionStatus] = useState("all");
@@ -114,10 +142,59 @@ export default function TransportDashboard() {
   const [isVehicleDialogOpen, setIsVehicleDialogOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<VehicleSimple | null>(null);
 
+  const [isChangeVehicleModalOpen, setIsChangeVehicleModalOpen] = useState(false);
+  const [selectedItineraryForChange, setSelectedItineraryForChange] = useState<any>(null);
+  const [newVehicleId, setNewVehicleId] = useState("");
+
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedItineraryForHistory, setSelectedItineraryForHistory] = useState<any>(null);
+
+  const [isCreateRouteModalOpen, setIsCreateRouteModalOpen] = useState(false);
+  const [newRouteVehicle, setNewRouteVehicle] = useState("");
+  const [newRouteFees, setNewRouteFees] = useState("");
+  const [newRouteState, setNewRouteState] = useState(true);
+
+  const [filterPlate, setFilterPlate] = useState("");
+  const [filterDriver, setFilterDriver] = useState("all");
+  const [filterItinerary, setFilterItinerary] = useState("all");
+  const [filterAcademicYear, setFilterAcademicYear] = useState("");
+
   const debouncedVehicleSearch = useDebounce(searchVehicle, 500);
   const debouncedDriverSearch = useDebounce(searchDriver, 500);
   const debouncedSubscriptionSearch = useDebounce(searchSubscription, 500);
   const debouncedCheckInSearch = useDebounce(searchCheckIn, 500);
+  const debouncedPlateSearch = useDebounce(filterPlate, 500);
+
+  const queryClient = useQueryClient();
+
+  const { data: yearsData } = useQuery({
+    queryKey: ["academic-years"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/academics/years/");
+      return (res.data?.results || []) as Array<{ id: number; start_year: number; end_year: number; is_current: boolean; name?: string }>;
+    },
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const { data: allVehiclesData } = useQuery({
+    queryKey: ["all-vehicles"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/transport/vehicle/", { params: { page: 1 } });
+      const results = res.data?.results || res.data || [];
+      return Array.isArray(results) ? results : [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: feesData } = useQuery({
+    queryKey: ["fees"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/finance/fees/");
+      const results = res.data?.results || res.data || [];
+      return Array.isArray(results) ? results : [];
+    },
+    staleTime: 1000 * 60 * 5,
+  });
 
   const {
     data: vehicleData,
@@ -156,6 +233,10 @@ export default function TransportDashboard() {
     search: debouncedSubscriptionSearch,
     status: filterSubscriptionStatus === "all" ? undefined : filterSubscriptionStatus,
     student: filterSubscriptionStudent === "all" ? undefined : filterSubscriptionStudent,
+    plate: debouncedPlateSearch || undefined,
+    driver: filterDriver === "all" ? undefined : filterDriver,
+    itinerary: filterItinerary === "all" ? undefined : filterItinerary,
+    academic_year: filterAcademicYear || undefined,
   });
 
   const {
@@ -233,13 +314,21 @@ export default function TransportDashboard() {
       setIsSubscriptionDialogOpen(false);
       setSelectedSubscription(null);
     } catch (error: any) {
-      console.error("Update enrollment error:", error);
+      console.error("Update error:", error);
       const errorMessage = error.response?.data?.errors?.non_field_errors?.[0] || 
                            error.response?.data?.message || 
                            error.message || 
                            "Failed to update enrollment";
       toast.error(errorMessage, { id: loadingToast });
     }
+  };
+
+  const handleValidateSubscription = async () => {
+    if (!selectedSubscription) return;
+    await updateSubscriptionMutation.mutateAsync({
+      id: selectedSubscription.id,
+      data: { status: TransportStatusEnum.Active },
+    });
   };
 
   const openEditSubscription = (subscription: any) => {
@@ -277,6 +366,92 @@ export default function TransportDashboard() {
   const filteredSubscriptions = subscriptionData?.results || [];
 
   const filteredCheckIns = checkInData?.results || [];
+
+  const downloadPDF = (title: string, headers: string[], rows: string[][], filename: string) => {
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(37, 99, 235);
+    doc.text(`EDUCORE - ${title}`, 14, 15);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 250, 15);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(14, 18, 282, 18);
+    autoTable(doc, {
+      head: [headers],
+      body: rows,
+      startY: 23,
+      theme: "striped",
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: "bold" },
+      margin: { left: 14, right: 14 },
+    });
+    doc.save(`${filename}.pdf`);
+  };
+
+  const downloadSubscriptions = () => {
+    const headers = ["Student", "Enrollment #", "Route", "Date", "Plate #", "Driver", "Period", "Payment", "Status"];
+    const rows = filteredSubscriptions.map((s: any) => [
+      s.student_name || "",
+      s.student_enrollment || "",
+      s.itinerary_detail?.registration_number || "N/A",
+      s.enrollment_date ? new Date(s.enrollment_date).toLocaleDateString() : "",
+      s.itinerary_detail?.vehicle_detail?.plate_number || s.itinerary_detail?.vehicle_detail?.registration || "—",
+      s.itinerary_detail?.drivers?.map((d: any) => d.user_name).join(", ") || "—",
+      PeriodCategoryLabels[s.period_category as PeriodCategory] || `${s.period_category} months`,
+      s.payment_status ? "In Order" : "Not in Order",
+      s.status || "",
+    ]);
+    downloadPDF("Transport Subscriptions", headers, rows, "transport-subscriptions");
+  };
+
+  const downloadItineraries = () => {
+    const headers = ["Route ID", "Vehicle", "Fees Period", "Cost", "Status"];
+    const rows = filteredItineraries.map((r: any) => [
+      r.registration_number || "",
+      r.vehicle_detail?.model || "N/A",
+      r.fees_label || "",
+      r.fees_amount ? `BIF ${Number(r.fees_amount).toLocaleString()}` : "—",
+      r.state ? "Active" : "Inactive",
+    ]);
+    downloadPDF("Transport Routes", headers, rows, "transport-routes");
+  };
+
+  const downloadCheckIns = () => {
+    const headers = ["Student", "Route", "Check-in Time", "Status"];
+    const rows = filteredCheckIns.map((c: any) => [
+      c.student_name || "",
+      `Route ${c.itinerary || "N/A"}`,
+      c.checked_at ? new Date(c.checked_at).toLocaleString() : "",
+      c.status ? "Active" : "Inactive",
+    ]);
+    downloadPDF("Transport Check-ins", headers, rows, "transport-checkins");
+  };
+
+  const downloadDrivers = () => {
+    const headers = ["Name", "Email", "Assigned Vehicle", "License Number", "License Expiration"];
+    const rows = filteredDrivers.map((d: any) => [
+      d.user_name || "",
+      d.user_email || "Not set",
+      getVehicleLabel(d),
+      d.driving_license_number || "",
+      d.driving_license_expiration_date ? new Date(d.driving_license_expiration_date).toLocaleDateString() : "Not set",
+    ]);
+    downloadPDF("Transport Drivers", headers, rows, "transport-drivers");
+  };
+
+  const downloadVehicles = () => {
+    const headers = ["License Plate", "Model", "Capacity", "Status"];
+    const rows = filteredVehicles.map((v: any) => [
+      v.registration || "",
+      v.model || "",
+      v.capacity?.toString() || "",
+      v.status || "",
+    ]);
+    downloadPDF("Fleet Vehicles", headers, rows, "transport-vehicles");
+  };
 
   if (isGlobalLoading) {
     return (
@@ -316,7 +491,7 @@ export default function TransportDashboard() {
           value={stats.subscriptions.active + stats.subscriptions.inactive}
           subtitle={`${stats.subscriptions.active} active`}
           icon={<Users className="w-6 h-6" />}
-          trend="+12%"
+          trend={12}
         />
         <KpiCard
           title="Vehicles"
@@ -340,12 +515,10 @@ export default function TransportDashboard() {
 
       {/* Tabs Section */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-5 w-full">
-          <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-          <TabsTrigger value="checkins">Check-ins</TabsTrigger>
-          <TabsTrigger value="itineraries">Routes</TabsTrigger>
-          <TabsTrigger value="drivers">Drivers</TabsTrigger>
-          <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${allowedTabs.length}, minmax(0, 1fr))` }}>
+          {TABS.filter((t) => allowedTabs.includes(t.value)).map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+          ))}
         </TabsList>
 
 
@@ -362,16 +535,18 @@ export default function TransportDashboard() {
                   Manage student transport enrollment and status
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setSelectedSubscription(null);
-                  setIsSubscriptionDialogOpen(true);
-                }}
-                className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Enrollment
-              </Button>
+              {user?.role === "transporter" && (
+                <Button
+                  onClick={() => {
+                    setSelectedSubscription(null);
+                    setIsSubscriptionDialogOpen(true);
+                  }}
+                  className="rounded-xl shadow-lg bg-blue-600 hover:bg-blue-700 transition-all font-semibold"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Enrollment
+                </Button>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -454,6 +629,49 @@ export default function TransportDashboard() {
               </select>
             </div>
 
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <input
+                placeholder="Search plate number..."
+                value={filterPlate}
+                onChange={(e) => { setFilterPlate(e.target.value); setSubscriptionPage(1); }}
+                className="w-full sm:w-48 pl-4 pr-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              />
+              <select
+                value={filterDriver}
+                onChange={(e) => { setFilterDriver(e.target.value); setSubscriptionPage(1); }}
+                className="w-full sm:w-48 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Drivers</option>
+                {driverData?.results?.map((d: any) => (
+                  <option key={d.id} value={d.id}>{d.user_name}</option>
+                ))}
+              </select>
+              <select
+                value={filterItinerary}
+                onChange={(e) => { setFilterItinerary(e.target.value); setSubscriptionPage(1); }}
+                className="w-full sm:w-48 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Routes</option>
+                {itineraryData?.results?.map((r: any) => (
+                  <option key={r.id} value={r.id}>{r.registration_number}</option>
+                ))}
+              </select>
+              <select
+                value={filterAcademicYear}
+                onChange={(e) => { setFilterAcademicYear(e.target.value); setSubscriptionPage(1); }}
+                className="w-full sm:w-48 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Years</option>
+                {yearsData?.map((y: any) => (
+                  <option key={y.id} value={y.id}>{y.name || `${y.start_year}/${y.end_year}`}{y.is_current ? " (Current)" : ""}</option>
+                ))}
+              </select>
+              <Button variant="outline" size="sm" onClick={downloadSubscriptions} className="gap-2 whitespace-nowrap">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
+            </div>
+
             {isSubscriptionsLoading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 className="w-10 h-10 animate-spin text-blue-600" />
@@ -476,14 +694,23 @@ export default function TransportDashboard() {
                       render: (it) => it?.registration_number || "N/A"
                     },
                     {
-                      key: "status" as any,
-                      label: "Status",
-                      render: (status) => <StatusBadge status={status as any} />
-                    },
-                    {
                       key: "enrollment_date" as any,
                       label: "Date",
                       render: (date) => new Date(date).toLocaleDateString()
+                    },
+                    {
+                      key: "plate_number" as any,
+                      label: "Plate #",
+                      render: (_, sub: any) => sub?.itinerary_detail?.vehicle_detail?.plate_number || sub?.itinerary_detail?.vehicle_detail?.registration || "—"
+                    },
+                    {
+                      key: "driver_name" as any,
+                      label: "Driver",
+                      render: (_, sub: any) => {
+                        const drivers = sub?.itinerary_detail?.drivers;
+                        if (!drivers || drivers.length === 0) return "—";
+                        return drivers.map((d: any) => d.user_name).join(", ");
+                      }
                     },
                     {
                       key: "period_category" as any,
@@ -491,28 +718,68 @@ export default function TransportDashboard() {
                       render: (p) => PeriodCategoryLabels[p as PeriodCategory] || `${p} months`
                     },
                     {
+                      key: "payment_status" as any,
+                      label: "Payment",
+                      render: (payment_status) => {
+                        const isInOrder = payment_status === "in_order";
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            isInOrder
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${isInOrder ? "bg-emerald-500" : "bg-rose-500"}`} />
+                            {isInOrder ? "In Order" : "Not in Order"}
+                          </span>
+                        );
+                      }
+                    },
+                    {
+                      key: "status" as any,
+                      label: "Status",
+                      render: (status) => <StatusBadge status={status as any} />
+                    },
+                    {
                       key: "id" as any,
                       label: "Actions",
                       render: (_, subscription: any) => {
                         const status = subscription.status?.toLowerCase();
                         const isActive = status === "active";
-                        
+                        const isReceptionist = user?.role === "receptionist";
+                        const isDriver = user?.role === "driver";
+
                         return (
                           <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditSubscription(subscription);
-                              }}
-                              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                              title="Edit"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
+                            {!isActive && !isDriver && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditSubscription(subscription);
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleToggleSubscriptionStatus(subscription);
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                  title="Validate"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
 
-                            {!isActive && (
+                            {isActive && !isReceptionist && !isDriver && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -520,25 +787,12 @@ export default function TransportDashboard() {
                                   e.stopPropagation();
                                   handleToggleSubscriptionStatus(subscription);
                                 }}
-                                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                                title="Validate"
+                                className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                                title="Deactivate"
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                <XCircle className="h-4 w-4" />
                               </Button>
                             )}
-
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleSubscriptionStatus(subscription);
-                              }}
-                              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                              title={isActive ? "Deactivate" : "Disable"}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
                           </div>
                         );
                       }
@@ -597,13 +851,24 @@ export default function TransportDashboard() {
         {/* Routes Tab */}
         <TabsContent value="itineraries" className="space-y-6">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Transport Routes
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {itineraryData?.count || 0} routes configured
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Transport Routes
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {itineraryData?.count || 0} routes configured
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={downloadItineraries} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+                <Button onClick={() => { setNewRouteVehicle(""); setNewRouteFees(""); setNewRouteState(true); setIsCreateRouteModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Route
+                </Button>
+              </div>
             </div>
 
             <div className="relative">
@@ -638,9 +903,9 @@ export default function TransportDashboard() {
                     },
                     { key: "fees_label", label: "Fees Period", sortable: true },
                     {
-                      key: "fees",
+                      key: "fees_amount" as any,
                       label: "Cost",
-                      render: (f) => `BIF ${f}`
+                      render: (v) => v ? `BIF ${Number(v).toLocaleString()}` : "—"
                     },
                     {
                       key: "state" as any,
@@ -649,6 +914,39 @@ export default function TransportDashboard() {
                         <StatusBadge
                           status={s ? "active" : "inactive"}
                         />
+                      )
+                    },
+                    {
+                      key: "id" as any,
+                      label: "Actions",
+                      render: (_: any, item: any) => (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedItineraryForChange(item);
+                              setNewVehicleId(item.vehicule?.toString() || "");
+                              setIsChangeVehicleModalOpen(true);
+                            }}
+                            className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            title="Change Vehicle"
+                          >
+                            <Truck className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedItineraryForHistory(item);
+                              setIsHistoryModalOpen(true);
+                            }}
+                            className="h-8 w-8 rounded-lg text-purple-600 hover:text-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                            title="History"
+                          >
+                            <History className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )
                     },
                   ]}
@@ -716,6 +1014,10 @@ export default function TransportDashboard() {
                   Monitor daily student check-ins and vehicle boarding
                 </p>
               </div>
+              <Button variant="outline" size="sm" onClick={downloadCheckIns} className="gap-2">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -816,13 +1118,19 @@ export default function TransportDashboard() {
         {/* Drivers Tab */}
         <TabsContent value="drivers" className="space-y-6">
           <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Transport Drivers
-              </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                {filteredDrivers.length} drivers
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  Transport Drivers
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {filteredDrivers.length} drivers
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={downloadDrivers} className="gap-2">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -938,6 +1246,10 @@ export default function TransportDashboard() {
                   {vehicleData?.count || 0} vehicles in total
                 </p>
               </div>
+              <Button variant="outline" size="sm" onClick={downloadVehicles} className="gap-2">
+                <Download className="h-4 w-4" />
+                PDF
+              </Button>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
@@ -1104,6 +1416,147 @@ export default function TransportDashboard() {
           record={selectedVehicle}
         />
       </Tabs>
+
+      {/* Change Vehicle Modal */}
+      <Dialog open={isChangeVehicleModalOpen} onOpenChange={setIsChangeVehicleModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Vehicle</DialogTitle>
+            <DialogDescription>
+              Assign a different vehicle to route <strong>{selectedItineraryForChange?.registration_number}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current Vehicle</label>
+              <p className="text-sm text-muted-foreground">
+                {selectedItineraryForChange?.vehicle_detail?.model || selectedItineraryForChange?.vehicle_detail?.registration || "N/A"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">New Vehicle</label>
+              <select
+                value={newVehicleId}
+                onChange={(e) => setNewVehicleId(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a vehicle...</option>
+                {(allVehiclesData || []).map((v: any) => (
+                  <option key={v.id} value={v.id}>
+                    {v.registration} - {v.model} ({v.plate_number || "N/A"})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsChangeVehicleModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!newVehicleId}
+              onClick={async () => {
+                try {
+                  await axiosInstance.post(`/transport/itinerary/${selectedItineraryForChange.id}/change_vehicle/`, { vehicle_id: parseInt(newVehicleId) });
+                  toast.success("Vehicle changed successfully");
+                  queryClient.invalidateQueries({ queryKey: ["transport-itineraries"] });
+                  setIsChangeVehicleModalOpen(false);
+                } catch {
+                  toast.error("Failed to change vehicle");
+                }
+              }}
+            >
+              Change Vehicle
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Modal */}
+      <Dialog open={isHistoryModalOpen} onOpenChange={setIsHistoryModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Route Change History</DialogTitle>
+            <DialogDescription>
+              Vehicle change logs for route <strong>{selectedItineraryForHistory?.registration_number}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <HistoryModalContent itineraryId={selectedItineraryForHistory?.id} />
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Route Modal */}
+      <Dialog open={isCreateRouteModalOpen} onOpenChange={setIsCreateRouteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Transport Route</DialogTitle>
+            <DialogDescription>Create a new itinerary with a vehicle and fees.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vehicle</label>
+              <select
+                value={newRouteVehicle}
+                onChange={(e) => setNewRouteVehicle(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select a vehicle...</option>
+                {(allVehiclesData || []).map((v: any) => (
+                  <option key={v.id} value={v.id}>
+                    {v.registration} - {v.model} ({v.plate_number || "N/A"})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fees</label>
+              <select
+                value={newRouteFees}
+                onChange={(e) => setNewRouteFees(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select fees...</option>
+                {(feesData || []).map((f: any) => (
+                  <option key={f.id} value={f.id}>
+                    {f.label} — BIF {f.amount}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="route-state"
+                checked={newRouteState}
+                onChange={(e) => setNewRouteState(e.target.checked)}
+                className="rounded border-slate-300 dark:border-slate-600"
+              />
+              <label htmlFor="route-state" className="text-sm font-medium">Active</label>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setIsCreateRouteModalOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!newRouteVehicle || !newRouteFees}
+              onClick={async () => {
+                try {
+                  await axiosInstance.post("/transport/itinerary/", {
+                    vehicule: parseInt(newRouteVehicle),
+                    fees: parseInt(newRouteFees),
+                    state: newRouteState,
+                  });
+                  toast.success("Route created successfully");
+                  queryClient.invalidateQueries({ queryKey: ["transport-itineraries"] });
+                  setIsCreateRouteModalOpen(false);
+                } catch {
+                  toast.error("Failed to create route");
+                }
+              }}
+            >
+              Create Route
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <SubscriptionDialog
         isOpen={isSubscriptionDialogOpen}
         onClose={() => {
@@ -1117,6 +1570,7 @@ export default function TransportDashboard() {
             handleCreateSubscription(data);
           }
         }}
+        onValidate={handleValidateSubscription}
         record={selectedSubscription}
       />
     </div>
@@ -1127,11 +1581,13 @@ function SubscriptionDialog({
   isOpen,
   onClose,
   onSubmit,
+  onValidate,
   record,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: TransportSubscriptionCreate | Partial<TransportSubscriptionCreate>) => void;
+  onValidate?: () => void;
   record?: any | null;
 }) {
   const { data: studentsData } = useStudents();
@@ -1143,8 +1599,9 @@ function SubscriptionDialog({
   const [enrollmentDate, setEnrollmentDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Active);
+  const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Inactive);
   const [openStudentSelect, setOpenStudentSelect] = useState(false);
+  const [isValidated, setIsValidated] = useState(false);
 
   useEffect(() => {
     if (record && isOpen) {
@@ -1152,13 +1609,13 @@ function SubscriptionDialog({
       setItineraryId(record.itinerary?.toString() || "");
       setPeriodCategory(record.period_category?.toString() || PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(record.enrollment_date || new Date().toISOString().split("T")[0]);
-      setStatus(record.status || TransportStatusEnum.Active);
+      setStatus(record.status || TransportStatusEnum.Inactive);
     } else if (isOpen) {
       setStudentId("");
       setItineraryId("");
       setPeriodCategory(PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(new Date().toISOString().split("T")[0]);
-      setStatus(TransportStatusEnum.Active);
+      setStatus(TransportStatusEnum.Inactive);
     }
   }, [record, isOpen]);
 
@@ -1178,6 +1635,18 @@ function SubscriptionDialog({
       enrollment_date: enrollmentDate,
       status,
     });
+  };
+
+  const handleValidate = async () => {
+    if (!onValidate || !record) return;
+    const loadingToast = toast.loading("Validating subscription...");
+    try {
+      await onValidate();
+      setIsValidated(true);
+      toast.success("Subscription validated successfully!", { id: loadingToast });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to validate subscription", { id: loadingToast });
+    }
   };
 
   return (
@@ -1321,7 +1790,16 @@ function SubscriptionDialog({
             >
               Cancel
             </Button>
-            {record?.status !== "active" && (
+            {record && record.status !== "active" && !isValidated && onValidate && (
+              <Button
+                type="button"
+                onClick={handleValidate}
+                className="rounded-xl px-6 h-11 bg-green-600 hover:bg-green-700 text-white font-bold shadow-lg shadow-green-200 dark:shadow-none transition-all"
+              >
+                Validate
+              </Button>
+            )}
+            {record?.status !== "active" && !isValidated && (
               <Button
                 type="submit"
                 className="rounded-xl px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 dark:shadow-none transition-all"
@@ -1333,5 +1811,49 @@ function SubscriptionDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function HistoryModalContent({ itineraryId }: { itineraryId: number | undefined }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["itinerary-detail", itineraryId],
+    queryFn: async () => {
+      if (!itineraryId) return null;
+      const res = await axiosInstance.get(`/transport/itinerary/${itineraryId}/`);
+      return res.data;
+    },
+    enabled: !!itineraryId,
+  });
+
+  const logs = data?.change_logs || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 py-4 max-h-80 overflow-y-auto">
+      {logs.length > 0 ? (
+        logs.map((log: any) => (
+          <div key={log.id} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 last:border-0">
+            <div>
+              <p className="text-sm font-medium">
+                {log.old_vehicle_label || "N/A"} → {log.new_vehicle_label || "N/A"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {log.changed_by_name || "System"} — {new Date(log.changed_at).toLocaleString()}
+              </p>
+            </div>
+            <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-muted-foreground text-center py-8">No vehicle changes recorded for this route.</p>
+      )}
+    </div>
   );
 }

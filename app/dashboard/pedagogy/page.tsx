@@ -38,9 +38,13 @@ import {
   useGeneratePreschoolAnnualReportCards,
   useGenerateElementaryAnnualReportCards,
   useGenerateMiddleSchoolAnnualReportCards,
-  useGenerateHighSchoolAnnualReportCards 
+  useGenerateHighSchoolAnnualReportCards,
+  useAllTeachers,
+  useTeacherCourses,
+  useAllCourses,
+  useCourseAssessmentPolicies,
 } from "@/hooks/use-pedagogy"
-import { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { CreateAssessmentDialog } from "@/components/pedagogy/create-assessment-dialog"
@@ -58,6 +62,8 @@ export default function PedagogyPage() {
   const [selectedClassId, setSelectedClassId] = useState<number | undefined>(undefined)
   const [selectedTermId, setSelectedTermId] = useState<number | undefined>(undefined)
   const [classSearch, setClassSearch] = useState("")
+  const [activeTab, setActiveTab] = useState("classes")
+  const [teacherToDetail, setTeacherToDetail] = useState<number | null>(null)
 
   const academicYears = yearsData || []
 
@@ -71,7 +77,10 @@ export default function PedagogyPage() {
   }, [academicYears, selectedYearId])
 
   // Data fetching
-  const { data: classrooms = [], isLoading: classroomsLoading } = useClassRooms(classSearch)
+  const { data: classrooms = [], isLoading: classroomsLoading, isError: classroomsError } = useClassRooms(classSearch)
+  const { data: teachers = [], isLoading: teachersLoading } = useAllTeachers()
+  const { data: allCoursesData } = useAllCourses(1)
+  const { data: teacherOverview, isLoading: teacherOverviewLoading } = useTeacherCourses(teacherToDetail)
   const { data: selectedClass, isLoading: selectedClassLoading } = useClassRoom(selectedClassId || "")
   const isHighSchool = selectedClass?.level === 'high'
   
@@ -96,6 +105,8 @@ export default function PedagogyPage() {
   const enrollments = enrollmentsData?.results || []
   const courses = coursesData?.results || []
   const allGrades = gradesData?.results || []
+  const courseIds = useMemo(() => courses.map((c: any) => c.id), [courses])
+  const { data: allPolicies = [] } = useCourseAssessmentPolicies(courseIds)
 
   const [isCreateAssessmentOpen, setIsCreateAssessmentOpen] = useState(false)
   const [activeCourseForAssessment, setActiveCourseForAssessment] = useState<number | undefined>(undefined)
@@ -115,6 +126,19 @@ export default function PedagogyPage() {
     }
   }, [terms, selectedTermId])
 
+  // Build policy lookup: { courseId: { assessmentTypeId: { weight, categoryCode } } }
+  const policyMap = useMemo(() => {
+    const map: Record<number, Record<number, { weight: number; categoryCode: string }>> = {}
+    allPolicies.forEach((p: any) => {
+      if (!map[p.course]) map[p.course] = {}
+      map[p.course][p.assessment_type] = {
+        weight: parseFloat(p.weight) || 0,
+        categoryCode: p.category_label || '',
+      }
+    })
+    return map
+  }, [allPolicies])
+
   const classStats = useMemo(() => {
     if (!selectedClassId || enrollments.length === 0) return null
 
@@ -131,68 +155,70 @@ export default function PedagogyPage() {
 
     const studentAverages = enrollments.map(enr => {
       const studentCoursesGrades = gradesByEnrollment[enr.id] || {}
-      const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
-      const hwCodes = ['HOMEWORK']
-      // Everything else is Classwork (CW)
 
       const coursePercentages = Object.entries(studentCoursesGrades).map(([courseId, courseGrades]) => {
         const course = courses.find(c => c.id === parseInt(courseId))
         if (!course) return null
 
-        const dwMax = parseFloat(String(course.max_points_dw || "35")) || 35
-        const examMax = parseFloat(String(course.max_points_exam || "35")) || 35
-        const totalMax = parseFloat(String(course.max_points_total || "0")) || (dwMax + examMax)
+        const coursePolicies = policyMap[parseInt(courseId)] || {}
+        const hasPolicies = Object.keys(coursePolicies).length > 0
 
-        let rawSum = 0
-        let percentage = 0
+        // Group grades by assessment_type to apply policy weights
+        const typeGroups: Record<string, { grades: any[]; weight: number }> = {}
+        const examCodes = ['EXAM', 'FINAL', 'MIDTERM', 'AQA', 'PROJECT']
 
-        if (isHighSchool) {
-          // Weighted Logic for High School
-          const hwGrades = (courseGrades as any[]).filter(g => hwCodes.includes(g.assessment_type_code))
-          const examGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
-          const cwGrades = (courseGrades as any[]).filter(g => !hwCodes.includes(g.assessment_type_code) && !examCodes.includes(g.assessment_type_code))
+        for (const g of courseGrades as any[]) {
+          const atCode = g.assessment_type_code
+          const atId = g.assessment_type_detail?.id || g.assessment_type
+          const policy = coursePolicies[atId]
+          const weight = policy?.weight || 0
 
-          const hwAvg = hwGrades.length > 0 ? hwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / hwGrades.length : 100 // Default to 100 if no HW yet? No, 0.
-          const cwAvg = cwGrades.length > 0 ? cwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cwGrades.length : 0
-          const exAvg = examGrades.length > 0 ? examGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / examGrades.length : 0
-
-          // Weights: HW 15%, CW 35%, EX 50%
-          const weightedPct = (hwGrades.length > 0 ? (hwAvg * 0.15) : 0) + 
-                              (cwGrades.length > 0 ? (cwAvg * 0.35) : 0) + 
-                              (examGrades.length > 0 ? (exAvg * 0.50) : 0)
-          
-          // Re-normalize weights if some categories are missing
-          const totalWeight = (hwGrades.length > 0 ? 0.15 : 0) + 
-                             (cwGrades.length > 0 ? 0.35 : 0) + 
-                             (examGrades.length > 0 ? 0.50 : 0)
-          
-          percentage = totalWeight > 0 ? (weightedPct / totalWeight) : 0
-          rawSum = (percentage / 100) * totalMax
-        } else {
-          // Standard Logic for Primary/Middle
-          const cDwGrades = (courseGrades as any[]).filter(g => !examCodes.includes(g.assessment_type_code))
-          const cExGrades = (courseGrades as any[]).filter(g => examCodes.includes(g.assessment_type_code))
-
-          const dwAvgPct = cDwGrades.length > 0 
-            ? cDwGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cDwGrades.length 
-            : 0
-          const exAvgPct = cExGrades.length > 0 
-            ? cExGrades.reduce((acc, g) => acc + (parseFloat(g.percentage) || 0), 0) / cExGrades.length 
-            : 0
-
-          const dwScore = (dwAvgPct / 100) * dwMax
-          const exScore = (exAvgPct / 100) * examMax
-          rawSum = dwScore + exScore
-          percentage = totalMax > 0 ? (rawSum / totalMax) * 100 : 0
+          if (!typeGroups[atCode]) {
+            typeGroups[atCode] = { grades: [], weight }
+          }
+          typeGroups[atCode].grades.push(g)
         }
+
+        // Compute weighted percentage using policies or fallback
+        let totalWeightedPct = 0
+        let totalActiveWeight = 0
+
+        if (hasPolicies) {
+          for (const [, group] of Object.entries(typeGroups)) {
+            if (group.grades.length === 0 || group.weight === 0) continue
+            const groupAvg = group.grades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / group.grades.length
+            totalWeightedPct += groupAvg * group.weight / 100
+            totalActiveWeight += group.weight
+          }
+        } else {
+          // Fallback: split grades into DW and Exam categories
+          const dwGrades = (courseGrades as any[]).filter((g: any) => !examCodes.includes(g.assessment_type_code))
+          const exGrades = (courseGrades as any[]).filter((g: any) => examCodes.includes(g.assessment_type_code))
+
+          if (dwGrades.length > 0) {
+            const dwAvg = dwGrades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / dwGrades.length
+            totalWeightedPct += dwAvg * (dwGrades.length)
+            totalActiveWeight += dwGrades.length
+          }
+          if (exGrades.length > 0) {
+            const exAvg = exGrades.reduce((acc: number, g: any) => acc + (parseFloat(g.percentage) || 0), 0) / exGrades.length
+            totalWeightedPct += exAvg * (exGrades.length)
+            totalActiveWeight += exGrades.length
+          }
+        }
+
+        const percentage = totalActiveWeight > 0 ? (totalWeightedPct / totalActiveWeight) : 0
+        const totalMax = 100
+        const rawSum = (percentage / 100) * totalMax
 
         return {
           courseId: parseInt(courseId),
           percentage,
           rawSum,
-          totalMax
+          totalMax,
+          hasPolicies
         }
-      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number }[]
+      }).filter(Boolean) as { courseId: number, percentage: number, rawSum: number, totalMax: number, hasPolicies: boolean }[]
 
       const avg = coursePercentages.length > 0 
         ? coursePercentages.reduce((acc, cp) => acc + cp.percentage, 0) / coursePercentages.length 
@@ -209,26 +235,22 @@ export default function PedagogyPage() {
 
       const isKindergarten = selectedClass?.level === 'preschool'
       
-      // Calculate GPA and Letter based on avg
       let letter = "F"
       let gpa = 0
       
       if (isKindergarten) {
-        // Kindergarten Scale: Qualitative acquisition levels
         if (avg >= 90) letter = "Expert";
         else if (avg >= 75) letter = "Mastered";
         else if (avg >= 50) letter = "Developing";
         else letter = "Emerging";
         gpa = 0
       } else if (isPrimary) {
-        // Elementary School Scale: A (>80), B (60-80), C (40-60), D (<40)
         if (avg >= 80) letter = "A";
         else if (avg >= 60) letter = "B";
         else if (avg >= 40) letter = "C";
         else letter = "D";
         gpa = 0
       } else {
-        // High School / Middle Scale (requested)
         if (avg >= 90) { letter = "A"; gpa = 4.0 }
         else if (avg >= 80) { letter = "B"; gpa = 3.0 }
         else if (avg >= 70) { letter = "C"; gpa = 2.0 }
@@ -258,16 +280,29 @@ export default function PedagogyPage() {
       totalCourses: courses.length,
       gradesByEnrollment
     }
-  }, [selectedClassId, selectedClass, enrollments, courses, allGrades])
+  }, [selectedClassId, selectedClass, enrollments, courses, allGrades, policyMap])
 
   // Grade distribution for chart
   const distribution = useMemo(() => {
-    const dist: Record<string, number> = { "A": 0, "B": 0, "C": 0, "D": 0, "F": 0 }
+    if (isHighSchool) {
+      const dist: Record<string, number> = { "A": 0, "B": 0, "C": 0, "D": 0, "F": 0 }
+      classStats?.studentAverages.forEach(s => {
+        if (dist[s.letter] !== undefined) dist[s.letter]++
+      })
+      return Object.keys(dist).map(key => ({ range: key, count: dist[key] }))
+    }
+    const ranges = ["0-20%", "20-40%", "40-60%", "60-80%", "80-100%"]
+    const dist: Record<string, number> = Object.fromEntries(ranges.map(r => [r, 0]))
     classStats?.studentAverages.forEach(s => {
-      if (dist[s.letter] !== undefined) dist[s.letter]++
+      const avg = s.average
+      if (avg < 20) dist["0-20%"]++
+      else if (avg < 40) dist["20-40%"]++
+      else if (avg < 60) dist["40-60%"]++
+      else if (avg < 80) dist["60-80%"]++
+      else dist["80-100%"]++
     })
-    return Object.keys(dist).map(key => ({ range: key, count: dist[key] }))
-  }, [classStats])
+    return ranges.map(key => ({ range: key, count: dist[key] }))
+  }, [classStats, isHighSchool])
 
   const handleGenerateGroupReportCards = async () => {
     if (!selectedTermId || !selectedClassId) return
@@ -397,14 +432,28 @@ export default function PedagogyPage() {
     )
   }
 
+  if (classroomsError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <AlertCircle className="w-12 h-12 text-destructive" />
+        <h3 className="mt-2 font-semibold text-lg">Failed to load classes</h3>
+        <p className="text-muted-foreground">Check that the backend server is running and accessible.</p>
+        <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    )
+  }
+
   // --- SELECTION VIEW ---
   if (!selectedClassId) {
+    const totalTeachers = teachers.length
+    const totalCourses = allCoursesData?.count || 0
+
     return (
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Pedagogy Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Select a class to manage courses, assessments and grades.</p>
+            <p className="text-muted-foreground mt-1">Manage classes, teachers, courses, assessments and grades.</p>
           </div>
           <div className="flex items-center gap-3">
             <Select 
@@ -423,64 +472,204 @@ export default function PedagogyPage() {
                 ))}
               </SelectContent>
             </Select>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search classes..."
-                className="pl-8"
-                value={classSearch}
-                onChange={(e) => setClassSearch(e.target.value)}
-              />
-            </div>
+            {activeTab === "classes" && (
+              <div className="relative w-64">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search classes..."
+                  className="pl-8"
+                  value={classSearch}
+                  onChange={(e) => setClassSearch(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {classrooms.map((cls: any) => (
-            <Card 
-              key={cls.id} 
-              className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
-              onClick={() => setSelectedClassId(cls.id)}
-            >
-              <CardHeader className="pb-3">
+        {/* KPI Cards */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="bg-blue-50/30 border-blue-100 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-blue-600 uppercase">Total Courses</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalCourses}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-50/30 border-purple-100 shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-purple-600 uppercase">Total Teachers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{totalTeachers}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs: Classes / Teachers */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="bg-muted/50 p-1">
+            <TabsTrigger value="classes" className="gap-2">
+              <Users className="w-4 h-4" /> Classes
+            </TabsTrigger>
+            <TabsTrigger value="teachers" className="gap-2">
+              <BookOpen className="w-4 h-4" /> Teachers
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="classes" className="mt-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {classrooms.map((cls: any) => (
+                <Card 
+                  key={cls.id} 
+                  className="group cursor-pointer hover:border-primary/50 hover:shadow-md transition-all"
+                  onClick={() => setSelectedClassId(cls.id)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="font-mono">{cls.code}</Badge>
+                      <Badge className={cn(
+                        "capitalize",
+                        cls.level === 'high' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100' :
+                        cls.level === 'middle' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
+                        'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
+                      )}>
+                        {cls.level}
+                      </Badge>
+                    </div>
+                    <CardTitle className="mt-2 text-xl">{cls.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-4 h-4" />
+                        <span>Roster</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="w-4 h-4" />
+                        <span>{cls.grade_label || 'Manage'}</span>
+                      </div>
+                    </div>
+                    <Button variant="ghost" className="w-full mt-4 group-hover:bg-primary group-hover:text-white transition-colors">
+                      Open Pedagogy
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+              {classrooms.length === 0 && (
+                <div className="col-span-full py-20 text-center">
+                  <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
+                  <h3 className="mt-4 font-semibold text-lg">No classes found</h3>
+                  <p className="text-muted-foreground">Try adjusting your filters or search term.</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="teachers" className="mt-6">
+            <Card className="shadow-sm overflow-hidden border-muted/60">
+              <CardHeader className="bg-muted/10 border-b border-muted/60">
                 <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="font-mono">{cls.code}</Badge>
-                  <Badge className={cn(
-                    "capitalize",
-                    cls.level === 'high' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-100' :
-                    cls.level === 'middle' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
-                    'bg-emerald-100 text-emerald-700 hover:bg-emerald-100'
-                  )}>
-                    {cls.level}
-                  </Badge>
+                  <CardTitle className="text-lg font-semibold">Teachers</CardTitle>
+                  <Badge variant="outline" className="bg-white">{teachers.length} Teachers</Badge>
                 </div>
-                <CardTitle className="mt-2 text-xl">{cls.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>Roster</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BookOpen className="w-4 h-4" />
-                    <span>{cls.grade_label || 'Manage'}</span>
-                  </div>
-                </div>
-                <Button variant="ghost" className="w-full mt-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                  Open Pedagogy
-                </Button>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/20 hover:bg-muted/20">
+                      <TableHead className="font-bold">Name</TableHead>
+                      <TableHead className="font-bold">Username</TableHead>
+                      <TableHead className="font-bold">Email</TableHead>
+                      <TableHead className="text-center font-bold">Courses</TableHead>
+                      <TableHead className="text-right font-bold pr-6">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {teachers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
+                          No teachers found.
+                        </TableCell>
+                      </TableRow>
+                    ) : teachers.map((t: any) => (
+                      <React.Fragment key={t.id}>
+                        <TableRow className="hover:bg-muted/5 group">
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                {(t.user?.first_name?.charAt(0) || t.user?.username?.charAt(0) || '?').toUpperCase()}
+                              </div>
+                              <span>{t.user?.first_name} {t.user?.last_name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{t.user?.username}</code>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{t.user?.email || '—'}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary" className="font-mono">{t.courses_count ?? 0}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right pr-6">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-8 px-2"
+                              onClick={() => setTeacherToDetail(teacherToDetail === t.id ? null : t.id)}
+                            >
+                              <BookOpen className="w-4 h-4 mr-1" /> 
+                              {teacherToDetail === t.id ? 'Hide Details' : 'Details'}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                        {teacherToDetail === t.id && (
+                          <TableRow key={`${t.id}-detail`}>
+                            <TableCell colSpan={5} className="p-4 bg-muted/10">
+                              {teacherOverviewLoading ? (
+                                <div className="flex items-center justify-center py-8">
+                                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                </div>
+                              ) : teacherOverview ? (
+                                <div className="space-y-4">
+                                  <div>
+                                    <h4 className="font-semibold text-sm mb-2">Courses ({teacherOverview.courses?.length || 0})</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {teacherOverview.courses?.length > 0 ? teacherOverview.courses.map((c: any) => (
+                                        <Badge key={c.id} variant="secondary" className="text-xs">
+                                          {c.name} ({c.code})
+                                        </Badge>
+                                      )) : (
+                                        <p className="text-xs text-muted-foreground">No courses assigned.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-sm mb-2">Classes ({teacherOverview.classrooms?.length || 0})</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                      {teacherOverview.classrooms?.length > 0 ? teacherOverview.classrooms.map((c: any) => (
+                                        <Badge key={c.id} variant="outline" className="text-xs">
+                                          {c.name}
+                                        </Badge>
+                                      )) : (
+                                        <p className="text-xs text-muted-foreground">No classes assigned.</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground text-center py-4">Failed to load details.</p>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          )}
+                        </React.Fragment>
+                      ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
-          ))}
-          {classrooms.length === 0 && (
-            <div className="col-span-full py-20 text-center">
-              <LayoutDashboard className="w-12 h-12 text-muted-foreground mx-auto opacity-20" />
-              <h3 className="mt-4 font-semibold text-lg">No classes found</h3>
-              <p className="text-muted-foreground">Try adjusting your filters or search term.</p>
-            </div>
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     )
   }
@@ -687,7 +876,7 @@ export default function PedagogyPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {classStats?.studentAverages.length === 0 ? (
+                    {!classStats || classStats.studentAverages.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={courses.length + (isHighSchool ? 6 : 4)} className="text-center py-20 text-muted-foreground">
                           No student academic records found for this classroom and year.
@@ -725,7 +914,7 @@ export default function PedagogyPage() {
                           const gradeInfo = student.grades[course.id]
                           const percentage = gradeInfo?.score || '0.0'
                           const rawSum = gradeInfo?.rawSum || 0
-                          const maxPoints = gradeInfo?.totalMax || (parseFloat(String(course.max_points_dw || "35")) + parseFloat(String(course.max_points_exam || "35"))) || 70
+                          const maxPoints = gradeInfo?.totalMax || 100
 
                           return (
                             <TableCell key={course.id} className="text-center">
@@ -967,7 +1156,9 @@ export default function PedagogyPage() {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Grade Distribution</CardTitle>
+                <CardTitle>
+                  {isHighSchool ? "Grade Distribution (A-F)" : "Class Performance Distribution"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>

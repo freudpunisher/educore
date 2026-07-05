@@ -9,6 +9,9 @@ export const employeeSchema = z.object({
   phone_number: z.string().nullable(),
   address: z.string(),
   active: z.boolean(),
+  is_deleted: z.boolean().optional().default(false),
+  deleted_at: z.string().nullable().optional(),
+  deleted_by: z.number().nullable().optional(),
 });
 
 export const paginatedEmployeeListSchema = createPaginatedSchema(employeeSchema);
@@ -20,6 +23,8 @@ export type EmployeeListRequest = {
   active?: boolean;
   search?: string;
   page?: number;
+  page_size?: number;
+  include_deleted?: boolean;
 };
 
 export const employeeCreateSchema = z.object({

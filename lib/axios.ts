@@ -5,15 +5,13 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.68:10000/api/"; // Client-side → goes through Next.js proxy (recommended!)
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.88.50:1200/api/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,
   // timeout: 15_000, // 15 seconds
+  // Do NOT set a default Content-Type — axios auto-detects FormData vs JSON
   headers: {
-    "Content-Type": "application/json",
-
-
     // You can add common headers here
   },
   // Important for cookies/auth when calling your own Next.js API routes
@@ -65,19 +63,26 @@ axiosInstance.interceptors.response.use(
       error.response?.status === 401 &&
       error.response?.data?.code === "token_not_valid"
     ) {
-      console.warn("Auth: Invalid token detected, clearing storage and redirecting.");
+      console.warn("Auth: Invalid token detected, clearing storage.");
       localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       localStorage.removeItem("user_data");
 
       if (!isServer) {
-        window.location.href = "/login";
+        window.dispatchEvent(new CustomEvent("auth:unauthorized", {
+          detail: { message: "Session expired. Please log in again." },
+        }));
       }
       return Promise.reject(error);
     }
 
     // Handle 401 globally with token refresh logic
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip for login requests – pass through original error so the form can display the backend message
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("login/")
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -99,12 +104,16 @@ axiosInstance.interceptors.response.use(
           throw new Error("Invalid refresh response");
         }
       } catch (refreshError) {
-        // Force logout, redirect to login
-        console.warn("Auth: Refresh token failed or expired, redirecting to login.");
+        // Auth failed — dispatch event instead of hard redirect
+        console.warn("Auth: Refresh token failed or expired.");
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user_data");
-        if (!isServer) window.location.href = "/login";
+        if (!isServer) {
+          window.dispatchEvent(new CustomEvent("auth:unauthorized", {
+            detail: { message: "Session expired. Please log in again." },
+          }));
+        }
         return Promise.reject(refreshError);
       }
     }

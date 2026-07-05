@@ -18,6 +18,7 @@ export const studentListSchema = z.object({
   is_enrolled: z.boolean().optional(),
   is_validated: z.boolean().optional(),
   account_active: z.boolean().optional(),
+  registration_paid: z.boolean().optional(),
   enrollment_info: z.union([enrollmentInfoSchema, z.record(z.any()), z.string()]).nullish(),
   image: z.string().nullable().optional(),
 }).passthrough();
@@ -29,6 +30,8 @@ export type Student = z.infer<typeof studentListSchema>;
 export type EnrollmentInfo = z.infer<typeof enrollmentInfoSchema>;
 
 export type AcademicsEnrollmentsListRequest = {
+  page?: number;
+  page_size?: number;
   academic_year?: number;
   classroom?: number;
   /**
@@ -75,19 +78,25 @@ export const studentDocumentSchema = z.object({
 export type StudentDocument = z.infer<typeof studentDocumentSchema>;
 
 export enum RoleEnum {
-  AcademicPrincipal = "academic_principal",
-  Accountant = "accountant",
-  Director = "director",
-  DisciplinePrincipal = "discipline_principal",
-  Driver = "driver",
   GlobalControl = "global_control",
-  Hr = "hr",
-  None = "none",
-  Receptionist = "receptionist",
-  Student = "student",
-  StudentParent = "student_parent",
   SystemAdmin = "system_admin",
+  BodyControl = "body_control",
+  Director = "director",
+  AcademicPrincipal = "academic_principal",
+  DisciplinePrincipal = "discipline_principal",
+  Receptionist = "receptionist",
+  Accountant = "accountant",
+  Hr = "hr",
+  Transporter = "transporter",
+  Driver = "driver",
   Teacher = "teacher",
+  StudentParent = "student_parent",
+  Student = "student",
+  Boarding = "boarding",
+  Daycare = "daycare",
+  Restaurant = "restaurant",
+  Storage = "storage",
+  None = "none",
 }
 
 export const userSchema = z.object({
@@ -381,3 +390,15 @@ export const studentTransactionsResponseSchema = z.object({
 }).passthrough();
 
 export type StudentTransactions = z.infer<typeof studentTransactionsResponseSchema>;
+
+export const studentStatsSchema = z.object({
+  total: z.number(),
+  total_enrolled: z.number(),
+  active: z.number(),
+  inactive: z.number(),
+  male: z.number(),
+  female: z.number(),
+  abandoned: z.number(),
+});
+
+export type StudentStats = z.infer<typeof studentStatsSchema>;
