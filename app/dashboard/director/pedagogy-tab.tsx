@@ -22,8 +22,8 @@ export function PedagogyTab({ filters }: Props) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Erreur</AlertTitle>
-        <AlertDescription>Impossible de charger les données pédagogiques.</AlertDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Unable to load pedagogy data.</AlertDescription>
       </Alert>
     )
   }
@@ -33,8 +33,8 @@ export function PedagogyTab({ filters }: Props) {
     return (
       <Alert>
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Aucune donnée</AlertTitle>
-        <AlertDescription>Aucune donnée disponible.</AlertDescription>
+        <AlertTitle>No data</AlertTitle>
+        <AlertDescription>No data available.</AlertDescription>
       </Alert>
     )
   }
@@ -45,33 +45,33 @@ export function PedagogyTab({ filters }: Props) {
   // Performance KPIs
   const perfKpis: KpiCardData[] = [
     {
-      title: "Meilleure Moyenne",
+      title: "Best Average",
       value: data.performance.best_average.toFixed(1),
-      sub: `Moyenne générale: ${data.performance.overall_average.toFixed(1)}`,
+      sub: `Overall average: ${data.performance.overall_average.toFixed(1)}`,
       icon: <Award className="w-5 h-5 text-emerald-600" />,
       color: "text-emerald-600",
       bgColor: "bg-emerald-500/10",
     },
     {
-      title: "Plus Faible Moyenne",
+      title: "Lowest Average",
       value: data.performance.lowest_average.toFixed(1),
-      sub: "Moyenne la plus basse",
+      sub: "Lowest class average",
       icon: <TrendingDown className="w-5 h-5 text-red-600" />,
       color: "text-red-600",
       bgColor: "bg-red-500/10",
     },
     {
-      title: "Taux de Réussite",
+      title: "Pass Rate",
       value: `${data.performance.pass_rate.toFixed(1)}%`,
-      sub: `${data.performance.fail_rate.toFixed(1)}% d'échec`,
+      sub: `${data.performance.fail_rate.toFixed(1)}% fail rate`,
       icon: <TrendingUp className="w-5 h-5 text-blue-600" />,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
     },
     {
-      title: "Taux de Promotion",
+      title: "Promotion Rate",
       value: `${data.performance.promotion_rate.toFixed(1)}%`,
-      sub: `${data.performance.repetition_rate.toFixed(1)}% redoublement · ${data.performance.dropout_rate.toFixed(1)}% abandon`,
+      sub: `${data.performance.repetition_rate.toFixed(1)}% repetition · ${data.performance.dropout_rate.toFixed(1)}% dropout`,
       icon: <Trophy className="w-5 h-5 text-amber-600" />,
       color: "text-amber-600",
       bgColor: "bg-amber-500/10",
@@ -80,25 +80,25 @@ export function PedagogyTab({ filters }: Props) {
 
   const stockKpis: KpiCardData[] = [
     {
-      title: "Produits Disponibles",
+      title: "Available Products",
       value: data.stock.available_products,
-      sub: "Références actives",
+      sub: "Active references",
       icon: <Package className="w-5 h-5 text-indigo-600" />,
       color: "text-indigo-600",
       bgColor: "bg-indigo-500/10",
     },
     {
-      title: "Stock Faible",
+      title: "Low Stock",
       value: data.stock.low_stock,
-      sub: "Réapprovisionnement nécessaire",
+      sub: "Restocking needed",
       icon: <AlertTriangle className="w-5 h-5 text-amber-600" />,
       color: "text-amber-600",
       bgColor: "bg-amber-500/10",
     },
     {
-      title: "Ruptures Sèches",
+      title: "Out of Stock",
       value: data.stock.out_of_stock,
-      sub: "Produits indisponibles",
+      sub: "Unavailable products",
       icon: <PackageOpen className="w-5 h-5 text-red-600" />,
       color: "text-red-600",
       bgColor: "bg-red-500/10",
@@ -106,7 +106,7 @@ export function PedagogyTab({ filters }: Props) {
     {
       title: "Distributions",
       value: data.stock.distributions_in_progress,
-      sub: "En cours",
+      sub: "In progress",
       icon: <Package className="w-5 h-5 text-teal-600" />,
       color: "text-teal-600",
       bgColor: "bg-teal-500/10",
@@ -114,17 +114,17 @@ export function PedagogyTab({ filters }: Props) {
   ]
 
   const topStudentCols = [
-    { key: "name" as const, label: "Nom", sortable: true },
-    { key: "class_name" as const, label: "Classe", sortable: true },
-    { key: "average" as const, label: "Moyenne", sortable: true, render: (v: number) => v.toFixed(1) },
+    { key: "name" as const, label: "Name", sortable: true },
+    { key: "class_name" as const, label: "Class", sortable: true },
+    { key: "average" as const, label: "Average", sortable: true, render: (v: number) => v.toFixed(1) },
   ]
   const topTeacherCols = [
-    { key: "name" as const, label: "Enseignant", sortable: true },
-    { key: "average" as const, label: "Moy. Classe", sortable: true, render: (v: number) => v.toFixed(1) },
+    { key: "name" as const, label: "Teacher", sortable: true },
+    { key: "average" as const, label: "Class Avg", sortable: true, render: (v: number) => v.toFixed(1) },
   ]
   const topClassCols = [
-    { key: "name" as const, label: "Classe", sortable: true },
-    { key: "average" as const, label: "Moyenne", sortable: true, render: (v: number) => v.toFixed(1) },
+    { key: "name" as const, label: "Class", sortable: true },
+    { key: "average" as const, label: "Average", sortable: true, render: (v: number) => v.toFixed(1) },
   ]
 
   return (
@@ -134,7 +134,7 @@ export function PedagogyTab({ filters }: Props) {
         <div className="space-y-2">
           <h2 className="text-lg font-heading font-bold text-foreground/80 tracking-tight flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Alertes Critiques
+            Critical Alerts
           </h2>
           <div className="grid gap-2">
             {alerts.map((alert, i) => (
@@ -151,7 +151,7 @@ export function PedagogyTab({ filters }: Props) {
       {/* Performance Section */}
       <div className="space-y-2">
         <h2 className="text-lg font-heading font-bold text-foreground/80 tracking-tight">
-          Performances Scolaires
+          Academic Performance
         </h2>
         <KpiGrid cards={perfKpis} isLoading={isLoading} />
       </div>
@@ -160,7 +160,7 @@ export function PedagogyTab({ filters }: Props) {
       {data.performance.score_trend.length > 0 && (
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Évolution des Résultats par Trimestre</CardTitle>
+            <CardTitle className="text-lg">Score Trend by Term</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -168,7 +168,7 @@ export function PedagogyTab({ filters }: Props) {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(var(--border) / 0.5)" />
                 <XAxis dataKey="term" axisLine={false} tickLine={false} className="text-xs font-bold text-muted-foreground" dy={10} />
                 <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} domain={[0, 100]} />
-                <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} formatter={(v) => [`${Number(v).toFixed(1)}`, "Moyenne"]} />
+                <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} formatter={(v) => [`${Number(v).toFixed(1)}`, "Average"]} />
                 <Line type="monotone" dataKey="average" stroke="#3b82f6" strokeWidth={3} dot={{ r: 6, fill: "#3b82f6" }} />
               </LineChart>
             </ResponsiveContainer>
@@ -180,7 +180,7 @@ export function PedagogyTab({ filters }: Props) {
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Top 10 Élèves</CardTitle>
+            <CardTitle className="text-lg">Top 10 Students</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable
@@ -193,7 +193,7 @@ export function PedagogyTab({ filters }: Props) {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Top 10 Enseignants</CardTitle>
+            <CardTitle className="text-lg">Top 10 Teachers</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable
@@ -221,7 +221,7 @@ export function PedagogyTab({ filters }: Props) {
       {/* Stock Section */}
       <div className="space-y-2">
         <h2 className="text-lg font-heading font-bold text-foreground/80 tracking-tight">
-          Gestion des Stocks
+          Stock Management
         </h2>
         <KpiGrid cards={stockKpis} isLoading={isLoading} />
       </div>

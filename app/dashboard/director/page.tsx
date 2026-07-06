@@ -34,7 +34,7 @@ export default function DirectorDashboardPage() {
         <div className="text-center">
           <div className="w-20 h-20 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-6" />
           <p className="text-muted-foreground font-bold tracking-widest uppercase text-xs animate-pulse">
-            Initialisation du tableau de bord...
+            Initializing dashboard...
           </p>
         </div>
       </div>
@@ -47,10 +47,10 @@ export default function DirectorDashboardPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl font-heading font-bold text-foreground tracking-tight">
-            Tableau de Bord Directeur
+            Director Dashboard
           </h1>
           <p className="text-muted-foreground mt-2 font-medium">
-            Vue stratégique de l&apos;établissement — <span className="text-primary font-bold">{user.fullName}</span>
+            Strategic overview — <span className="text-primary font-bold">{user.fullName}</span>
           </p>
         </div>
       </div>
@@ -60,19 +60,19 @@ export default function DirectorDashboardPage() {
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Période
+              Period
             </span>
             <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
               <SelectTrigger className="w-40 h-9 text-sm">
-                <SelectValue placeholder="Toute l'année" />
+                <SelectValue placeholder="Full Year" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">Aujourd&apos;hui</SelectItem>
-                <SelectItem value="week">Cette semaine</SelectItem>
-                <SelectItem value="month">Ce mois</SelectItem>
-                <SelectItem value="quarter">Ce trimestre</SelectItem>
-                <SelectItem value="semester">Ce semestre</SelectItem>
-                <SelectItem value="year">Cette année</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="quarter">This Quarter</SelectItem>
+                <SelectItem value="semester">This Semester</SelectItem>
+                <SelectItem value="year">This Year</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -83,16 +83,16 @@ export default function DirectorDashboardPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4 h-auto p-1 bg-muted/50 rounded-xl">
           <TabsTrigger value="overview" className="text-sm font-semibold py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            📊 Vue Globale & Inscriptions
+            📊 Overview & Enrollments
           </TabsTrigger>
           <TabsTrigger value="finances" className="text-sm font-semibold py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            💰 Finances & Trésorerie
+            💰 Finances & Treasury
           </TabsTrigger>
           <TabsTrigger value="school-life" className="text-sm font-semibold py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            🚌 Vie Scolaire & Logistique
+            🚌 School Life & Logistics
           </TabsTrigger>
           <TabsTrigger value="pedagogy" className="text-sm font-semibold py-2.5 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-            🎓 Pédagogie & Alertes
+            🎓 Pedagogy & Alerts
           </TabsTrigger>
         </TabsList>
 
