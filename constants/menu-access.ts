@@ -21,9 +21,7 @@ export const MODULE_ACCESS = {
   Calendar: [
     ...ALL_ROLES,
     "director", "academic_principal", "discipline_principal",
-    "accountant", "hr", "transporter",
     "teacher", "student",
-    "boarding", "daycare", "restaurant", "storage",
   ],
   Timetable: [
     ...ALL_ROLES,
@@ -34,7 +32,7 @@ export const MODULE_ACCESS = {
     "director", "academic_principal", "discipline_principal",
     "receptionist", "accountant", "hr", "transporter",
     "teacher", "student_parent", "student",
-    "boarding", "daycare", "restaurant", "storage",
+    "driver",
   ],
   Finances: [
     ...ALL_ROLES,
@@ -47,19 +45,19 @@ export const MODULE_ACCESS = {
   ],
   "Course Tracking": [
     ...ALL_ROLES,
-    "director", "teacher",
+    "director", "academic_principal", "teacher",
   ],
   Transport: [
     ...ALL_ROLES,
-    "director", "accountant", "receptionist", "transporter", "driver",
+    "director", "accountant", "receptionist", "transporter", "driver", "student",
   ],
   Employees: [
     ...ALL_ROLES,
-    "director", "hr",
+    "director", "hr", "receptionist", "accountant",
   ],
   Restaurant: [
     ...ALL_ROLES,
-    "director", "accountant", "restaurant",
+    "director", "accountant", "restaurant", "student",
   ],
   Daycare: [
     ...ALL_ROLES,
@@ -71,13 +69,12 @@ export const MODULE_ACCESS = {
   ],
   Storage: [
     ...ALL_ROLES,
-    "director", "accountant", "storage",
+    "director", "accountant", "restaurant", "storage",
   ],
   Rapports: [
     ...ALL_ROLES,
     "director", "academic_principal", "discipline_principal",
     "receptionist", "accountant", "hr", "teacher",
-    "transporter", "restaurant", "daycare", "storage",
   ],
   "Audit Logs": [
     "global_control", "system_admin",
@@ -87,7 +84,7 @@ export const MODULE_ACCESS = {
     "director", "academic_principal", "discipline_principal",
   ],
   Settings: [
-    "system_admin",
+    "global_control", "system_admin",
   ],
 } as const satisfies Record<string, string[] | null>
 
