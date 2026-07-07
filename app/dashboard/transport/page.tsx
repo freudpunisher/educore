@@ -699,9 +699,13 @@ export default function TransportDashboard() {
                       render: (date) => new Date(date).toLocaleDateString()
                     },
                     {
-                      key: "plate_number" as any,
-                      label: "Plate #",
-                      render: (_, sub: any) => sub?.itinerary_detail?.vehicle_detail?.plate_number || sub?.itinerary_detail?.vehicle_detail?.registration || "—"
+                      key: "vehicle_info" as any,
+                      label: "Vehicle",
+                      render: (_, sub: any) => {
+                        const plate = sub?.itinerary_detail?.vehicle_detail?.plate_number;
+                        const model = sub?.itinerary_detail?.vehicle_detail?.model;
+                        return plate && model ? `${plate} - ${model}` : plate || model || "—";
+                      }
                     },
                     {
                       key: "driver_name" as any,
@@ -899,7 +903,11 @@ export default function TransportDashboard() {
                     {
                       key: "vehicle_detail" as any,
                       label: "Vehicle",
-                      render: (v) => v?.model || "N/A"
+                      render: (v) => {
+                        const plate = v?.plate_number;
+                        const model = v?.model;
+                        return plate && model ? `${plate} - ${model}` : plate || model || "N/A";
+                      }
                     },
                     { key: "fees_label", label: "Fees Period", sortable: true },
                     {
@@ -1727,7 +1735,7 @@ function SubscriptionDialog({
                 <option value="">Select Route</option>
                 {itineraries.map((it) => (
                   <option key={it.id} value={it.id}>
-                    {it.registration_number} - {it.vehicle_detail.model}
+                    {it.fees_label || `${it.registration_number} - ${it.vehicle_detail?.model || ""}`}
                   </option>
                 ))}
               </select>

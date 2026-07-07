@@ -5,7 +5,7 @@ const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
 // Base URL logic (works perfectly with Vercel + local dev)
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/"; // Client-side → goes through Next.js proxy (recommended!)
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.68:10000/api/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,
@@ -25,7 +25,7 @@ axiosInstance.interceptors.request.use(
     // the cookie is automatically sent because of withCredentials: true
 
     // Example: if you store token in localStorage (Clerk, custom JWT, etc.)
-    const token = localStorage.getItem("access_token");
+    const token = typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null;
     // Don't send token for login requests to avoid 'token_not_valid' errors
     // from old/expired tokens in localStorage.
     if (token && !config.url?.includes("login/")) {
@@ -64,9 +64,11 @@ axiosInstance.interceptors.response.use(
       error.response?.data?.code === "token_not_valid"
     ) {
       console.warn("Auth: Invalid token detected, clearing storage.");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user_data");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("access_token");
+        window.localStorage.removeItem("refresh_token");
+        window.localStorage.removeItem("user_data");
+      }
 
       if (!isServer) {
         window.dispatchEvent(new CustomEvent("auth:unauthorized", {
@@ -86,7 +88,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refresh_token");
+        const refreshToken = typeof window !== "undefined" ? window.localStorage.getItem("refresh_token") : null;
         if (!refreshToken) throw new Error("No refresh token");
 
         // Use basic axios to avoid infinite loops if refresh fails
@@ -97,7 +99,9 @@ axiosInstance.interceptors.response.use(
         const newAccessToken = data.access || (data.data && data.data.access);
 
         if (newAccessToken) {
-          localStorage.setItem("access_token", newAccessToken);
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem("access_token", newAccessToken);
+          }
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return axiosInstance(originalRequest);
         } else {
@@ -106,9 +110,11 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         // Auth failed — dispatch event instead of hard redirect
         console.warn("Auth: Refresh token failed or expired.");
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        localStorage.removeItem("user_data");
+        if (typeof window !== "undefined") {
+          window.localStorage.removeItem("access_token");
+          window.localStorage.removeItem("refresh_token");
+          window.localStorage.removeItem("user_data");
+        }
         if (!isServer) {
           window.dispatchEvent(new CustomEvent("auth:unauthorized", {
             detail: { message: "Session expired. Please log in again." },

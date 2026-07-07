@@ -12,11 +12,11 @@ export const feesDetailSchema = z.object({
     code: z.string(),
     amount: z.string(),
     label: z.string(),
-    assignment: z.string(),
+    assignment: z.string().nullable().optional(),
     fee_category: numericIdSchema,
-    fee_category_name: z.string(),
+    fee_category_name: z.string().nullable().optional(),
     priority: numericIdSchema,
-    priority_name: z.string(),
+    priority_name: z.string().nullable().optional(),
     period: nullableNumericIdSchema,
     period_name: z.string().nullable().optional(),
 });
@@ -80,9 +80,9 @@ export const financeOverviewSchema = z.object({
 export const feesPreviewItemSchema = z.object({
     label: z.string(),
     amount: z.string(),
-    assignment: z.string().optional(),
-    fee_category: z.number().optional(),
-    fee_category_name: z.string().optional(),
+    assignment: z.string().nullable().optional(),
+    fee_category: z.number().nullable().optional(),
+    fee_category_name: z.string().nullable().optional(),
 });
 
 export const feesPreviewSchema = z.object({

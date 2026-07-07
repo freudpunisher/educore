@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedAcademicYearSchema, paginatedClassRoomSchema, EnrollmentCreate } from "@/types/enrollment";
+import { paginatedAcademicYearSchema, paginatedClassRoomSchema, paginatedEnrollmentListSchema, EnrollmentCreate } from "@/types/enrollment";
 import { feesPreviewSchema } from "@/types/finance";
 import { z } from "zod";
 import toast from "react-hot-toast";
@@ -67,6 +67,7 @@ export function useEnrollStudent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["recent-enrollments"] });
       toast.success("Enrollment successful!");
     },
     onError: (error: any) => {
@@ -77,5 +78,20 @@ export function useEnrollStudent() {
         "Could not enroll student";
       toast.error(message);
     },
+  });
+}
+
+export function useRecentEnrollments(limit: number = 5, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["recent-enrollments", limit],
+    ...options,
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/academics/enrollments/", {
+        params: { page_size: limit, ordering: "-date_enrolled" },
+      });
+      const parsed = paginatedEnrollmentListSchema.parse(data);
+      return parsed.results;
+    },
+    staleTime: 1000 * 60 * 2,
   });
 }

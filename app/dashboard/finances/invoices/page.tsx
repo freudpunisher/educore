@@ -5,13 +5,13 @@ import { useStudents } from "@/hooks/use-students";
 import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
 import { InvoicesTable } from "@/components/finances/invoices-table";
 import { Button } from "@/components/ui/button";
-import { Download, Receipt, Check, ChevronsUpDown, X, Printer } from "lucide-react";
+import { Download, Receipt, Check, ChevronsUpDown, X, Printer, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandInput, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { FEE_CATEGORIES, INVOICE_STATUS_OPTIONS } from "@/constants/finance";
 
@@ -20,7 +20,8 @@ export default function InvoicesPage() {
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState("");
-    const [studentSearchUrl, setStudentSearchUrl] = useState("");
+    const [studentSearchInput, setStudentSearchInput] = useState("");
+    const [debouncedStudentSearch, setDebouncedStudentSearch] = useState("");
     const [selectedStudent, setSelectedStudent] = useState<string>("");
     const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("");
     const [selectedClassRoom, setSelectedClassRoom] = useState<string>("");
@@ -28,8 +29,16 @@ export default function InvoicesPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>("");
     const [studentComboboxOpen, setStudentComboboxOpen] = useState(false);
 
+    // Debounce student search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedStudentSearch(studentSearchInput);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [studentSearchInput]);
+
     // Fetch filter options
-    const { data: studentsData } = useStudents({ search: studentSearchUrl, page_size: 20 });
+    const { data: studentsData } = useStudents({ search: debouncedStudentSearch || undefined, page_size: 20 });
     const students = studentsData?.results || [];
     const { data: academicYears = [] } = useAcademicYears();
     const { data: classRooms = [] } = useClassRooms();
@@ -45,16 +54,14 @@ export default function InvoicesPage() {
         search: searchQuery || undefined,
     });
 
-    const invoices = [...(data?.results || [])].sort((a, b) => {
-        const priorityA = a.fees_detail?.priority ?? 999;
-        const priorityB = b.fees_detail?.priority ?? 999;
-        return priorityA - priorityB;
-    });
+    const invoices = [...(data?.results || [])].sort((a, b) => b.id - a.id);
     const totalCount = data?.count || 0;
 
     const resetFilters = () => {
         setSearchQuery("");
         setSelectedStudent("");
+        setStudentSearchInput("");
+        setDebouncedStudentSearch("");
         setSelectedAcademicYear("all");
         setSelectedClassRoom("all");
         setSelectedEntity("all");
@@ -216,10 +223,15 @@ export default function InvoicesPage() {
                                 </PopoverTrigger>
                                 <PopoverContent className="w-full md:w-[250px] p-0">
                                     <Command>
-                                        <CommandInput
-                                            placeholder="Search student..."
-                                            onValueChange={setStudentSearchUrl} // Optional: fetch from API
-                                        />
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                                            <Input
+                                                placeholder="Search student..."
+                                                className="pl-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                                value={studentSearchInput}
+                                                onChange={(e) => setStudentSearchInput(e.target.value)}
+                                            />
+                                        </div>
                                         <CommandList>
                                             <CommandEmpty>No student found.</CommandEmpty>
                                             <CommandGroup>

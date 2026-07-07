@@ -28,7 +28,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Plus, Check, ChevronsUpDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -39,7 +39,7 @@ const formSchema = z.object({
     student: z.number({ required_error: "Student is required" }),
     meal_plan: z.number({ required_error: "Meal plan is required" }),
     period_category: z.number({ required_error: "Period category is required" }),
-    status: z.enum(["active", "paused", "expired", "cancelled"]).default("active"),
+            status: z.enum(["active", "paused", "expired", "cancelled"]).default("paused"),
     start_date: z.string(),
 });
 
@@ -78,11 +78,33 @@ export function CreateSubscriptionDialog({
     const form = useForm<SubscriptionFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            status: "active",
+            status: "paused",
             start_date: new Date().toISOString().split("T")[0],
             period_category: 1, // Monthly by default
         },
     });
+
+    const mealPlanId = form.watch("meal_plan");
+    const periodCategory = form.watch("period_category");
+
+    const selectedMealPlan = useMemo(
+        () => mealPlans.find((p) => p.id === mealPlanId),
+        [mealPlans, mealPlanId]
+    );
+
+    const periodMultiplier = useMemo(() => {
+        switch (periodCategory) {
+            case 2: return 1;   // Trimester (1 term)
+            case 3: return 2;   // Semester (2 terms)
+            case 4: return 3;   // Annual (3 terms)
+            default: return 1 / 3; // Monthly (1/3 of a term)
+        }
+    }, [periodCategory]);
+
+    const computedPrice = useMemo(() => {
+        if (!selectedMealPlan) return 0;
+        return Number(selectedMealPlan.monthly_cost || 0) * periodMultiplier;
+    }, [selectedMealPlan, periodMultiplier]);
 
     useEffect(() => {
         if (open) {
@@ -99,7 +121,7 @@ export function CreateSubscriptionDialog({
             student: record?.student,
             meal_plan: record?.meal_plan,
             period_category: record?.period_category ?? 1,
-            status: record?.status ?? "active",
+            status: record?.status ?? "paused",
             start_date: record?.start_date ?? new Date().toISOString().split("T")[0],
         });
     }, [form, open, record]);
@@ -242,17 +264,39 @@ export function CreateSubscriptionDialog({
                                                         <SelectValue placeholder="Select period" />
                                                     </SelectTrigger>
                                                 </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="1">Monthly</SelectItem>
-                                                    <SelectItem value="2">Quarterly</SelectItem>
-                                                    <SelectItem value="3">Semiannually</SelectItem>
-                                                    <SelectItem value="4">Annually</SelectItem>
-                                                </SelectContent>
+                        <SelectContent>
+                            <SelectItem value="1">Monthly</SelectItem>
+                            <SelectItem value="2">Trimester</SelectItem>
+                            <SelectItem value="3">Semester</SelectItem>
+                            <SelectItem value="4">Annual</SelectItem>
+                        </SelectContent>
                                             </Select>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Price preview */}
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-3 space-y-1">
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Base price (per term)</span>
+                                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                                    BIF {selectedMealPlan ? Number(selectedMealPlan.monthly_cost || 0).toFixed(0) : "—"}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-muted-foreground">Number of terms</span>
+                                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                                    ×{periodMultiplier < 1 ? periodMultiplier.toFixed(2) : periodMultiplier}
+                                </span>
+                            </div>
+                            <div className="border-t border-slate-200 dark:border-slate-600 pt-1 flex items-center justify-between">
+                                <span className="text-sm font-medium">Total Due</span>
+                                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                                    BIF {computedPrice.toFixed(0)}
+                                </span>
                             </div>
                         </div>
 
@@ -285,12 +329,12 @@ export function CreateSubscriptionDialog({
                                                 <SelectValue placeholder="Select status" />
                                             </SelectTrigger>
                                         </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="paused">Paused</SelectItem>
-                                            <SelectItem value="expired">Expired</SelectItem>
-                                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                                        </SelectContent>
+                        <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="paused">Pending</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
                                     </Select>
                                     <FormMessage />
                                 </FormItem>
