@@ -33,6 +33,11 @@ const restaurantSchema = z.object({
   total_meals_served: z.number().optional(),
 });
 
+const storageSchema = z.object({
+  total_products: z.number().optional(),
+  total_stock_entries: z.number().optional(),
+});
+
 const academicYearSchema = z.object({
   id: z.number(),
   label: z.string(),
@@ -56,6 +61,7 @@ const dashboardSchema = z.object({
   daycare: daycareSchema.optional(),
   boarding: boardingSchema.optional(),
   restaurant: restaurantSchema.optional(),
+  storage: storageSchema.optional(),
   academic_years: z.array(academicYearSchema).optional(),
   selected_academic_year: z.string().nullable().optional(),
   assessments: z.object({

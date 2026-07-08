@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { useState, useMemo, useEffect } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
@@ -136,7 +138,7 @@ type Attendance = {
   account: number | null;
   staff_name: string | null;
   meal: number;
-  meal_info: { date: string; meal_type: string; description: string };
+  meal_info: { name: string; description: string; monthly_cost: string; date?: string; meal_type?: string };
   subscription_info: { plan: string; status: string } | null;
   status: "present" | "absent" | "excused";
   checked_in_at: string;
@@ -179,6 +181,8 @@ export default function CanteenPage() {
     () => attendance.find((record) => record.id === selectedAttendanceId) || null,
     [attendance, selectedAttendanceId]
   );
+
+  const { user } = useAuth();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -451,84 +455,88 @@ export default function CanteenPage() {
         const isActive = row.status === "active";
         return (
           <div className="flex items-center gap-1">
-            {/* Edit — only for non-active */}
-            {!isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedOrderId(row.id);
-                  setIsEditOrderOpen(true);
-                }}
-                className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                title="Edit"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
+            {canManage(user?.role, "restaurant") && (
+              <>
+                {/* Edit — only for non-active */}
+                {!isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOrderId(row.id);
+                      setIsEditOrderOpen(true);
+                    }}
+                    className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Validate / Activate */}
-            {!isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubscriptionAction(row.id, "active");
-                }}
-                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                title="Validate / Activate"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Validate / Activate */}
+                {!isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscriptionAction(row.id, "active");
+                    }}
+                    className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    title="Validate / Activate"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Pause / Deactivate */}
-            {isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubscriptionAction(row.id, "paused");
-                }}
-                className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                title="Pause"
-              >
-                <PauseCircle className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Pause / Deactivate */}
+                {isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscriptionAction(row.id, "paused");
+                    }}
+                    className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                    title="Pause"
+                  >
+                    <PauseCircle className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Delete (only if no invoices yet) */}
-            {!isActive && !row.invoiceSummary && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteSubscription(row.id);
-                }}
-                className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                title="Delete permanently"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Delete (only if no invoices yet) */}
+                {!isActive && !row.invoiceSummary && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSubscription(row.id);
+                    }}
+                    className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Delete permanently"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Cancel */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSubscriptionAction(row.id, "cancelled");
-              }}
-              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-              title="Cancel"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
+                {/* Cancel */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscriptionAction(row.id, "cancelled");
+                  }}
+                  className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                  title="Cancel"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         );
       },
@@ -683,99 +691,96 @@ export default function CanteenPage() {
 
   const attendanceColumns = [
     {
-      key: "studentName" as const,
+      key: "attendee" as const,
       label: "Attendee",
       sortable: true,
       render: (value: string) => (
-        <span className="font-medium text-slate-900 dark:text-white">{value || "Staff"}</span>
+        <span className="font-medium text-slate-900 dark:text-white">{value || "—"}</span>
       ),
     },
     {
-      key: "enrollment" as const,
-      label: "Enrollment",
+      key: "mealPlan" as const,
+      label: "Meal Plan",
       sortable: true,
       render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value || "—"}</span>,
     },
     {
-      key: "mealType" as const,
-      label: "Meal Type",
+      key: "pricingMeal" as const,
+      label: "Pricing Meal",
       sortable: true,
-      render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
+      render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value || "—"}</span>,
     },
     {
-      key: "mealDate" as const,
-      label: "Date",
+      key: "checkedIn" as const,
+      label: "Check-in At",
       sortable: true,
-      render: (value: string) => <span className="text-slate-600 dark:text-slate-300">{value}</span>,
+      render: (value: string) => (
+        <span className="text-slate-600 dark:text-slate-300">
+          {value ? new Date(value).toLocaleString() : "—"}
+        </span>
+      ),
     },
     {
       key: "status" as const,
       label: "Status",
       sortable: true,
       render: (value: string) => {
-        const statusMap: Record<string, "active" | "inactive"> = {
-          present: "active",
-          absent: "inactive",
+        const labels: Record<string, string> = {
+          present: "Validé",
+          absent: "En attente",
+          excused: "Excused",
         };
-        return <StatusBadge status={statusMap[value?.toLowerCase()] || (value as any)} />;
+        const styles: Record<string, string> = {
+          present: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+          absent: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+          excused: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+        };
+        const v = value?.toLowerCase();
+        return (
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${styles[v] || ""}`}>
+            {labels[v] || value}
+          </span>
+        );
       },
-    },
-    {
-      key: "checkedIn" as const,
-      label: "Checked In At",
-      sortable: true,
-      render: (value: string) => (
-        <span className="text-slate-600 dark:text-slate-300">
-          {value ? new Date(value).toLocaleTimeString() : "—"}
-        </span>
-      ),
     },
     {
       key: "id" as any,
       label: "Actions",
       sortable: false,
       render: (_: any, row: any) => {
-        const isPresent = row.status === "present";
-        if (isPresent) return <span className="text-slate-400 text-xs">—</span>;
+        const isValidated = row.status === "present";
+        if (isValidated) return <span className="text-slate-400 text-xs">—</span>;
         return (
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedAttendanceId(row.id);
-                setIsEditAttendanceOpen(true);
-              }}
-              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAttendanceAction(row.id, "present");
-              }}
-              className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-              title="Validate"
-            >
-              <CheckCircle className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteAttendance(row.id);
-              }}
-              className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              title="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canManage(user?.role, "restaurant") && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAttendanceAction(row.id, "present");
+                  }}
+                  className="h-8 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
+                  title="Validate"
+                >
+                  <CheckCircle className="mr-1 h-4 w-4" />
+                  <span className="text-xs font-medium">Validate</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAttendance(row.id);
+                  }}
+                  className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         );
       },
@@ -879,7 +884,9 @@ export default function CanteenPage() {
                   Available meal plans for different dietary needs
                 </p>
               </div>
-              <CreateMealPlanDialog onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateMealPlanDialog onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -952,7 +959,9 @@ export default function CanteenPage() {
                   Available food items with nutritional information
                 </p>
               </div>
-              <CreateFoodItemDialog onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateFoodItemDialog onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -995,7 +1004,9 @@ export default function CanteenPage() {
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
-                <CreateSubscriptionDialog mealPlans={mealPlans} onSuccess={fetchData} />
+                {canManage(user?.role, "restaurant") && (
+                  <CreateSubscriptionDialog mealPlans={mealPlans} onSuccess={fetchData} />
+                )}
               </div>
             </div>
 
@@ -1070,7 +1081,9 @@ export default function CanteenPage() {
                   Dietary restrictions and meal preferences
                 </p>
               </div>
-              <CreatePreferenceDialog mealPlans={mealPlans} onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreatePreferenceDialog mealPlans={mealPlans} onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -1210,7 +1223,9 @@ export default function CanteenPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Meal Attendance</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Student and staff check-in records</p>
               </div>
-              <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
+              )}
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
@@ -1247,13 +1262,11 @@ export default function CanteenPage() {
                   )
                   .map((a) => ({
                     id: a.id,
-                    account: a.account,
-                    meal: a.meal,
-                    notes: a.notes,
-                    studentName: a.student_name || a.staff_name || "Staff",
-                    enrollment: a.student_enrollment,
-                    mealType: a.meal_info?.meal_type || "N/A",
-                    mealDate: a.meal_info?.date || "N/A",
+                    attendee: a.student_name || a.staff_name || "—",
+                    mealPlan: a.meal_info?.name || "—",
+                    pricingMeal: a.meal_info?.monthly_cost
+                      ? `${Number(a.meal_info.monthly_cost).toLocaleString()} BIF`
+                      : "—",
                     status: a.status,
                     checkedIn: a.checked_in_at,
                   }))}
@@ -1263,31 +1276,35 @@ export default function CanteenPage() {
             </div>
           </TabsContent>
         </Tabs>
-        <CreateSubscriptionDialog
-          mealPlans={mealPlans}
-          onSuccess={fetchData}
-          record={selectedOrder}
-          open={isEditOrderOpen}
-          onOpenChange={(open) => {
-            setIsEditOrderOpen(open);
-            if (!open) {
-              setSelectedOrderId(null);
-            }
-          }}
-        />
-        <CreateStaffAttendanceDialog
-          meals={meals}
-          mealPlans={mealPlans}
-          onSuccess={fetchData}
-          record={selectedAttendance}
-          open={isEditAttendanceOpen}
-          onOpenChange={(open) => {
-            setIsEditAttendanceOpen(open);
-            if (!open) {
-              setSelectedAttendanceId(null);
-            }
-          }}
-        />
+        {canManage(user?.role, "restaurant") && (
+          <CreateSubscriptionDialog
+            mealPlans={mealPlans}
+            onSuccess={fetchData}
+            record={selectedOrder}
+            open={isEditOrderOpen}
+            onOpenChange={(open) => {
+              setIsEditOrderOpen(open);
+              if (!open) {
+                setSelectedOrderId(null);
+              }
+            }}
+          />
+        )}
+        {canManage(user?.role, "restaurant") && (
+          <CreateStaffAttendanceDialog
+            meals={meals}
+            mealPlans={mealPlans}
+            onSuccess={fetchData}
+            record={selectedAttendance}
+            open={isEditAttendanceOpen}
+            onOpenChange={(open) => {
+              setIsEditAttendanceOpen(open);
+              if (!open) {
+                setSelectedAttendanceId(null);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );

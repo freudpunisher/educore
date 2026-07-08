@@ -28,22 +28,32 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
+  XCircle,
 } from "lucide-react"
-import { useFinanceOverview, useInvoices, usePayments } from "@/hooks/use-finance"
+import { useFinanceOverview, useInvoices, usePayments, useCancelInvoice } from "@/hooks/use-finance"
 import { Loader2 } from "lucide-react"
 import { ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Area, AreaChart } from "recharts"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
+import { canManage } from "@/lib/access-control"
+import { toast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function FinancesPage() {
+  const { user } = useAuth()
   const router = useRouter()
   const { data: overview, isLoading } = useFinanceOverview()
+  const cancelMutation = useCancelInvoice()
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("invoices")
   const [invoicePage, setInvoicePage] = useState(1)
   const [paymentPage, setPaymentPage] = useState(1)
+  const [cancelInvoice, setCancelInvoice] = useState<typeof overview['recentInvoices'][0] | null>(null)
+  const cancelRoles = ["director", "system_admin", "global_control"]
 
-  const { data: invoicesData, isLoading: loadingInvoices } = useInvoices(
+  const { data: invoicesData, isLoading: loadingInvoices, isError: invoicesError } = useInvoices(
     activeTab === "invoices" ? { page: invoicePage, page_size: 10, search: searchTerm || undefined } : { page: 1 }
   )
   const { data: paymentsData, isLoading: loadingPayments } = usePayments(
@@ -189,10 +199,12 @@ export default function FinancesPage() {
             <Download className="w-4 h-4 mr-2" />
             Annual Report
           </Button>
-          <Button className="rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-bold h-12 px-6">
-            <Plus className="w-4 h-4 mr-2" />
-            Record Transaction
-          </Button>
+          {canManage(user?.role, "finance") && (
+            <Button className="rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-bold h-12 px-6">
+              <Plus className="w-4 h-4 mr-2" />
+              Record Transaction
+            </Button>
+          )}
         </div>
       </div>
 
@@ -335,9 +347,11 @@ export default function FinancesPage() {
             </TabsList>
 
             <div className="flex items-center gap-2">
-              <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
-                Mark all as reviewed
-              </Button>
+              {canManage(user?.role, "finance") && (
+                <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
+                  Mark all as reviewed
+                </Button>
+              )}
             </div>
           </div>
 
@@ -356,7 +370,19 @@ export default function FinancesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {loadingInvoices ? (
+                    {invoicesError ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="py-20 text-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
+                              <Wallet className="w-6 h-6 text-destructive" />
+                            </div>
+                            <p className="font-bold text-foreground">Failed to load invoices</p>
+                            <p className="text-sm text-muted-foreground">Please try again later</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : loadingInvoices ? (
                       <TableRow>
                         <TableCell colSpan={6} className="py-20 text-center">
                           <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
@@ -431,6 +457,16 @@ export default function FinancesPage() {
                             >
                               <Printer className="w-4 h-4" />
                             </Button>
+                            {cancelRoles.includes(user?.role || "") && invoice.status === 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:shadow-md transition-all text-destructive"
+                                onClick={() => setCancelInvoice(invoice)}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -582,6 +618,61 @@ export default function FinancesPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={!!cancelInvoice} onOpenChange={(v) => { if (!v) setCancelInvoice(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Invoice</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel invoice <strong>{cancelInvoice?.reference}</strong>?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="flex justify-between items-center rounded-xl border p-4 bg-muted/30">
+              <div>
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Student</span>
+                <span className="font-bold text-foreground">{cancelInvoice?.student_name || "Institutional Fee"}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Amount</span>
+                <span className="font-bold">{Number(cancelInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">
+                Cancelling this invoice will mark it as cancelled. This is irreversible.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelInvoice(null)} disabled={cancelMutation.isPending}>
+              Keep Invoice
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!cancelInvoice) return;
+                cancelMutation.mutate(cancelInvoice.id, {
+                  onSuccess: () => {
+                    toast.success(`Invoice ${cancelInvoice.reference} cancelled successfully.`);
+                    setCancelInvoice(null);
+                  },
+                  onError: (err: any) => {
+                    const msg = err.response?.data?.message || "Failed to cancel invoice.";
+                    toast.error(msg);
+                  }
+                });
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cancel Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

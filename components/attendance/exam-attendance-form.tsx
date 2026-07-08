@@ -37,6 +37,8 @@ import {
   Timer,
 } from "lucide-react";
 
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { useBulkMarkExamAttendance } from "@/hooks/use-attendance-sessions";
 import { useClassRooms } from "@/hooks/use-academic-data";
 import { useStudentsByClassLevel } from "@/hooks/use-discipline";
@@ -67,6 +69,7 @@ export function ExamAttendanceForm({
   assessmentTitle,
   classroomId,
 }: ExamAttendanceFormProps) {
+  const { user } = useAuth();
   const [records, setRecords] = useState<Record<number, ExamRecord>>({});
   const [search, setSearch] = useState("");
   const [isSaved, setIsSaved] = useState(false);
@@ -287,6 +290,7 @@ export function ExamAttendanceForm({
 
       {/* Save */}
       <div className="flex justify-end">
+        {canManage(user?.role, "attendance") && (
         <Button
           size="lg"
           onClick={handleSave}
@@ -301,6 +305,7 @@ export function ExamAttendanceForm({
             <><Save className="w-4 h-4" /> Enregistrer les présences</>
           )}
         </Button>
+        )}
       </div>
     </div>
   );

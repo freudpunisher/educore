@@ -43,6 +43,8 @@ import {
   Printer,
   Power,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -183,6 +185,7 @@ type AccountDetail = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function StorePage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("inventory");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -630,9 +633,11 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setAdjustingInventory(item); setIsAdjustModalOpen(true); }}>
-              <Pencil className="w-4 h-4 mr-2" /> Adjust Stock
-            </DropdownMenuItem>
+            {canManage(user?.role, "storage") && (
+              <DropdownMenuItem onClick={() => { setAdjustingInventory(item); setIsAdjustModalOpen(true); }}>
+                <Pencil className="w-4 h-4 mr-2" /> Adjust Stock
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -687,12 +692,16 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setEditingProduct(item); setIsProductModalOpen(true); }}>
-              <Pencil className="w-4 h-4 mr-2" /> Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggleProductStatus(item)} className={item.is_active ? "text-amber-600" : "text-green-600"}>
-              <Power className="w-4 h-4 mr-2" /> {item.is_active ? "Deactivate" : "Activate"}
-            </DropdownMenuItem>
+            {canManage(user?.role, "storage") && (
+              <>
+                <DropdownMenuItem onClick={() => { setEditingProduct(item); setIsProductModalOpen(true); }}>
+                  <Pencil className="w-4 h-4 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleToggleProductStatus(item)} className={item.is_active ? "text-amber-600" : "text-green-600"}>
+                  <Power className="w-4 h-4 mr-2" /> {item.is_active ? "Deactivate" : "Activate"}
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -825,9 +834,11 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setEditingDistribution(item); setIsDistributionModalOpen(true); }}>
-              <Pencil className="w-4 h-4 mr-2" /> Edit Status
-            </DropdownMenuItem>
+            {canManage(user?.role, "storage") && (
+              <DropdownMenuItem onClick={() => { setEditingDistribution(item); setIsDistributionModalOpen(true); }}>
+                <Pencil className="w-4 h-4 mr-2" /> Edit Status
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -930,9 +941,11 @@ export default function StorePage() {
                 <Printer className="w-4 h-4 mr-2 text-green-600" /> Print Receipt
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => handleDeleteSale(item.id)} className="text-red-600">
-              <Trash2 className="w-4 h-4 mr-2" /> Delete Transaction
-            </DropdownMenuItem>
+            {canManage(user?.role, "storage") && (
+              <DropdownMenuItem onClick={() => handleDeleteSale(item.id)} className="text-red-600">
+                <Trash2 className="w-4 h-4 mr-2" /> Delete Transaction
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -1036,9 +1049,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Products</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">All products with their category and unit of measure</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Product
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Product
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1068,9 +1083,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Inventory</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Current stock levels for all products</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Product
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Product
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1134,9 +1151,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock List (By Location)</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Manage local stock by sales points or storage depots</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsStoreProductModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Add Location Stock
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsStoreProductModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Add Location Stock
+                </Button>
+              )}
             </div>
             <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden">
               <DataTable data={storeProducts} columns={storeProductColumns} itemsPerPage={10} />
@@ -1150,9 +1169,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock Entries</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Restocking and supply records</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingEntry(null); setIsEntryModalOpen(true); }}>
-                <ArrowUp className="w-4 h-4 mr-2" /> New Entry
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingEntry(null); setIsEntryModalOpen(true); }}>
+                  <ArrowUp className="w-4 h-4 mr-2" /> New Entry
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1195,9 +1216,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock Exits</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Consumption, assignment and loss records</p>
               </div>
-              <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setIsExitModalOpen(true)}>
-                <ArrowDown className="w-4 h-4 mr-2" /> Log Exit
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setIsExitModalOpen(true)}>
+                  <ArrowDown className="w-4 h-4 mr-2" /> Log Exit
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -1247,9 +1270,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Distributions</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Equipment and supplies assigned to staff, students and departments</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingDistribution(null); setIsDistributionModalOpen(true); }}>
-                <Plus className="w-4 h-4 mr-2" /> New Distribution
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingDistribution(null); setIsDistributionModalOpen(true); }}>
+                  <Plus className="w-4 h-4 mr-2" /> New Distribution
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -1297,9 +1322,11 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Product Sales</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Record and track sales of uniforms and school items</p>
               </div>
-              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsSaleModalOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" /> Record Sale
-              </Button>
+              {canManage(user?.role, "storage") && (
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsSaleModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" /> Record Sale
+                </Button>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-4">

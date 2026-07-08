@@ -10,7 +10,6 @@ export function useAcademicYears() {
     queryKey: ["academic-years"],
     queryFn: async () => {
       const { data } = await axiosInstance.get("academics/years/");
-      console.log("Academic Years:", data);
       const parsed = paginatedAcademicYearSchema.parse(data);
       return parsed.results;
     },

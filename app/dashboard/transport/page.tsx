@@ -36,6 +36,7 @@ import {
 import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
 import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum, PeriodCategory, PeriodCategoryLabels } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -535,7 +536,7 @@ export default function TransportDashboard() {
                   Manage student transport enrollment and status
                 </p>
               </div>
-              {user?.role === "transporter" && (
+              {canManage(user?.role, "transport") && (
                 <Button
                   onClick={() => {
                     setSelectedSubscription(null);
@@ -749,12 +750,9 @@ export default function TransportDashboard() {
                       render: (_, subscription: any) => {
                         const status = subscription.status?.toLowerCase();
                         const isActive = status === "active";
-                        const isReceptionist = user?.role === "receptionist";
-                        const isDriver = user?.role === "driver";
-
                         return (
                           <div className="flex items-center gap-1">
-                            {!isActive && !isDriver && (
+                            {!isActive && canManage(user?.role, "transport") && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -783,7 +781,7 @@ export default function TransportDashboard() {
                               </>
                             )}
 
-                            {isActive && !isReceptionist && !isDriver && (
+                            {isActive && canManage(user?.role, "transport") && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -869,9 +867,11 @@ export default function TransportDashboard() {
                   <Download className="h-4 w-4" />
                   PDF
                 </Button>
-                <Button onClick={() => { setNewRouteVehicle(""); setNewRouteFees(""); setNewRouteState(true); setIsCreateRouteModalOpen(true); }}>
-                  <Plus className="w-4 h-4 mr-2" /> New Route
-                </Button>
+                {canManage(user?.role, "transport") && (
+                  <Button onClick={() => { setNewRouteVehicle(""); setNewRouteFees(""); setNewRouteState(true); setIsCreateRouteModalOpen(true); }}>
+                    <Plus className="w-4 h-4 mr-2" /> New Route
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -929,19 +929,21 @@ export default function TransportDashboard() {
                       label: "Actions",
                       render: (_: any, item: any) => (
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedItineraryForChange(item);
-                              setNewVehicleId(item.vehicule?.toString() || "");
-                              setIsChangeVehicleModalOpen(true);
-                            }}
-                            className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Change Vehicle"
-                          >
-                            <Truck className="h-4 w-4" />
-                          </Button>
+                          {canManage(user?.role, "transport") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedItineraryForChange(item);
+                                setNewVehicleId(item.vehicule?.toString() || "");
+                                setIsChangeVehicleModalOpen(true);
+                              }}
+                              className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                              title="Change Vehicle"
+                            >
+                              <Truck className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -1309,18 +1311,21 @@ export default function TransportDashboard() {
                       label: "Actions",
                       render: (_, vehicle: VehicleSimple) => (
                         <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditVehicle(vehicle);
-                            }}
-                            className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          {canManage(user?.role, "transport") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditVehicle(vehicle);
+                              }}
+                              className="h-8 w-8 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
 
+                          {canManage(user?.role, "transport") && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -1358,6 +1363,7 @@ export default function TransportDashboard() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          )}
                         </div>
                       )
                     }

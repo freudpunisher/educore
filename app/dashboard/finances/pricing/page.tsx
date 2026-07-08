@@ -14,6 +14,8 @@ import { Loader2, Tag, Search, Save, X, Pencil, Plus, ChevronLeft, ChevronRight,
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 
 const FEES_CATEGORIES: Record<number, string> = {
   1: "Registration",
@@ -27,6 +29,7 @@ const FEES_CATEGORIES: Record<number, string> = {
 };
 
 export default function PricingPage() {
+  const { user } = useAuth();
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -157,9 +160,11 @@ export default function PricingPage() {
           <Button variant="outline" onClick={downloadPDF}>
             <Download className="w-4 h-4 mr-2" /> PDF
           </Button>
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> New Fee
-          </Button>
+          {canManage(user?.role, "finance") && (
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" /> New Fee
+            </Button>
+          )}
         </div>
       </div>
 
@@ -230,15 +235,17 @@ export default function PricingPage() {
                               onChange={(e) => setEditAmount(e.target.value)}
                               className="w-32 text-right h-8"
                             />
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-green-600"
-                              onClick={() => saveAmount(fee.id)}
-                              disabled={!editAmount || parseFloat(editAmount) < 0}
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
+                            {canManage(user?.role, "finance") && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600"
+                                onClick={() => saveAmount(fee.id)}
+                                disabled={!editAmount || parseFloat(editAmount) < 0}
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="icon"
@@ -256,14 +263,16 @@ export default function PricingPage() {
                       </TableCell>
                       <TableCell>{fee.priority_name || `Order ${fee.priority}`}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => startEditing(fee)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        {canManage(user?.role, "finance") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => startEditing(fee)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -348,9 +357,11 @@ export default function PricingPage() {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreate} disabled={!newLabel || !newAmount || isCreating}>
-              {isCreating ? "Creating..." : "Create Fee"}
-            </Button>
+            {canManage(user?.role, "finance") && (
+              <Button onClick={handleCreate} disabled={!newLabel || !newAmount || isCreating}>
+                {isCreating ? "Creating..." : "Create Fee"}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

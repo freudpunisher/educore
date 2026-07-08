@@ -1,90 +1,92 @@
-const ALL_ROLES = [
-  "global_control", "system_admin", "body_control",
-] as const
-
 export const MODULE_ACCESS = {
   Dashboard: null,
   Students: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "discipline_principal",
     "receptionist", "accountant", "teacher",
-    "restaurant", "daycare", "student_parent", "student",
+    "student_parent", "student",
+  ],
+  Employees: [
+    "global_control", "system_admin", "body_control",
+    "director", "hr",
   ],
   Attendance: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal", "teacher",
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
   ],
   Behavior: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal", "teacher",
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
   ],
   Calendar: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "discipline_principal",
-    "accountant", "hr", "transporter",
-    "teacher", "student",
+    "receptionist", "accountant", "hr", "transporter", "driver",
+    "teacher",
     "boarding", "daycare", "restaurant", "storage",
   ],
   Timetable: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
   ],
   Announcements: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "hr", "transporter",
-    "teacher", "student_parent", "student",
+    "receptionist", "accountant", "hr", "transporter", "driver",
+    "teacher",
     "boarding", "daycare", "restaurant", "storage",
   ],
   Finances: [
-    ...ALL_ROLES,
-    "director",
-    "accountant", "student_parent",
+    "global_control", "system_admin", "body_control",
+    "director", "receptionist", "accountant",
   ],
   Pedagogy: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "teacher",
   ],
+  "Academic Planning": [
+    "global_control", "system_admin",
+    "director", "academic_principal",
+  ],
   "Course Tracking": [
-    ...ALL_ROLES,
-    "director", "teacher",
+    "global_control", "system_admin",
+    "director", "academic_principal",
+    "receptionist", "teacher",
   ],
   Transport: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "transporter", "driver",
-  ],
-  Employees: [
-    ...ALL_ROLES,
-    "director", "hr",
-  ],
-  Restaurant: [
-    ...ALL_ROLES,
-    "director", "accountant", "restaurant",
-  ],
-  Daycare: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "daycare",
-  ],
-  Boarding: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "boarding",
-  ],
-  Storage: [
-    ...ALL_ROLES,
-    "director", "accountant", "storage",
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "transporter", "driver",
   ],
   Rapports: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "hr", "teacher",
-    "transporter", "restaurant", "daycare", "storage",
+    "global_control", "system_admin",
+    "director",
+  ],
+  Restaurant: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "restaurant",
+  ],
+  Storage: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "storage",
+  ],
+  Boarding: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "boarding",
+  ],
+  Daycare: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "daycare",
   ],
   "Audit Logs": [
-    "global_control", "system_admin",
-  ],
-  "Academic Planning": [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
+    "global_control", "system_admin", "body_control",
   ],
   Settings: [
     "system_admin",

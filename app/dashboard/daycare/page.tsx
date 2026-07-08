@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
+import { canManage } from "@/lib/access-control"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import {
@@ -90,9 +91,9 @@ export default function DaycarePage() {
         { value: "history", label: "Daily Records History" },
     ]
     const { user } = useAuth()
-    const visibleDaycareTabs = user?.role === "receptionist"
-        ? allDaycareTabs.filter((t) => t.value === "history")
-        : allDaycareTabs
+    const visibleDaycareTabs = canManage(user?.role, "daycare")
+        ? allDaycareTabs
+        : allDaycareTabs.filter((t) => t.value === "history")
     const [daycareTab, setDaycareTab] = useState(visibleDaycareTabs[0]?.value ?? "history")
 
     // Dialog States
@@ -406,12 +407,12 @@ export default function DaycarePage() {
                         <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Workflow Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            {!r.check_in_time && (
+                            {!r.check_in_time && canManage(user?.role, "daycare") && (
                                 <DropdownMenuItem onClick={() => handleArrival(r.id)}>
                                     <Play className="mr-2 h-4 w-4" /> Check-in
                                 </DropdownMenuItem>
                             )}
-                            {r.check_in_time && !r.check_out_time && (
+                            {r.check_in_time && !r.check_out_time && canManage(user?.role, "daycare") && (
                                 <>
                                     <DropdownMenuItem onClick={() => openAction("activity", r)}>
                                         <Sun className="mr-2 h-4 w-4" /> Log Activity
@@ -455,8 +456,6 @@ export default function DaycarePage() {
     return (
 
         <div className="space-y-6">
-            {user?.role !== "receptionist" && (
-                <>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground">Daycare Management</h1>
@@ -466,10 +465,12 @@ export default function DaycarePage() {
                     <Button variant="outline" onClick={() => { fetchDashboardStats(); fetchDailyRecords(); fetchHistoryRecords(); }}>
                         Refresh
                     </Button>
-                    <Button onClick={() => openAction("new")}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Register Child
-                    </Button>
+                    {canManage(user?.role, "daycare") && (
+                        <Button onClick={() => openAction("new")}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Register Child
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -546,8 +547,7 @@ export default function DaycarePage() {
                     </CardContent>
                 </Card>
             </div>
-            </>
-            )}
+
 
             <Tabs value={daycareTab} onValueChange={setDaycareTab} className="space-y-4">
                 <TabsList className="grid w-full md:w-[420px]" style={{ gridTemplateColumns: `repeat(${visibleDaycareTabs.length}, 1fr)` }}>
@@ -679,7 +679,7 @@ export default function DaycarePage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
-                        <Button onClick={createRecord} disabled={!selectedStudent}>Create Record</Button>
+                        {canManage(user?.role, "daycare") && <Button onClick={createRecord} disabled={!selectedStudent}>Create Record</Button>}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -702,7 +702,7 @@ export default function DaycarePage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
-                        <Button onClick={submitMeal}>Save Meal</Button>
+                        {canManage(user?.role, "daycare") && <Button onClick={submitMeal}>Save Meal</Button>}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -733,7 +733,7 @@ export default function DaycarePage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
-                        <Button onClick={submitNap}>Save Nap</Button>
+                        {canManage(user?.role, "daycare") && <Button onClick={submitNap}>Save Nap</Button>}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -773,7 +773,7 @@ export default function DaycarePage() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={closeDialogs}>Cancel</Button>
-                        <Button onClick={submitActivity}>Save Activity</Button>
+                        {canManage(user?.role, "daycare") && <Button onClick={submitActivity}>Save Activity</Button>}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
