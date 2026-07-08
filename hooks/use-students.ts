@@ -14,16 +14,12 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 
-const unwrap = (data: any, hookName: string) => {
-  console.log(`[${hookName}] Raw data received:`, JSON.stringify(data, null, 2));
+const unwrap = (data: any) => {
   if (data && typeof data === 'object') {
     if ((data.status === 'success' || data.success === true) && data.data !== undefined) {
-      console.log(`[${hookName}] unwrapping 'data' key`);
       return data.data;
     }
-    // If it's already unwrapped but has a status/success key (unlikely if unwrap worked)
     if (data.data !== undefined && Object.keys(data).length === 1) {
-      console.log(`[${hookName}] unwrapping single 'data' key`);
       return data.data;
     }
   }
@@ -36,18 +32,11 @@ export function useStudents(params?: AcademicsEnrollmentsListRequest) {
     queryFn: async () => {
       try {
         const { data: rawResponse } = await axiosInstance.get("users/students/", { params });
-        console.log("Raw Response for Student List:", JSON.stringify(rawResponse, null, 2));
         const data = (rawResponse && typeof rawResponse === 'object' && (rawResponse.status === 'success' || rawResponse.success === true))
           ? (Array.isArray(rawResponse.data) ? { results: rawResponse.data } : rawResponse.data)
           : (Array.isArray(rawResponse) ? { results: rawResponse } : rawResponse);
-        console.log("Processed data for useStudents Parsing:", JSON.stringify(data, null, 2));
         return paginatedStudentListSchema.parse(data);
       } catch (err: any) {
-        if (err.name === "ZodError") {
-          console.error("Zod Validation Issues (useStudents):", JSON.stringify(err.issues, null, 2));
-        } else {
-          console.error("Unknown Error in useStudents:", err);
-        }
         throw err;
       }
     },
@@ -63,18 +52,11 @@ export function useStudentDetail(id: number | null) {
       try {
         const response = await axiosInstance.get(`users/students/${id}/`);
         const rawData = response.data;
-        console.log("Raw Response for Student Detail:", JSON.stringify(rawData, null, 2));
         const studentData = (rawData && typeof rawData === 'object' && (rawData.status === 'success' || rawData.success === true))
           ? (Array.isArray(rawData.data) ? rawData.data[0] : rawData.data)
           : (Array.isArray(rawData) ? rawData[0] : rawData);
-        console.log("Processed studentData for Parsing:", JSON.stringify(studentData, null, 2));
         return studentDetailSchema.parse(studentData);
       } catch (err: any) {
-        if (err.name === "ZodError") {
-          console.error("Zod Validation Issues:", JSON.stringify(err.issues, null, 2));
-        } else {
-          console.error("Unknown Error in useStudentDetail:", err);
-        }
         throw err;
       }
     },

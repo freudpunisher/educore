@@ -15,6 +15,8 @@ import {
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { ClipboardCheck, RefreshCw, GraduationCap } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { canManage } from "@/lib/access-control"
 
 type AcademicYear = {
   id: number
@@ -34,6 +36,7 @@ type CourseTracking = {
 }
 
 export default function CourseTrackingPage() {
+  const { user } = useAuth()
   const [years, setYears] = useState<AcademicYear[]>([])
   const [selectedYear, setSelectedYear] = useState<string>("")
   const [trackingList, setTrackingList] = useState<CourseTracking[]>([])
@@ -134,18 +137,20 @@ export default function CourseTrackingPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button
-            onClick={handleAutoGenerate}
-            disabled={scaning || !selectedYear}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {scaning ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <ClipboardCheck className="w-4 h-4 mr-2" />
-            )}
-            Identify Failures
-          </Button>
+          {canManage(user?.role, "course-tracking") && (
+            <Button
+              onClick={handleAutoGenerate}
+              disabled={scaning || !selectedYear}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {scaning ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <ClipboardCheck className="w-4 h-4 mr-2" />
+              )}
+              Identify Failures
+            </Button>
+          )}
         </div>
       </div>
 
@@ -195,19 +200,23 @@ export default function CourseTrackingPage() {
                       <TableCell>{getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Select
-                            defaultValue={item.status}
-                            onValueChange={(val) => updateStatus(item.id, val)}
-                          >
-                            <SelectTrigger className="w-[140px] h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="to_repeat">To Retake</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {canManage(user?.role, "course-tracking") ? (
+                            <Select
+                              defaultValue={item.status}
+                              onValueChange={(val) => updateStatus(item.id, val)}
+                            >
+                              <SelectTrigger className="w-[140px] h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="to_repeat">To Retake</SelectItem>
+                                <SelectItem value="in_progress">In Progress</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

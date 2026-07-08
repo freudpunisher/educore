@@ -13,32 +13,22 @@ export const createStudentSchema = z.object({
   nationality: z.string().optional().or(z.literal("")),
   religion: z.string().optional().or(z.literal("")),
 
+  father_full_name: z.string().optional().or(z.literal("")),
+  father_phone_number: z.string().optional().or(z.literal("")),
+  father_job_name: z.string().optional().or(z.literal("")),
+  mother_full_name: z.string().optional().or(z.literal("")),
+  mother_phone_number: z.string().optional().or(z.literal("")),
+  mother_job_name: z.string().optional().or(z.literal("")),
+  address_parent_quarter: z.string().optional().or(z.literal("")),
+  address_parent_commune: z.string().optional().or(z.literal("")),
+  address_parent_province: z.string().optional().or(z.literal("")),
+
   parent_first_name: z.string().optional().or(z.literal("")),
   parent_last_name: z.string().optional().or(z.literal("")),
   parent_relationship: z.string().optional().or(z.literal("")),
-  parent_job_title: z.string().optional().or(z.literal("")),
-  parent_address_quarter: z.string().optional().or(z.literal("")),
-  parent_address_commune: z.string().optional().or(z.literal("")),
-  parent_address_province: z.string().optional().or(z.literal("")),
-  parent_contact: z
-    .string()
-    .optional()
-    .or(z.literal("")),
-  parent_email: z
-    .string()
-    .email("Invalid parent email")
-    .optional()
-    .or(z.literal("")),
-  father_first_name: z.string().optional().or(z.literal("")),
-  father_last_name: z.string().optional().or(z.literal("")),
-  father_contact: z.string().optional().or(z.literal("")),
-  father_email: z.string().email("Invalid father email").optional().or(z.literal("")),
-  father_job_title: z.string().optional().or(z.literal("")),
-  mother_first_name: z.string().optional().or(z.literal("")),
-  mother_last_name: z.string().optional().or(z.literal("")),
-  mother_contact: z.string().optional().or(z.literal("")),
-  mother_email: z.string().email("Invalid mother email").optional().or(z.literal("")),
-  mother_job_title: z.string().optional().or(z.literal("")),
+  parent_contact: z.string().optional().or(z.literal("")),
+  parent_email: z.string().email("Invalid parent email").optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;

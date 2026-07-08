@@ -47,6 +47,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import {
   useSchoolDailyAttendances,
   useBulkMarkSchoolAttendance,
@@ -87,6 +89,7 @@ interface StudentRecord {
 }
 
 export function SchoolAttendanceTable() {
+  const { user } = useAuth();
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedClassroom, setSelectedClassroom] = useState<number | null>(null);
@@ -324,6 +327,8 @@ export function SchoolAttendanceTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {canManage(user?.role, "attendance") && (
+                          <>
                         {["present", "absent", "late"].map((s) => {
                           const opt = STATUS_OPTIONS.find((o) => o.value === s)!;
                           const Icon = opt.icon;
@@ -340,6 +345,8 @@ export function SchoolAttendanceTable() {
                             </Button>
                           );
                         })}
+                          </>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
@@ -361,6 +368,7 @@ export function SchoolAttendanceTable() {
       {/* Save button */}
       {selectedClassroom && filtered.length > 0 && (
         <div className="flex justify-end pt-2">
+          {canManage(user?.role, "attendance") && (
           <Button
             size="lg"
             onClick={handleSave}
@@ -375,6 +383,7 @@ export function SchoolAttendanceTable() {
               <><Save className="w-4 h-4" /> Sauvegarder les présences</>
             )}
           </Button>
+          )}
         </div>
       )}
 
@@ -467,7 +476,9 @@ export function SchoolAttendanceTable() {
               <Button variant="outline" onClick={() => setEditDialog({ open: false, studentId: null })}>
                 Annuler
               </Button>
+              {canManage(user?.role, "attendance") && (
               <Button onClick={saveEdit}>Sauvegarder</Button>
+              )}
             </div>
           </div>
         </DialogContent>

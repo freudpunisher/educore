@@ -1,90 +1,95 @@
-const ALL_ROLES = [
-  "global_control", "system_admin", "body_control",
-] as const
-
 export const MODULE_ACCESS = {
   Dashboard: null,
   Students: [
-    ...ALL_ROLES,
+    "global_control", "system_admin",
     "director", "academic_principal", "discipline_principal",
     "receptionist", "accountant", "teacher",
-    "restaurant", "daycare", "student_parent", "student",
-  ],
-  Attendance: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal", "teacher",
-  ],
-  Behavior: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal", "teacher",
-  ],
-  Calendar: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
-    "teacher", "student",
-  ],
-  Timetable: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
-  ],
-  Announcements: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "hr", "transporter",
-    "teacher", "student_parent", "student",
-    "driver",
-  ],
-  Finances: [
-    ...ALL_ROLES,
-    "director",
-    "accountant", "student_parent",
-  ],
-  Pedagogy: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "teacher",
-  ],
-  "Course Tracking": [
-    ...ALL_ROLES,
-    "director", "academic_principal", "teacher",
-  ],
-  Transport: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "transporter", "driver", "student",
+    "student_parent", "student",
   ],
   Employees: [
-    ...ALL_ROLES,
-    "director", "hr", "receptionist", "accountant",
+    "global_control", "system_admin", "body_control",
+    "director", "hr",
   ],
-  Restaurant: [
-    ...ALL_ROLES,
-    "director", "accountant", "restaurant", "student",
-  ],
-  Daycare: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "daycare",
-  ],
-  Boarding: [
-    ...ALL_ROLES,
-    "director", "accountant", "receptionist", "boarding",
-  ],
-  Storage: [
-    ...ALL_ROLES,
-    "director", "accountant", "restaurant", "storage",
-  ],
-  Rapports: [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
-    "receptionist", "accountant", "hr", "teacher",
-  ],
-  "Audit Logs": [
+  Attendance: [
     "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
+  ],
+  Behavior: [
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
+  ],
+  Calendar: [
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "accountant", "hr", "transporter", "driver",
+    "teacher",
+    "boarding", "daycare", "restaurant", "storage",
+  ],
+  Timetable: [
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "teacher",
+  ],
+  Announcements: [
+    "global_control", "system_admin",
+    "director", "academic_principal", "discipline_principal",
+    "receptionist", "accountant", "hr", "transporter", "driver",
+    "teacher",
+    "boarding", "daycare", "restaurant", "storage",
+  ],
+  Finances: [
+    "global_control", "system_admin", "body_control",
+    "director", "receptionist", "accountant",
+  ],
+  Pedagogy: [
+    "global_control", "system_admin",
+    "director", "academic_principal", "teacher",
   ],
   "Academic Planning": [
-    ...ALL_ROLES,
-    "director", "academic_principal", "discipline_principal",
+    "global_control", "system_admin",
+    "director", "academic_principal",
+  ],
+  "Course Tracking": [
+    "global_control", "system_admin",
+    "director", "academic_principal",
+    "receptionist", "teacher",
+  ],
+  Transport: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "transporter", "driver",
+  ],
+  Rapports: [
+    "global_control", "system_admin",
+    "director",
+  ],
+  Restaurant: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "restaurant",
+  ],
+  Storage: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "storage",
+  ],
+  Boarding: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "boarding",
+  ],
+  Daycare: [
+    "global_control", "system_admin",
+    "director", "receptionist", "accountant",
+    "daycare",
+  ],
+  "Audit Logs": [
+    "global_control", "system_admin", "body_control",
   ],
   Settings: [
-    "global_control", "system_admin",
+    "system_admin",
   ],
 } as const satisfies Record<string, string[] | null>
 

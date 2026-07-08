@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePayInvoice } from "@/hooks/use-finance";
+import { usePayInvoice, useCancelInvoice } from "@/hooks/use-finance";
 import { useFinancialInstitutions } from "@/hooks/use-financial-institutions";
+import { useProfile } from "@/hooks/use-profile";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
@@ -24,9 +25,14 @@ interface InvoicesTableProps {
 
 export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
     const payMutation = usePayInvoice();
+    const cancelMutation = useCancelInvoice();
+    const { data: profile } = useProfile();
     const { data: institutions } = useFinancialInstitutions();
+    const cancelRoles = ["director", "system_admin", "global_control"];
+    const canCancel = profile?.role ? cancelRoles.includes(profile.role) : false;
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState<string>("");
     const [paymentMode, setPaymentMode] = useState<string>("1");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -366,6 +372,19 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                                                 <DollarSign className="h-3 w-3 mr-1" />
                                                 Pay
                                             </Button>
+                                            {canCancel && (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                                                    onClick={() => {
+                                                        setSelectedInvoice(invoice);
+                                                        setIsCancelDialogOpen(true);
+                                                    }}
+                                                >
+                                                    Cancel
+                                                </Button>
+                                            )}
                                             {isBlocked && (
                                                 <span className="text-[9px] font-bold text-destructive uppercase tracking-tighter">
                                                     Priority Required
@@ -566,6 +585,61 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                         <Button onClick={handleConfirmPayment} disabled={payMutation.isPending}>
                             {payMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm Payment
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Cancel Invoice</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to cancel invoice <strong>{selectedInvoice?.reference}</strong>?
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="flex justify-between items-center rounded-xl border p-4 bg-muted/30">
+                            <div>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Student</span>
+                                <span className="font-bold text-foreground">{selectedInvoice?.student_name || "Institutional Fee"}</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Amount</span>
+                                <span className="font-bold">{Number(selectedInvoice?.amount || 0).toLocaleString("en-US")} FBU</span>
+                            </div>
+                        </div>
+                        <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 flex items-start gap-3">
+                            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-destructive">
+                                Cancelling this invoice will mark it as cancelled. This is irreversible.
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCancelDialogOpen(false)} disabled={cancelMutation.isPending}>
+                            Keep Invoice
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                if (!selectedInvoice) return;
+                                cancelMutation.mutate(selectedInvoice.id, {
+                                    onSuccess: () => {
+                                        toast.success(`Invoice ${selectedInvoice.reference} cancelled successfully.`);
+                                        setIsCancelDialogOpen(false);
+                                        setSelectedInvoice(null);
+                                    },
+                                    onError: (err: any) => {
+                                        const msg = err.response?.data?.message || "Failed to cancel invoice.";
+                                        toast.error(msg);
+                                    }
+                                });
+                            }}
+                            disabled={cancelMutation.isPending}
+                        >
+                            {cancelMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Cancel Invoice
                         </Button>
                     </DialogFooter>
                 </DialogContent>

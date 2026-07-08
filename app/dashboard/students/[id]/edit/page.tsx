@@ -18,9 +18,11 @@ import { useStudentDetail } from "@/hooks/use-students";
 import { useUpdateStudent } from "@/hooks/use-update-student";
 import { createStudentSchema, CreateStudentData } from "@/lib/schemas/student.Schema";
 import { StudentImageCapture } from "@/components/students/student-image-capture";
+import { NATIONALITY_OPTIONS } from "@/constants/nationalities";
 import {
   ArrowLeft, Loader2, User, Users, Phone, Mail,
-  CalendarDays, UserCheck, ImageIcon, GraduationCap, AlertCircle
+  CalendarDays, UserCheck, ImageIcon, GraduationCap, AlertCircle,
+  MapPin, Globe2, BookOpen
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useEffect, useState } from "react";
@@ -44,26 +46,26 @@ export default function EditStudentPage() {
     resolver: zodResolver(createStudentSchema),
     defaultValues: {
       first_name: "",
+      middle_name: "",
       last_name: "",
       date_of_birth: "",
+      place_of_birth: "",
+      nationality: "Burundian",
+      religion: "",
+      father_full_name: "",
+      father_phone_number: "",
+      father_job_name: "",
+      mother_full_name: "",
+      mother_phone_number: "",
+      mother_job_name: "",
+      address_parent_quarter: "",
+      address_parent_commune: "",
+      address_parent_province: "",
       parent_first_name: "",
       parent_last_name: "",
       parent_contact: "",
       parent_email: "",
-      parent_job_title: "",
-      parent_address_quarter: "",
-      parent_address_commune: "",
-      parent_address_province: "",
-      father_first_name: "",
-      father_last_name: "",
-      father_contact: "",
-      father_email: "",
-      father_job_title: "",
-      mother_first_name: "",
-      mother_last_name: "",
-      mother_contact: "",
-      mother_email: "",
-      mother_job_title: "",
+      address: "",
     },
   });
 
@@ -71,33 +73,31 @@ export default function EditStudentPage() {
     if (student) {
       const parent = student.parents_info?.[0];
       setValue("first_name", student.first_name ?? "");
+      setValue("middle_name", student.middle_name ?? "");
       setValue("last_name", student.last_name ?? "");
       setValue("gender", String(student.gender ?? "") as "0" | "1");
       setValue("date_of_birth", student.date_of_birth
         ? new Date(student.date_of_birth).toISOString().split("T")[0]
         : "");
+      setValue("place_of_birth", student.place_of_birth ?? "");
+      setValue("nationality", student.nationality ?? "Burundian");
+      setValue("religion", student.religion ?? "");
+      setValue("father_full_name", student.father_full_name ?? "");
+      setValue("father_phone_number", student.father_phone_number ?? "");
+      setValue("father_job_name", student.father_job_name ?? "");
+      setValue("mother_full_name", student.mother_full_name ?? "");
+      setValue("mother_phone_number", student.mother_phone_number ?? "");
+      setValue("mother_job_name", student.mother_job_name ?? "");
+      setValue("address_parent_quarter", student.address_parent_quarter ?? "");
+      setValue("address_parent_commune", student.address_parent_commune ?? "");
+      setValue("address_parent_province", student.address_parent_province ?? "");
+
       setValue("parent_first_name", parent?.first_name ?? "");
       setValue("parent_last_name", parent?.last_name ?? "");
       setValue("parent_relationship", (parent?.relationship ?? "") as any);
       setValue("parent_contact", parent?.phone ?? parent?.phone_number ?? "");
       setValue("parent_email", parent?.email ?? "");
-      setValue("parent_job_title", parent?.job_title ?? "");
-      setValue("parent_address_quarter", student.address_quarter ?? parent?.address_quarter ?? "");
-      setValue("parent_address_commune", student.address_commune ?? parent?.address_commune ?? "");
-      setValue("parent_address_province", student.address_province ?? parent?.address_province ?? "");
-
-      const fatherParts = (student.father_name ?? "").split(" ");
-      setValue("father_first_name", fatherParts[0] ?? "");
-      setValue("father_last_name", fatherParts.slice(1).join(" ") ?? "");
-      setValue("father_contact", student.father_contact ?? "");
-      setValue("father_job_title", student.father_job_title ?? "");
-
-      const motherParts = (student.mother_name ?? "").split(" ");
-      setValue("mother_first_name", motherParts[0] ?? "");
-      setValue("mother_last_name", motherParts.slice(1).join(" ") ?? "");
-      setValue("mother_contact", student.mother_contact ?? "");
-      setValue("mother_email", student.mother_email ?? "");
-      setValue("mother_job_title", student.mother_job_title ?? "");
+      setValue("address", parent?.address ?? "");
     }
   }, [student, setValue]);
 
@@ -206,13 +206,17 @@ export default function EditStudentPage() {
             <CardDescription>Basic personal details of the student.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>First Name <span className="text-destructive">*</span></Label>
                 <Input placeholder="Jean" {...register("first_name")} />
                 {errors.first_name && (
                   <p className="text-sm text-destructive">{errors.first_name.message}</p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label>Middle Name</Label>
+                <Input placeholder="(optional)" {...register("middle_name")} />
               </div>
               <div className="space-y-2">
                 <Label>Last Name <span className="text-destructive">*</span></Label>
@@ -237,8 +241,8 @@ export default function EditStudentPage() {
                     <SelectValue placeholder="Choose gender" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Girl</SelectItem>
-                    <SelectItem value="0">Boy</SelectItem>
+                    <SelectItem value="1">Male</SelectItem>
+                    <SelectItem value="0">Female</SelectItem>
                   </SelectContent>
                 </Select>
                 {errors.gender && (
@@ -263,6 +267,95 @@ export default function EditStudentPage() {
                 )}
               </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Place of Birth
+                </Label>
+                <Input placeholder="Bujumbura" {...register("place_of_birth")} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Globe2 className="h-3.5 w-3.5" />
+                  Nationality
+                </Label>
+                <Select
+                  defaultValue={student.nationality ?? "Burundian"}
+                  onValueChange={(value) => setValue("nationality", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select nationality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NATIONALITY_OPTIONS.map((nationality) => (
+                      <SelectItem key={nationality.value} value={nationality.value}>
+                        {nationality.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Religion
+                </Label>
+                <Input placeholder="Christian" {...register("religion")} />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Father Information</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input {...register("father_full_name")} placeholder="Jean Ndayisenga" />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Phone</Label>
+                <Input {...register("father_phone_number")} placeholder="+243812345678" />
+              </div>
+              <div className="space-y-2">
+                <Label>Job</Label>
+                <Input {...register("father_job_name")} placeholder="Teacher, Trader..." />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Mother Information</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input {...register("mother_full_name")} placeholder="Marie Ndayisenga" />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Phone</Label>
+                <Input {...register("mother_phone_number")} placeholder="+243812345678" />
+              </div>
+              <div className="space-y-2">
+                <Label>Job</Label>
+                <Input {...register("mother_job_name")} placeholder="Doctor, Banker..." />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Parent Address</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Quarter</Label>
+                <Input {...register("address_parent_quarter")} placeholder="Rohero" />
+              </div>
+              <div className="space-y-2">
+                <Label>Commune</Label>
+                <Input {...register("address_parent_commune")} placeholder="Mukaza" />
+              </div>
+              <div className="space-y-2">
+                <Label>Province</Label>
+                <Input {...register("address_parent_province")} placeholder="Bujumbura Mairie" />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -270,7 +363,7 @@ export default function EditStudentPage() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              Parent / Guardian Details
+              Parent / Guardian — Contact Person
             </CardTitle>
             <CardDescription>At least one parent or guardian contact is required.</CardDescription>
           </CardHeader>
@@ -313,38 +406,9 @@ export default function EditStudentPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Job Title</Label>
-                <Input placeholder="Teacher, Trader, Nurse..." {...register("parent_job_title")} />
-                {errors.parent_job_title && (
-                  <p className="text-sm text-destructive">{errors.parent_job_title.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Quarter</Label>
-                <Input placeholder="Rohero" {...register("parent_address_quarter")} />
-                {errors.parent_address_quarter && (
-                  <p className="text-sm text-destructive">{errors.parent_address_quarter.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Commune</Label>
-                <Input placeholder="Mukaza" {...register("parent_address_commune")} />
-                {errors.parent_address_commune && (
-                  <p className="text-sm text-destructive">{errors.parent_address_commune.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Province</Label>
-                <Input placeholder="Bujumbura Mairie" {...register("parent_address_province")} />
-                {errors.parent_address_province && (
-                  <p className="text-sm text-destructive">{errors.parent_address_province.message}</p>
-                )}
-              </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input placeholder="123 Main St, Bujumbura" {...register("address")} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

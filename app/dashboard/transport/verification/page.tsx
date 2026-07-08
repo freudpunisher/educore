@@ -4,6 +4,8 @@ import { useState } from "react";
 import { TransportLayout } from "@/components/transport/transport-layout";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { Plus, CheckCircle2, XCircle, Calendar } from "lucide-react";
 import { mockVerificationChecks } from "@/lib/mock/transport";
 
@@ -24,6 +26,7 @@ interface VerificationCheck {
 }
 
 export default function VerificationCheckPage() {
+  const { user } = useAuth();
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const verificationData = mockVerificationChecks.map((check) => ({
@@ -50,10 +53,12 @@ export default function VerificationCheckPage() {
               Vehicle inspection records and safety checklists
             </p>
           </div>
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            New Inspection
-          </Button>
+          {canManage(user?.role, "transport") && (
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              New Inspection
+            </Button>
+          )}
         </div>
 
         {/* Stats */}
@@ -184,9 +189,11 @@ export default function VerificationCheckPage() {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
+                    {canManage(user?.role, "transport") && (
+                      <Button variant="outline" size="sm">
+                        Edit
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm">
                       Print Report
                     </Button>

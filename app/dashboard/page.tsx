@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDistanceToNow } from "date-fns"
@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   Users, DollarSign, BookOpen, TrendingUp, Truck, Receipt,
   Wallet, BarChart3, ClipboardList, ClipboardCheck, Bus, Home, UtensilsCrossed, Baby,
-  Building2, UserPlus, FileText,
+  Building2, UserPlus, FileText, Download, Package,
 } from "lucide-react"
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts"
 import { useDashboard, DashboardData } from "@/hooks/use-dashboard"
@@ -25,6 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import axiosInstance from "@/lib/axios"
+import { toast } from "sonner"
 
 type ChartConfig = {
   title: string
@@ -135,6 +144,7 @@ const MODULE_DATA_FIELDS: Partial<Record<ModuleName, keyof DashboardData>> = {
   Attendance: "attendance",
   Employees: "staff",
   Storage: "storage",
+  Pedagogy: "assessments",
 }
 
 function getAccessibleModules(role: string): ModuleName[] {
@@ -300,6 +310,18 @@ function buildKpiCards(dashboardData: DashboardData | undefined, isDashboardLoad
     })
   }
 
+  if (dashboardData.storage) {
+    const s = dashboardData.storage
+    cards.push({
+      title: "Inventory",
+      value: isDashboardLoading ? null : String(s.total_products ?? "—"),
+      sub: `${s.total_stock_entries ?? 0} stock entries`,
+      icon: <Package className="w-5 h-5 text-emerald-600" />,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-500/10",
+    })
+  }
+
   return cards
 }
 
@@ -432,13 +454,13 @@ export default function DashboardPage() {
 
   const isBodyControl = user?.role === "body_control"
 
-  // Auto-select current academic year for body_control
+  // Auto-select current academic year
   useEffect(() => {
-    if (isBodyControl && dashboardData?.academic_years && !academicYearId) {
+    if (dashboardData?.academic_years && !academicYearId) {
       const current = dashboardData.academic_years.find((y) => y.is_current)
       if (current) setAcademicYearId(current.id)
     }
-  }, [isBodyControl, dashboardData?.academic_years, academicYearId])
+  }, [dashboardData?.academic_years, academicYearId])
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -460,6 +482,25 @@ export default function DashboardPage() {
   const isReceptionist = user?.role === "receptionist"
   const isDirector = user?.role === "director"
   const { data: recentEnrollments } = useRecentEnrollments(5, { enabled: isReceptionist })
+
+  const handleExport = useCallback(async (format: "csv" | "pdf") => {
+    try {
+      const params = new URLSearchParams({ format })
+      if (academicYearId) params.set("academic_year_id", String(academicYearId))
+      const response = await axiosInstance.get(`core/dashboard-stats/export/?${params}`, { responseType: "blob" })
+      const blob = new Blob([response.data])
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `dashboard.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch {
+      toast.error(`Failed to export ${format.toUpperCase()}`)
+    }
+  }, [academicYearId])
 
   const kpiCards = buildKpiCards(dashboardData, isDashboardLoading)
   const financeStats = dashboardData?.finance
@@ -496,7 +537,7 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          {isBodyControl && dashboardData?.academic_years && (
+          {dashboardData?.academic_years && dashboardData.academic_years.length > 0 && (
             <Select
               value={academicYearId?.toString() ?? ""}
               onValueChange={(v) => setAcademicYearId(Number(v))}
@@ -513,6 +554,19 @@ export default function DashboardPage() {
               </SelectContent>
             </Select>
           )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1" />Export</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("csv")}>
+                <FileText className="w-4 h-4 mr-2" />Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                <FileText className="w-4 h-4 mr-2" />Export PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <QuickActions
             actions={[
               {

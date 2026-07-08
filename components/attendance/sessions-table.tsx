@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -258,7 +259,7 @@ export function AttendanceSessionsTable() {
             </div>
 
             {/* Create Dialog */}
-            {user?.can?.('academics.manage') && (
+            {canManage(user?.role, "attendance") && (
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 h-11 shrink-0">
@@ -593,6 +594,7 @@ export function AttendanceSessionsTable() {
 
                           {/* Action */}
                           <TableCell className="text-right">
+                            {canManage(user?.role, "attendance") && (
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="sm"
@@ -624,6 +626,7 @@ export function AttendanceSessionsTable() {
                                 {session.is_locked ? "Voir" : "Prendre présence"}
                               </Button>
                             </div>
+                            )}
                           </TableCell>
                         </TableRow>
                       );

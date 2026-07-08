@@ -40,12 +40,14 @@ import {
   User,
   Filter,
   Eye,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 import { Student } from "@/types/student";
 import { EnrollStudentDialog } from "./enroll-student-dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useDeleteStudent } from "@/hooks/use-delete-student";
 
 const PAGE_SIZE = 10;
 const genderLabel = (g?: number) => (g === 1 ? "Male" : g === 0 ? "Female" : "Unknown");
@@ -183,6 +185,13 @@ export default function StudentsTable({
         const [openEnroll, setOpenEnroll] = useState(false);
         const student = row.original;
         const alreadyEnrolled = !!student.enrollment_info;
+        const deleteMutation = useDeleteStudent();
+
+        const handleDelete = () => {
+          if (confirm(`Delete student "${student.full_name}"? This action cannot be undone.`)) {
+            deleteMutation.mutate(student.id);
+          }
+        };
 
         return (
           <div className="flex items-center gap-2">
@@ -207,6 +216,16 @@ export default function StudentsTable({
                 {alreadyEnrolled ? "Already Assigned" : "Assign"}
               </Button>
             )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
 
             <EnrollStudentDialog
               studentId={student.id}
