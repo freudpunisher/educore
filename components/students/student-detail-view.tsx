@@ -7,11 +7,6 @@ import {
     Users, FileText, Calendar, GraduationCap, Wallet, Activity,
     Sparkles, Award, ClipboardList, Folder, BookOpen, CheckCircle,
     DollarSign, ShieldAlert, LayoutGrid, Package, Trash2,
-<<<<<<< HEAD
-    Phone,
-    Mail
-=======
->>>>>>> f33ee93 (the update)
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
 import { useAcademicYears } from "@/hooks/use-academic-data";
@@ -31,11 +26,6 @@ import { ParentContactsTab } from "./tabs/parent-contacts-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-<<<<<<< HEAD
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-=======
-
->>>>>>> f33ee93 (the update)
 import {
     Select,
     SelectContent,

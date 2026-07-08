@@ -32,11 +32,23 @@ export function useStudents(params?: AcademicsEnrollmentsListRequest) {
     queryFn: async () => {
       try {
         const { data: rawResponse } = await axiosInstance.get("users/students/", { params });
+        console.log("[useStudents] rawResponse:", JSON.stringify(rawResponse)?.slice(0, 500));
+
         const data = (rawResponse && typeof rawResponse === 'object' && (rawResponse.status === 'success' || rawResponse.success === true))
           ? (Array.isArray(rawResponse.data) ? { results: rawResponse.data } : rawResponse.data)
           : (Array.isArray(rawResponse) ? { results: rawResponse } : rawResponse);
-        return paginatedStudentListSchema.parse(data);
+
+        console.log("[useStudents] data to parse:", JSON.stringify(data)?.slice(0, 500));
+
+        const parsed = paginatedStudentListSchema.parse(data);
+        console.log("[useStudents] parsed results count:", parsed.results?.length);
+        return parsed;
       } catch (err: any) {
+        if (err.name === "ZodError") {
+          console.error("[useStudents] ZodError:", JSON.stringify(err.issues, null, 2));
+        } else {
+          console.error("[useStudents] Error:", err?.response?.status, err?.message);
+        }
         throw err;
       }
     },
