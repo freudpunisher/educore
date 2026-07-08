@@ -4,12 +4,15 @@ import { StudentDetail } from "@/types/student";
 import { useAuth } from "@/lib/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-    Phone, Mail, Users, FileText, Calendar, GraduationCap, Wallet, Activity,
-    Sparkles, ShoppingBag, Award, ClipboardList, Folder, BookOpen, CheckCircle,
-    DollarSign, ShieldAlert, LayoutGrid, UtensilsCrossed, Home, Baby, Package
+    Users, FileText, Calendar, GraduationCap, Wallet, Activity,
+    Sparkles, Award, ClipboardList, Folder, BookOpen, CheckCircle,
+    DollarSign, ShieldAlert, LayoutGrid, Package, Trash2,
+    Phone,
+    Mail
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
 import { useAcademicYears } from "@/hooks/use-academic-data";
+import { useDeleteStudent } from "@/hooks/use-delete-student";
 import { Button } from "@/components/ui/button";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
@@ -20,10 +23,12 @@ import { BehaviorTab } from "./tabs/behavior-tab";
 import { AttendanceTab } from "./tabs/attendance-tab";
 import { ServicesTab } from "./tabs/services-tab";
 import { InventoryTab } from "./tabs/inventory-tab";
+import { ParentInfoTab } from "./tabs/parent-info-tab";
+import { ParentContactsTab } from "./tabs/parent-contacts-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
     Select,
     SelectContent,
@@ -39,7 +44,6 @@ interface StudentDetailViewProps {
 
 const ROLE_TABS: Record<string, string[]> = {
     accountant: ["invoicing"],
-    receptionist: ["documents"],
 };
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -49,7 +53,8 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
     attendance: <Activity className="h-4 w-4" />,
     services: <LayoutGrid className="h-4 w-4" />,
     inventory: <Package className="h-4 w-4" />,
-    family: <Users className="h-4 w-4" />,
+    "parent-info": <Users className="h-4 w-4" />,
+    "parent-contacts": <Users className="h-4 w-4" />,
     documents: <FileText className="h-4 w-4" />,
 };
 
@@ -60,11 +65,12 @@ const TAB_LABELS: Record<string, string> = {
     attendance: "Attendance",
     services: "Services",
     inventory: "Distribution",
-    family: "Family",
+    "parent-info": "Parent Information",
+    "parent-contacts": "Parent / Guardian Contacts",
     documents: "Documents",
 };
 
-const ALL_TABS = ["academics", "invoicing", "behavior", "attendance", "services", "inventory", "family", "documents"];
+const ALL_TABS = ["academics", "invoicing", "behavior", "attendance", "services", "inventory", "parent-info", "parent-contacts", "documents"];
 
 function getAllowedTabs(role: string | undefined): string[] {
     if (!role) return ALL_TABS;
@@ -78,6 +84,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
     const defaultTab = allowedTabs.includes("invoicing") && role === "accountant" ? "invoicing" : allowedTabs[0];
 
     const validateMutation = useValidateStudent();
+    const deleteMutation = useDeleteStudent();
     const { data: academicYears } = useAcademicYears();
     const [selectedYear, setSelectedYear] = useState<string>("current");
 
@@ -173,6 +180,21 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             >
                                 <Sparkles className="h-4 w-4" />
                                 Validate
+                            </Button>
+                        )}
+                        {role && ["system_admin"].includes(role) && (
+                            <Button
+                                variant="destructive"
+                                onClick={() => {
+                                    if (confirm(`Delete student "${student.full_name}"? This action cannot be undone.`)) {
+                                        deleteMutation.mutate(student.id);
+                                    }
+                                }}
+                                disabled={deleteMutation.isPending}
+                                className="rounded-2xl h-12 px-6 gap-2 text-xs"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
                             </Button>
                         )}
                     </div>

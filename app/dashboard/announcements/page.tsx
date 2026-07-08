@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
+import { canManage } from "@/lib/access-control"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -126,7 +127,7 @@ export default function AnnouncementsPage() {
           <p className="text-muted-foreground">Important communications and information</p>
         </div>
 
-        {user?.can?.('academics.manage') && (
+        {canManage(user?.role, "announcements") && (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button>

@@ -97,7 +97,6 @@ export function useTransportSubscriptions(params?: {
                     ? rawResponse.data
                     : rawResponse;
 
-                console.log("Subscriptions API Data:", data);
                 return paginatedTransportSubscriptionSchema.parse(data);
             } catch (err: any) {
                 if (err.name === "ZodError") {

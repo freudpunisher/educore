@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useBehaviorRecords, useUpdateDisciplineRecord } from "@/hooks/use-discipline";
 import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { BehaviorTable } from "@/components/discipline/behavior-table";
 import { BehaviorFilters } from "@/components/discipline/behavior-filters";
 import { BehaviorModal } from "@/components/discipline/behavior-modal";
@@ -105,7 +106,7 @@ export default function BehaviorPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2 text-lg font-medium">Record and manage disciplinary incidents across the school.</p>
                 </div>
-                {user?.can?.('academics.manage') && (
+                {canManage(user?.role, "behavior") && (
                 <Button
                     onClick={() => {
                         setSelectedRecord(null);

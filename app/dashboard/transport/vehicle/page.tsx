@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { Plus, Download } from "lucide-react";
 import { mockVehicles } from "@/lib/mock/transport";
 
@@ -26,6 +28,7 @@ interface Vehicle {
 }
 
 export default function VehiclePage() {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive" | "maintenance">(
     "all"
   );
@@ -117,10 +120,12 @@ export default function VehiclePage() {
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Vehicle
-            </Button>
+            {canManage(user?.role, "transport") && (
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Vehicle
+              </Button>
+            )}
           </div>
         </div>
 

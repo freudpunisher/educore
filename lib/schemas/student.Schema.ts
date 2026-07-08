@@ -9,23 +9,26 @@ export const createStudentSchema = z.object({
     required_error: "Gender is required",
   }),
   date_of_birth: z.string().optional().or(z.literal("")),
+  place_of_birth: z.string().optional().or(z.literal("")),
+  nationality: z.string().optional().or(z.literal("")),
+  religion: z.string().optional().or(z.literal("")),
 
-  parent_first_name: z.string().min(1, "Parent first name is required"),
-  parent_last_name: z.string().min(1, "Parent last name is required"),
-  parent_relationship: z.enum(["mother", "father", "guardian", "other"], {
-    required_error: "Relationship is required",
-  }),
-  parent_contact: z
-    .string()
-    .regex(
-      /^\+?[0-9]{10,15}$/,
-      "Invalid phone number (ex: +243812345678)"
-    ),
-  parent_email: z
-    .string()
-    .email("Invalid parent email")
-    .optional()
-    .or(z.literal("")),
+  father_full_name: z.string().optional().or(z.literal("")),
+  father_phone_number: z.string().optional().or(z.literal("")),
+  father_job_name: z.string().optional().or(z.literal("")),
+  mother_full_name: z.string().optional().or(z.literal("")),
+  mother_phone_number: z.string().optional().or(z.literal("")),
+  mother_job_name: z.string().optional().or(z.literal("")),
+  address_parent_quarter: z.string().optional().or(z.literal("")),
+  address_parent_commune: z.string().optional().or(z.literal("")),
+  address_parent_province: z.string().optional().or(z.literal("")),
+
+  parent_first_name: z.string().optional().or(z.literal("")),
+  parent_last_name: z.string().optional().or(z.literal("")),
+  parent_relationship: z.string().optional().or(z.literal("")),
+  parent_contact: z.string().optional().or(z.literal("")),
+  parent_email: z.string().email("Invalid parent email").optional().or(z.literal("")),
+  address: z.string().optional().or(z.literal("")),
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;

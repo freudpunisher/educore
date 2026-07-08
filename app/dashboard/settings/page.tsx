@@ -17,8 +17,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select"
 import {
-  Building2, Users, Bell, Shield, Save, Package, Tag, Ruler, Plus, Pencil, Trash2, Store
+  Building2, Users, Bell, Shield, Save, Package, Tag, Ruler, Plus, Pencil, Trash2, Store, Lock
 } from "lucide-react"
+import { PermissionsTab } from "@/components/settings/permissions-tab"
 import { api } from "@/lib/api"
 import { toast } from "sonner"
 
@@ -74,6 +75,7 @@ type Account = {
     email: string
     first_name: string
     last_name: string
+    last_login: string | null
   }
   role: string
   active: boolean
@@ -88,6 +90,11 @@ export default function SettingsPage() {
   const [locations, setLocations] = useState<StoreLocation[]>([])
   const [config, setConfig] = useState<SchoolConfig | null>(null)
   const [users, setUsers] = useState<Account[]>([])
+  const [userTotal, setUserTotal] = useState(0)
+  const [userPage, setUserPage] = useState(1)
+  const [userSearch, setUserSearch] = useState("")
+  const [userRoleFilter, setUserRoleFilter] = useState("")
+  const PAGE_SIZE = 10
 
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false)
@@ -99,21 +106,32 @@ export default function SettingsPage() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false)
   const [editingLocation, setEditingLocation] = useState<StoreLocation | null>(null)
 
+  const fetchUsers = async (page: number, search: string, role: string) => {
+    try {
+      const params: Record<string, any> = { page, page_size: PAGE_SIZE, exclude_roles: "student,student_parent" }
+      if (search) params.search = search
+      if (role) params.role = role
+      const res = await api.get<any>("users/accounts/", params)
+      setUsers(res.results ?? (Array.isArray(res) ? res : []))
+      setUserTotal(res.count ?? 0)
+    } catch {
+      toast.error("Failed to load users")
+    }
+  }
+
   const fetchData = async () => {
     try {
-      const [pRes, cRes, uRes, lRes, configRes, usersRes] = await Promise.all([
+      const [pRes, cRes, uRes, lRes, configRes] = await Promise.all([
         api.get<any>("store/stock/products/"),
         api.get<any>("store/stock/categories/"),
         api.get<any>("store/stock/units/"),
         api.get<any>("store/stock/locations/"),
         api.get<any>("config/school-config/"),
-        api.get<any>("users/accounts/"),
       ])
       setProducts(Array.isArray(pRes) ? pRes : pRes.results || [])
       setCategories(Array.isArray(cRes) ? cRes : cRes.results || [])
       setUnits(Array.isArray(uRes) ? uRes : uRes.results || [])
       setLocations(Array.isArray(lRes) ? lRes : lRes.results || [])
-      setUsers(Array.isArray(usersRes) ? usersRes : usersRes.results || [])
 
       // SchoolConfig is a list with one item
       const configData = Array.isArray(configRes) ? configRes[0] : configRes.results?.[0]
@@ -125,6 +143,9 @@ export default function SettingsPage() {
 
 
   useEffect(() => { fetchData() }, [])
+  useEffect(() => { fetchUsers(userPage, userSearch, userRoleFilter) }, [userPage, userSearch, userRoleFilter])
+
+  const totalPages = Math.max(1, Math.ceil(userTotal / PAGE_SIZE))
 
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -245,6 +266,7 @@ export default function SettingsPage() {
           <TabsTrigger value="articles"><Package className="w-4 h-4 mr-2" />Articles</TabsTrigger>
           <TabsTrigger value="categories"><Tag className="w-4 h-4 mr-2" />Category</TabsTrigger>
           <TabsTrigger value="units"><Ruler className="w-4 h-4 mr-2" />Units</TabsTrigger>
+          <TabsTrigger value="permissions"><Lock className="w-4 h-4 mr-2" />Permissions</TabsTrigger>
         </TabsList>
 
 
@@ -306,7 +328,39 @@ export default function SettingsPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div><CardTitle>User Management</CardTitle><CardDescription>Manage accounts and permissions</CardDescription></div>
-                <Button>Add User</Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <Input
+                  placeholder="Search by name, username, phone..."
+                  value={userSearch}
+                  onChange={(e) => { setUserSearch(e.target.value); setUserPage(1) }}
+                  className="max-w-xs"
+                />
+                <Select value={userRoleFilter || "all"} onValueChange={(v) => { setUserRoleFilter(v === "all" ? "" : v); setUserPage(1) }}>
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="All roles" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All roles</SelectItem>
+                    <SelectItem value="global_control">Global Control</SelectItem>
+                    <SelectItem value="system_admin">System Admin</SelectItem>
+                    <SelectItem value="body_control">Body Control</SelectItem>
+                    <SelectItem value="director">Director</SelectItem>
+                    <SelectItem value="academic_principal">Academic Principal</SelectItem>
+                    <SelectItem value="discipline_principal">Discipline Principal</SelectItem>
+                    <SelectItem value="receptionist">Receptionist</SelectItem>
+                    <SelectItem value="accountant">Accountant</SelectItem>
+                    <SelectItem value="hr">HR</SelectItem>
+                    <SelectItem value="transporter">Transporter</SelectItem>
+                    <SelectItem value="driver">Driver</SelectItem>
+                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="student_parent">Parent</SelectItem>
+                    <SelectItem value="student">Student</SelectItem>
+                    <SelectItem value="boarding">Boarding</SelectItem>
+                    <SelectItem value="daycare">Daycare</SelectItem>
+                    <SelectItem value="restaurant">Restaurant</SelectItem>
+                    <SelectItem value="storage">Storage</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => fetchUsers(userPage, userSearch, userRoleFilter)} variant="outline" size="sm">Refresh</Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -316,24 +370,79 @@ export default function SettingsPage() {
                     <TableRow>
                       <TableHead>Name</TableHead><TableHead>Email</TableHead>
                       <TableHead>Role</TableHead><TableHead>Status</TableHead>
+                      <TableHead>Last Login</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {users.length === 0
-                      ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
+                      ? <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No users found</TableCell></TableRow>
                       : users.map(u => (
                       <TableRow key={u.id}>
                         <TableCell className="font-medium">{u.user?.first_name} {u.user?.last_name}</TableCell>
                         <TableCell>{u.user?.email}</TableCell>
                         <TableCell><Badge variant="outline">{u.role}</Badge></TableCell>
                         <TableCell><Badge variant={u.active ? "default" : "secondary"}>{u.active ? "Active" : "Inactive"}</Badge></TableCell>
+                        <TableCell>
+                          {u.user?.last_login
+                            ? new Date(u.user.last_login).toLocaleString("fr-FR", {
+                                day: "2-digit", month: "2-digit", year: "numeric",
+                                hour: "2-digit", minute: "2-digit",
+                              })
+                            : <span className="text-muted-foreground text-sm">Never</span>}
+                        </TableCell>
                         <TableCell className="text-right"><Button variant="ghost" size="sm">Edit</Button></TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-sm text-muted-foreground">
+                    {userTotal} total
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={userPage <= 1}
+                      onClick={() => setUserPage(p => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    {(() => {
+                      const pages: (number | "...")[] = []
+                      const start = Math.max(1, userPage - 2)
+                      const end = Math.min(totalPages, userPage + 2)
+                      if (start > 1) { pages.push(1); if (start > 2) pages.push("...") }
+                      for (let i = start; i <= end; i++) pages.push(i)
+                      if (end < totalPages) { if (end < totalPages - 1) pages.push("..."); pages.push(totalPages) }
+                      return pages.map((p, idx) =>
+                        p === "..." ? (
+                          <span key={`e-${idx}`} className="px-1 text-muted-foreground">...</span>
+                        ) : (
+                          <Button
+                            key={p}
+                            variant={p === userPage ? "default" : "outline"}
+                            size="sm"
+                            className="min-w-[36px]"
+                            onClick={() => setUserPage(p)}
+                          >
+                            {p}
+                          </Button>
+                        )
+                      )
+                    })()}
+                    <Button
+                      variant="outline" size="sm"
+                      disabled={userPage >= totalPages}
+                      onClick={() => setUserPage(p => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -558,6 +667,11 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── Permissions ── */}
+        <TabsContent value="permissions">
+          <PermissionsTab />
         </TabsContent>
       </Tabs>
 

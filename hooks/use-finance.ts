@@ -38,8 +38,6 @@ export function useInvoices(params: InvoiceQueryParams = { page: 1, page_size: 1
                 const rawData = response.data;
                 const extraction = (rawData && (rawData.data || rawData.results)) ? (rawData.data || rawData) : rawData;
 
-                console.log("Invoices Raw Extraction:", extraction);
-
                 return paginatedInvoiceSchema.parse(extraction);
             } catch (err: any) {
                 if (err.name === "ZodError") {
@@ -155,6 +153,20 @@ export function useCancelRefund() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["finance", "surpluses"] });
             queryClient.invalidateQueries({ queryKey: ["finance", "refunds"] });
+        },
+    });
+}
+
+export function useCancelInvoice() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (invoiceId: number) => {
+            const response = await axiosInstance.post(`/finance/invoices/${invoiceId}/cancel/`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
         },
     });
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { useState, useMemo, useEffect } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
@@ -179,6 +181,8 @@ export default function CanteenPage() {
     () => attendance.find((record) => record.id === selectedAttendanceId) || null,
     [attendance, selectedAttendanceId]
   );
+
+  const { user } = useAuth();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -451,84 +455,88 @@ export default function CanteenPage() {
         const isActive = row.status === "active";
         return (
           <div className="flex items-center gap-1">
-            {/* Edit — only for non-active */}
-            {!isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedOrderId(row.id);
-                  setIsEditOrderOpen(true);
-                }}
-                className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                title="Edit"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
+            {canManage(user?.role, "restaurant") && (
+              <>
+                {/* Edit — only for non-active */}
+                {!isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOrderId(row.id);
+                      setIsEditOrderOpen(true);
+                    }}
+                    className="h-8 w-8 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                    title="Edit"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Validate / Activate */}
-            {!isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubscriptionAction(row.id, "active");
-                }}
-                className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                title="Validate / Activate"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Validate / Activate */}
+                {!isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscriptionAction(row.id, "active");
+                    }}
+                    className="h-8 w-8 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                    title="Validate / Activate"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Pause / Deactivate */}
-            {isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubscriptionAction(row.id, "paused");
-                }}
-                className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                title="Pause"
-              >
-                <PauseCircle className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Pause / Deactivate */}
+                {isActive && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscriptionAction(row.id, "paused");
+                    }}
+                    className="h-8 w-8 rounded-lg text-amber-500 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                    title="Pause"
+                  >
+                    <PauseCircle className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Delete (only if no invoices yet) */}
-            {!isActive && !row.invoiceSummary && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteSubscription(row.id);
-                }}
-                className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                title="Delete permanently"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+                {/* Delete (only if no invoices yet) */}
+                {!isActive && !row.invoiceSummary && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteSubscription(row.id);
+                    }}
+                    className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Delete permanently"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
 
-            {/* Cancel */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleSubscriptionAction(row.id, "cancelled");
-              }}
-              className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-              title="Cancel"
-            >
-              <XCircle className="h-4 w-4" />
-            </Button>
+                {/* Cancel */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscriptionAction(row.id, "cancelled");
+                  }}
+                  className="h-8 w-8 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                  title="Cancel"
+                >
+                  <XCircle className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         );
       },
@@ -744,31 +752,35 @@ export default function CanteenPage() {
         if (isValidated) return <span className="text-slate-400 text-xs">—</span>;
         return (
           <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAttendanceAction(row.id, "present");
-              }}
-              className="h-8 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
-              title="Validate"
-            >
-              <CheckCircle className="mr-1 h-4 w-4" />
-              <span className="text-xs font-medium">Validate</span>
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteAttendance(row.id);
-              }}
-              className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-              title="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canManage(user?.role, "restaurant") && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAttendanceAction(row.id, "present");
+                  }}
+                  className="h-8 rounded-lg border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30 transition-colors"
+                  title="Validate"
+                >
+                  <CheckCircle className="mr-1 h-4 w-4" />
+                  <span className="text-xs font-medium">Validate</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAttendance(row.id);
+                  }}
+                  className="h-8 w-8 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
           </div>
         );
       },
@@ -872,7 +884,9 @@ export default function CanteenPage() {
                   Available meal plans for different dietary needs
                 </p>
               </div>
-              <CreateMealPlanDialog onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateMealPlanDialog onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -945,7 +959,9 @@ export default function CanteenPage() {
                   Available food items with nutritional information
                 </p>
               </div>
-              <CreateFoodItemDialog onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateFoodItemDialog onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -988,7 +1004,9 @@ export default function CanteenPage() {
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
-                <CreateSubscriptionDialog mealPlans={mealPlans} onSuccess={fetchData} />
+                {canManage(user?.role, "restaurant") && (
+                  <CreateSubscriptionDialog mealPlans={mealPlans} onSuccess={fetchData} />
+                )}
               </div>
             </div>
 
@@ -1063,7 +1081,9 @@ export default function CanteenPage() {
                   Dietary restrictions and meal preferences
                 </p>
               </div>
-              <CreatePreferenceDialog mealPlans={mealPlans} onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreatePreferenceDialog mealPlans={mealPlans} onSuccess={fetchData} />
+              )}
             </div>
 
             <div className="grid grid-cols-4 gap-4">
@@ -1203,7 +1223,9 @@ export default function CanteenPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Meal Attendance</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Student and staff check-in records</p>
               </div>
-              <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
+              {canManage(user?.role, "restaurant") && (
+                <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
+              )}
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
@@ -1254,31 +1276,35 @@ export default function CanteenPage() {
             </div>
           </TabsContent>
         </Tabs>
-        <CreateSubscriptionDialog
-          mealPlans={mealPlans}
-          onSuccess={fetchData}
-          record={selectedOrder}
-          open={isEditOrderOpen}
-          onOpenChange={(open) => {
-            setIsEditOrderOpen(open);
-            if (!open) {
-              setSelectedOrderId(null);
-            }
-          }}
-        />
-        <CreateStaffAttendanceDialog
-          meals={meals}
-          mealPlans={mealPlans}
-          onSuccess={fetchData}
-          record={selectedAttendance}
-          open={isEditAttendanceOpen}
-          onOpenChange={(open) => {
-            setIsEditAttendanceOpen(open);
-            if (!open) {
-              setSelectedAttendanceId(null);
-            }
-          }}
-        />
+        {canManage(user?.role, "restaurant") && (
+          <CreateSubscriptionDialog
+            mealPlans={mealPlans}
+            onSuccess={fetchData}
+            record={selectedOrder}
+            open={isEditOrderOpen}
+            onOpenChange={(open) => {
+              setIsEditOrderOpen(open);
+              if (!open) {
+                setSelectedOrderId(null);
+              }
+            }}
+          />
+        )}
+        {canManage(user?.role, "restaurant") && (
+          <CreateStaffAttendanceDialog
+            meals={meals}
+            mealPlans={mealPlans}
+            onSuccess={fetchData}
+            record={selectedAttendance}
+            open={isEditAttendanceOpen}
+            onOpenChange={(open) => {
+              setIsEditAttendanceOpen(open);
+              if (!open) {
+                setSelectedAttendanceId(null);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );

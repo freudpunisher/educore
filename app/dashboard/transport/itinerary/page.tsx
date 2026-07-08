@@ -4,6 +4,8 @@ import { useState, useMemo } from "react";
 import { TransportLayout } from "@/components/transport/transport-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/auth-context";
+import { canManage } from "@/lib/access-control";
 import { Plus, MapPin, Users, Clock, Truck } from "lucide-react";
 import { mockItineraries } from "@/lib/mock/transport";
 
@@ -18,6 +20,7 @@ interface Itinerary {
 }
 
 export default function ItineraryPage() {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredData = useMemo(() => {
@@ -39,10 +42,12 @@ export default function ItineraryPage() {
               View and manage transport routes and schedules
             </p>
           </div>
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" />
-            New Route
-          </Button>
+          {canManage(user?.role, "transport") && (
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              New Route
+            </Button>
+          )}
         </div>
 
         {/* Stats */}

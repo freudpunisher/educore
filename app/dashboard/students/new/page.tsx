@@ -19,9 +19,10 @@ import { useCreateStudent } from "@/hooks/use-create-student";
 import { useAcademicYears, useClassRooms, useEnrollStudent } from "@/hooks/use-academic-data";
 import { createStudentSchema, CreateStudentData } from "@/lib/schemas/student.Schema";
 import { StudentImageCapture } from "@/components/students/student-image-capture";
+import { NATIONALITY_OPTIONS } from "@/constants/nationalities";
 import {
   ArrowLeft, Loader2, User, Users, Phone, Mail,
-  CalendarDays, UserCheck, ImageIcon, School
+  CalendarDays, UserCheck, ImageIcon, School, MapPin, Globe2, BookOpen
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
@@ -60,10 +61,23 @@ export default function NewStudentPage() {
   } = useForm<CreateStudentData>({
     resolver: zodResolver(createStudentSchema),
     defaultValues: {
+      place_of_birth: "",
+      nationality: "Burundian",
+      religion: "",
+      father_full_name: "",
+      father_phone_number: "",
+      father_job_name: "",
+      mother_full_name: "",
+      mother_phone_number: "",
+      mother_job_name: "",
+      address_parent_quarter: "",
+      address_parent_commune: "",
+      address_parent_province: "",
       parent_first_name: "",
       parent_last_name: "",
       parent_contact: "",
       parent_email: "",
+      address: "",
     },
   });
 
@@ -187,29 +201,118 @@ export default function NewStudentPage() {
                 )}
               </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Place of Birth
+                </Label>
+                <Input placeholder="Bujumbura" {...register("place_of_birth")} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Globe2 className="h-3.5 w-3.5" />
+                  Nationality
+                </Label>
+                <Select
+                  defaultValue="Burundian"
+                  onValueChange={(value) => setValue("nationality", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select nationality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NATIONALITY_OPTIONS.map((nationality) => (
+                      <SelectItem key={nationality.value} value={nationality.value}>
+                        {nationality.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Religion
+                </Label>
+                <Input placeholder="Christian" {...register("religion")} />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Father Information</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input placeholder="Jean Ndayisenga" {...register("father_full_name")} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Phone</Label>
+                <Input placeholder="+243812345678" {...register("father_phone_number")} />
+              </div>
+              <div className="space-y-2">
+                <Label>Job</Label>
+                <Input placeholder="Teacher, Trader..." {...register("father_job_name")} />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Mother Information</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Full Name</Label>
+                <Input placeholder="Marie Ndayisenga" {...register("mother_full_name")} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /> Phone</Label>
+                <Input placeholder="+243812345678" {...register("mother_phone_number")} />
+              </div>
+              <div className="space-y-2">
+                <Label>Job</Label>
+                <Input placeholder="Doctor, Banker..." {...register("mother_job_name")} />
+              </div>
+            </div>
+
+            <Separator />
+            <h3 className="text-sm font-medium text-muted-foreground">Parent Address</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Quarter</Label>
+                <Input placeholder="Rohero" {...register("address_parent_quarter")} />
+              </div>
+              <div className="space-y-2">
+                <Label>Commune</Label>
+                <Input placeholder="Mukaza" {...register("address_parent_commune")} />
+              </div>
+              <div className="space-y-2">
+                <Label>Province</Label>
+                <Input placeholder="Bujumbura Mairie" {...register("address_parent_province")} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Parent Info */}
+        {/* Parent / Guardian — Contact Person */}
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              Parent / Guardian Details
+              Parent / Guardian — Contact Person
             </CardTitle>
-            <CardDescription>At least one parent or guardian contact is required.</CardDescription>
+            <CardDescription>Contact person responsible for the student.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>First Name <span className="text-destructive">*</span></Label>
+                <Label>First Name</Label>
                 <Input placeholder="Marc" {...register("parent_first_name")} />
                 {errors.parent_first_name && (
                   <p className="text-sm text-destructive">{errors.parent_first_name.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Last Name <span className="text-destructive">*</span></Label>
+                <Label>Last Name</Label>
                 <Input placeholder="Dupont" {...register("parent_last_name")} />
                 {errors.parent_last_name && (
                   <p className="text-sm text-destructive">{errors.parent_last_name.message}</p>
@@ -218,7 +321,7 @@ export default function NewStudentPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Relationship <span className="text-destructive">*</span></Label>
+              <Label>Relationship</Label>
               <Select onValueChange={(v) => setValue("parent_relationship", v as any)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Relationship" />
@@ -227,6 +330,17 @@ export default function NewStudentPage() {
                   <SelectItem value="mother">Mother</SelectItem>
                   <SelectItem value="father">Father</SelectItem>
                   <SelectItem value="guardian">Guardian</SelectItem>
+                  <SelectItem value="stepmother">Step mother</SelectItem>
+                  <SelectItem value="stepfather">Step father</SelectItem>
+                  <SelectItem value="brother">Brother</SelectItem>
+                  <SelectItem value="sister">Sister</SelectItem>
+                  <SelectItem value="uncle">Uncle</SelectItem>
+                  <SelectItem value="aunt">Aunt</SelectItem>
+                  <SelectItem value="grandfather">Grandfather</SelectItem>
+                  <SelectItem value="grandmother">Grandmother</SelectItem>
+                  <SelectItem value="cousin">Cousin</SelectItem>
+                  <SelectItem value="nephew">Nephew</SelectItem>
+                  <SelectItem value="niece">Niece</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -235,10 +349,15 @@ export default function NewStudentPage() {
               )}
             </div>
 
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input placeholder="123 Main St, Bujumbura" {...register("address")} />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5" /> Phone <span className="text-destructive">*</span>
+                  <Phone className="h-3.5 w-3.5" /> Phone
                 </Label>
                 <Input placeholder="+243812345678" {...register("parent_contact")} />
                 {errors.parent_contact && (
