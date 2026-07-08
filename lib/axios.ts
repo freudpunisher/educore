@@ -4,12 +4,8 @@ import axios from "axios";
 const isDev = process.env.NODE_ENV === "development";
 const isServer = typeof window === "undefined";
 
-// Prefer the Next.js proxy by default so requests work in local/dev and deployment.
-// If an explicit public API URL is provided, use it; otherwise fall back to /api/.
-const configuredBaseUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-const baseURL = configuredBaseUrl
-  ? configuredBaseUrl.replace(/\/?$/, "/")
-  : "/api/";
+// Base URL logic (works perfectly with Vercel + local dev)
+const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.200.68:10000/api/"; // Client-side → goes through Next.js proxy (recommended!)
 
 const axiosInstance = axios.create({
   baseURL,

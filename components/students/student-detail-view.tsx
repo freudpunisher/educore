@@ -6,7 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     Users, FileText, Calendar, GraduationCap, Wallet, Activity,
     Sparkles, Award, ClipboardList, Folder, BookOpen, CheckCircle,
-    DollarSign, ShieldAlert, LayoutGrid, Package, Trash2
+    DollarSign, ShieldAlert, LayoutGrid, Package, Trash2,
+    Phone,
+    Mail
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
 import { useAcademicYears } from "@/hooks/use-academic-data";
@@ -170,7 +172,7 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                             </Select>
                         </div>
                         <StudentPvcCardDialog student={student as any} />
-                        {!student.is_validate && role && ["director", "system_admin", "global_control"].includes(role) && (
+                        {!student.is_validate && role === "academic_principal" && (
                             <Button
                                 onClick={() => validateMutation.mutate(student.id)}
                                 disabled={validateMutation.isPending}
@@ -310,84 +312,118 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         </TabsContent>
                     )}
 
-                    {allowedTabs.includes("parent-info") && (
-                        <TabsContent value="parent-info" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                            <ParentInfoTab student={student} />
-                        </TabsContent>
-                    )}
-
-                    {allowedTabs.includes("parent-contacts") && (
-                        <TabsContent value="parent-contacts" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
-                            <ParentContactsTab student={student} />
+                    {allowedTabs.includes("family") && (
+                        <TabsContent value="family" className="p-6 m-0 space-y-6">
+                            <h3 className="text-lg font-semibold flex items-center gap-2">
+                                <Users className="h-5 w-5 text-muted-foreground" />
+                                Parent / Guardian Contacts
+                            </h3>
+                            {student.parents_info?.length === 0 ? (
+                                <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
+                                    <p className="text-muted-foreground">No family information recorded.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {student.parents_info?.map((p: any, index: number) => (
+                                        <Card key={index} className="relative overflow-hidden group hover:shadow-md transition-shadow">
+                                            {p.is_primary && (
+                                                <div className="absolute top-0 right-0">
+                                                    <Badge className="rounded-tr-none rounded-bl-lg text-[10px] uppercase font-bold" variant="default">Primary</Badge>
+                                                </div>
+                                            )}
+                                            <CardHeader className="pb-2">
+                                                <p className="font-bold text-lg">
+                                                    {p.full_name}
+                                                </p>
+                                                <Badge variant="outline" className="w-fit capitalize text-xs bg-muted/50">
+                                                    {p.relationship}
+                                                </Badge>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3 text-sm">
+                                                <div className="flex items-center gap-3 text-muted-foreground">
+                                                    <div className="p-1.5 bg-primary/5 rounded-full"><Phone className="h-4 w-4 text-primary" /></div>
+                                                    <span>{p.phone || "No phone recorded"}</span>
+                                                </div>
+                                                {p.email && (
+                                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                                        <div className="p-1.5 bg-primary/5 rounded-full"><Mail className="h-4 w-4 text-primary" /></div>
+                                                        <span className="truncate">{p.email}</span>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </TabsContent>
                     )}
 
                     {allowedTabs.includes("documents") && (
                         <TabsContent value="documents" className="p-6 m-0 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-muted-foreground" />
-                                Academic Documents
-                            </h3>
-                            <UploadStudentDocumentDialog studentId={student.id} />
-                        </div>
-                        {student.documents?.length === 0 ? (
-                            <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
-                                <p className="text-muted-foreground">No documents uploaded yet.</p>
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold flex items-center gap-2">
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                    Academic Documents
+                                </h3>
+                                <UploadStudentDocumentDialog studentId={student.id} />
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 gap-3">
-                                {student.documents?.map((doc: any, idx: number) => {
-                                    const getIcon = (type: string) => {
-                                        switch (type) {
-                                            case "bulletin": return <ClipboardList className="h-6 w-6" />;
-                                            case "certificate": return <Award className="h-6 w-6" />;
-                                            case "enrollment": return <Folder className="h-6 w-6" />;
-                                            case "exam_copy": return <BookOpen className="h-6 w-6" />;
-                                            case "medical": return <Activity className="h-6 w-6" />;
-                                            default: return <FileText className="h-6 w-6" />;
-                                        }
-                                    };
+                            {student.documents?.length === 0 ? (
+                                <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
+                                    <p className="text-muted-foreground">No documents uploaded yet.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-3">
+                                    {student.documents?.map((doc: any, idx: number) => {
+                                        const getIcon = (type: string) => {
+                                            switch (type) {
+                                                case "bulletin": return <ClipboardList className="h-6 w-6" />;
+                                                case "certificate": return <Award className="h-6 w-6" />;
+                                                case "enrollment": return <Folder className="h-6 w-6" />;
+                                                case "exam_copy": return <BookOpen className="h-6 w-6" />;
+                                                case "medical": return <Activity className="h-6 w-6" />;
+                                                default: return <FileText className="h-6 w-6" />;
+                                            }
+                                        };
 
-                                    return (
-                                        <div
-                                            key={doc.id || `doc-${idx}`}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border bg-card hover:bg-accent/30 transition-all group border-l-4 border-l-primary shadow-sm hover:shadow-md"
-                                        >
-                                            <div className="flex items-center gap-5">
-                                                <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-inner">
-                                                    {getIcon(doc.document_type || "")}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold capitalize text-base tracking-tight">{(doc.document_type || "Document").replace("_", " ")}</p>
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
-                                                            <Calendar className="h-3.5 w-3.5" />
-                                                            {doc.uploaded_at ? `Uploaded on ${format(new Date(doc.uploaded_at), "PPP")}` : "Unknown date"}
-                                                        </p>
-                                                        {doc.uploaded_by_user && (
-                                                            <p className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-bold uppercase tracking-wider">
-                                                                Par {doc.uploaded_by_user}
+                                        return (
+                                            <div
+                                                key={doc.id || `doc-${idx}`}
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between p-5 rounded-2xl border bg-card hover:bg-accent/30 transition-all group border-l-4 border-l-primary shadow-sm hover:shadow-md"
+                                            >
+                                                <div className="flex items-center gap-5">
+                                                    <div className="p-3 bg-primary/10 rounded-xl text-primary shadow-inner">
+                                                        {getIcon(doc.document_type || "")}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold capitalize text-base tracking-tight">{(doc.document_type || "Document").replace("_", " ")}</p>
+                                                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
+                                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                                                                <Calendar className="h-3.5 w-3.5" />
+                                                                {doc.uploaded_at ? `Uploaded on ${format(new Date(doc.uploaded_at), "PPP")}` : "Unknown date"}
                                                             </p>
-                                                        )}
+                                                            {doc.uploaded_by_user && (
+                                                                <p className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-bold uppercase tracking-wider">
+                                                                    Par {doc.uploaded_by_user}
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <div className="flex items-center gap-3 mt-4 sm:mt-0">
+                                                    {doc.file_url && (
+                                                        <DocumentPreviewDialog
+                                                            fileUrl={doc.file_url}
+                                                            documentType={doc.document_type || "Document"}
+                                                            fileName={doc.file_url.split('/').pop()}
+                                                        />
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-3 mt-4 sm:mt-0">
-                                                {doc.file_url && (
-                                                    <DocumentPreviewDialog
-                                                        fileUrl={doc.file_url}
-                                                        documentType={doc.document_type || "Document"}
-                                                        fileName={doc.file_url.split('/').pop()}
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </TabsContent>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </TabsContent>
                     )}
                 </ScrollArea>
             </Tabs>

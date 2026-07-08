@@ -25,8 +25,8 @@ export function OverviewTab({ filters }: Props) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Erreur</AlertTitle>
-        <AlertDescription>Impossible de charger les données. Veuillez réessayer.</AlertDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Unable to load data. Please try again.</AlertDescription>
       </Alert>
     )
   }
@@ -39,41 +39,41 @@ export function OverviewTab({ filters }: Props) {
     return (
       <Alert>
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Aucune donnée</AlertTitle>
-        <AlertDescription>Aucune donnée disponible pour la période sélectionnée.</AlertDescription>
+        <AlertTitle>No data</AlertTitle>
+        <AlertDescription>No data available for the selected period.</AlertDescription>
       </Alert>
     )
   }
 
   const kpis: KpiCardData[] = [
     {
-      title: "Total Élèves",
+      title: "Total Students",
       value: data.kpis.total_students,
-      sub: `Encadrés par ${data.kpis.total_teachers} enseignants`,
+      sub: `Overseen by ${data.kpis.total_teachers} teachers`,
       icon: <Users className="w-5 h-5 text-blue-600" />,
       color: "text-blue-600",
       bgColor: "bg-blue-500/10",
     },
     {
-      title: "Enseignants",
+      title: "Teachers",
       value: data.kpis.total_teachers,
-      sub: `+ ${data.kpis.total_staff} personnel administratif`,
+      sub: `+ ${data.kpis.total_staff} admin staff`,
       icon: <GraduationCap className="w-5 h-5 text-indigo-600" />,
       color: "text-indigo-600",
       bgColor: "bg-indigo-500/10",
     },
     {
-      title: "Classes Actives",
+      title: "Active Classes",
       value: data.kpis.active_classes,
-      sub: `${data.kpis.occupied_rooms} places disponibles`,
+      sub: `${data.kpis.occupied_rooms} available seats`,
       icon: <Building2 className="w-5 h-5 text-amber-600" />,
       color: "text-amber-600",
       bgColor: "bg-amber-500/10",
     },
     {
-      title: "Matières",
+      title: "Subjects",
       value: data.kpis.total_subjects,
-      sub: `${data.kpis.total_parents} parents inscrits`,
+      sub: `${data.kpis.total_parents} registered parents`,
       icon: <BookOpen className="w-5 h-5 text-emerald-600" />,
       color: "text-emerald-600",
       bgColor: "bg-emerald-500/10",
@@ -81,29 +81,33 @@ export function OverviewTab({ filters }: Props) {
   ]
 
   const enrollmentColumns = [
-    { key: "student_name" as const, label: "Nom", sortable: true },
-    { key: "class_name" as const, label: "Classe", sortable: true },
+    { key: "student_name" as const, label: "Name", sortable: true },
+    { key: "class_name" as const, label: "Class", sortable: true },
     { key: "date" as const, label: "Date", sortable: true },
     {
       key: "status" as const,
-      label: "Statut",
+      label: "Status",
       render: (value: string) => (
         <Badge variant={value === "validated" ? "default" : "secondary"}>
-          {value === "validated" ? "Validé" : "En attente"}
+          {value === "validated" ? "Validated" : "Pending"}
         </Badge>
       ),
     },
   ]
 
   const activityColumns = [
-    { key: "user" as const, label: "Utilisateur", sortable: true },
+    { key: "user" as const, label: "User", sortable: true },
     { key: "action" as const, label: "Action", sortable: true },
     { key: "module" as const, label: "Module", sortable: true },
     { key: "time" as const, label: "Date", sortable: true },
   ]
 
+  const genderLabelMap: Record<string, string> = {
+    Hommes: "Male",
+    Femmes: "Female",
+  }
   const genderData = Object.entries(data.student_distribution.by_gender).map(([name, value]) => ({
-    name,
+    name: genderLabelMap[name] || name,
     value,
   }))
 
@@ -127,12 +131,12 @@ export function OverviewTab({ filters }: Props) {
         {/* Enrollment Trend */}
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Évolution des Inscriptions</CardTitle>
-            <CardDescription>Par mois (Janvier - Décembre)</CardDescription>
+            <CardTitle className="text-lg">Enrollment Trend</CardTitle>
+            <CardDescription>Per month (January - December)</CardDescription>
           </CardHeader>
           <CardContent>
             {data.enrollment_trend.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.enrollment_trend}>
@@ -150,12 +154,12 @@ export function OverviewTab({ filters }: Props) {
         {/* Gender Distribution */}
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Répartition par Sexe</CardTitle>
-            <CardDescription>Proportion Hommes / Femmes</CardDescription>
+            <CardTitle className="text-lg">Gender Distribution</CardTitle>
+            <CardDescription>Male / Female ratio</CardDescription>
           </CardHeader>
           <CardContent>
             {genderData.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
@@ -177,11 +181,11 @@ export function OverviewTab({ filters }: Props) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Répartition par Niveau</CardTitle>
+            <CardTitle className="text-lg">By Level</CardTitle>
           </CardHeader>
           <CardContent>
             {levelData.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={levelData} layout="vertical">
@@ -202,11 +206,11 @@ export function OverviewTab({ filters }: Props) {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Répartition par Tranche d&apos;Âge</CardTitle>
+            <CardTitle className="text-lg">By Age Range</CardTitle>
           </CardHeader>
           <CardContent>
             {ageData.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={ageData}>
@@ -226,7 +230,7 @@ export function OverviewTab({ filters }: Props) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Dernières Inscriptions</CardTitle>
+            <CardTitle className="text-lg">Recent Enrollments</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable
@@ -239,7 +243,7 @@ export function OverviewTab({ filters }: Props) {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Dernières Activités</CardTitle>
+            <CardTitle className="text-lg">Recent Activities</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable

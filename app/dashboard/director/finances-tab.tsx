@@ -25,8 +25,8 @@ export function FinancesTab({ filters }: Props) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Erreur</AlertTitle>
-        <AlertDescription>Impossible de charger les données financières.</AlertDescription>
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>Unable to load financial data.</AlertDescription>
       </Alert>
     )
   }
@@ -36,41 +36,41 @@ export function FinancesTab({ filters }: Props) {
     return (
       <Alert>
         <AlertCircle className="w-4 h-4" />
-        <AlertTitle>Aucune donnée</AlertTitle>
-        <AlertDescription>Aucune donnée financière disponible.</AlertDescription>
+        <AlertTitle>No data</AlertTitle>
+        <AlertDescription>No financial data available.</AlertDescription>
       </Alert>
     )
   }
 
   const kpis: KpiCardData[] = [
     {
-      title: "Total Attendu",
+      title: "Total Expected",
       value: fmt(data.kpis.total_expected),
-      sub: "Montant total facturé",
+      sub: "Total invoiced amount",
       icon: <Receipt className="w-5 h-5 text-purple-600" />,
       color: "text-purple-600",
       bgColor: "bg-purple-500/10",
     },
     {
-      title: "Total Payé",
+      title: "Total Paid",
       value: fmt(data.kpis.total_paid),
-      sub: `${((data.kpis.total_paid / (data.kpis.total_expected || 1)) * 100).toFixed(1)}% encaissé`,
+      sub: `${((data.kpis.total_paid / (data.kpis.total_expected || 1)) * 100).toFixed(1)}% collected`,
       icon: <DollarSign className="w-5 h-5 text-green-600" />,
       color: "text-green-600",
       bgColor: "bg-green-500/10",
     },
     {
-      title: "Restant à Recouvrer",
+      title: "Outstanding",
       value: fmt(data.kpis.outstanding),
-      sub: `Dont ${fmt(data.kpis.overdue)} en impayés > 30 jours`,
+      sub: `${fmt(data.kpis.overdue)} overdue > 30 days`,
       icon: <Wallet className="w-5 h-5 text-rose-600" />,
       color: "text-rose-600",
       bgColor: "bg-rose-500/10",
     },
     {
-      title: "Recette Annuelle",
+      title: "Annual Revenue",
       value: fmt(data.kpis.revenue_year),
-      sub: `${fmt(data.kpis.revenue_month)} ce mois · ${fmt(data.kpis.revenue_today)} aujourd'hui`,
+      sub: `${fmt(data.kpis.revenue_month)} this month · ${fmt(data.kpis.revenue_today)} today`,
       icon: <TrendingUp className="w-5 h-5 text-emerald-600" />,
       color: "text-emerald-600",
       bgColor: "bg-emerald-500/10",
@@ -78,10 +78,10 @@ export function FinancesTab({ filters }: Props) {
   ]
 
   const paymentColumns = [
-    { key: "student_name" as const, label: "Élève", sortable: true },
-    { key: "amount" as const, label: "Montant", sortable: true, render: (v: number) => fmt(v) },
+    { key: "student_name" as const, label: "Student", sortable: true },
+    { key: "amount" as const, label: "Amount", sortable: true, render: (v: number) => fmt(v) },
     { key: "date" as const, label: "Date", sortable: true },
-    { key: "payment_mode" as const, label: "Mode", sortable: true },
+    { key: "payment_mode" as const, label: "Method", sortable: true },
   ]
 
   return (
@@ -91,12 +91,12 @@ export function FinancesTab({ filters }: Props) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Évolution Mensuelle des Recettes</CardTitle>
-            <CardDescription>Montants attendus vs collectés</CardDescription>
+            <CardTitle className="text-lg">Monthly Revenue Trend</CardTitle>
+            <CardDescription>Expected vs collected amounts</CardDescription>
           </CardHeader>
           <CardContent>
             {data.monthly_revenue.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={data.monthly_revenue}>
@@ -105,8 +105,8 @@ export function FinancesTab({ filters }: Props) {
                   <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => new Intl.NumberFormat("fr-BI", { notation: "compact" }).format(v)} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} formatter={(v) => [fmt(Number(v)), ""]} />
                   <Legend />
-                  <Bar dataKey="expected" name="Attendu" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
-                  <Bar dataKey="collected" name="Collecté" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={30} />
+                  <Bar dataKey="expected" name="Expected" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={30} />
+                  <Bar dataKey="collected" name="Collected" fill="#22c55e" radius={[4, 4, 0, 0]} barSize={30} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -115,11 +115,11 @@ export function FinancesTab({ filters }: Props) {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Courbe des Remboursements</CardTitle>
+            <CardTitle className="text-lg">Refund Trend</CardTitle>
           </CardHeader>
           <CardContent>
             {data.refund_trend.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.refund_trend}>
@@ -127,7 +127,7 @@ export function FinancesTab({ filters }: Props) {
                   <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dy={10} />
                   <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => fmt(v)} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} formatter={(v) => [fmt(Number(v)), "Remboursé"]} />
-                  <Line type="monotone" dataKey="amount" stroke="#ef4444" strokeWidth={3} dot={{ r: 5, fill: "#ef4444" }} />
+                  <Line type="monotone" dataKey="amount" stroke="#ef4444" strokeWidth={3} dot={{ r: 5, fill: "#ef4444" }} name="Refunded" />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -138,11 +138,11 @@ export function FinancesTab({ filters }: Props) {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Comparatif Annuel</CardTitle>
+            <CardTitle className="text-lg">Year-over-Year Comparison</CardTitle>
           </CardHeader>
           <CardContent>
             {data.year_comparison.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-12">Aucune donnée</p>
+              <p className="text-muted-foreground text-sm text-center py-12">No data</p>
             ) : (
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.year_comparison}>
@@ -150,7 +150,7 @@ export function FinancesTab({ filters }: Props) {
                   <XAxis dataKey="label" axisLine={false} tickLine={false} className="text-xs font-bold text-muted-foreground" dy={10} />
                   <YAxis axisLine={false} tickLine={false} className="text-[10px] font-bold text-muted-foreground" dx={-10} tickFormatter={(v) => fmt(v)} />
                   <Tooltip contentStyle={{ borderRadius: "12px", border: "none" }} formatter={(v) => [fmt(Number(v)), "Payé"]} />
-                  <Bar dataKey="total_paid" name="Total Payé" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={60} />
+                  <Bar dataKey="total_paid" name="Total Paid" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={60} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -159,7 +159,7 @@ export function FinancesTab({ filters }: Props) {
 
         <Card className="border-none shadow-xl shadow-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Derniers Paiements Reçus</CardTitle>
+            <CardTitle className="text-lg">Recent Payments</CardTitle>
           </CardHeader>
           <CardContent>
             <DataTable

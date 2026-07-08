@@ -77,14 +77,14 @@ const navigation: NavItem[] = [
   { name: "Academic Planning", href: "/dashboard/academic-planning", icon: PenSquare, roles: MODULE_ACCESS["Academic Planning"] },
   { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck, roles: MODULE_ACCESS["Course Tracking"] },
   { name: "Transport", href: "/dashboard/transport", icon: Truck, roles: MODULE_ACCESS.Transport },
-  { name: "Rapports", href: "/dashboard/reports", icon: FileText, roles: MODULE_ACCESS.Rapports },
+  { name: "Reports", href: "/dashboard/reports", icon: FileText, roles: MODULE_ACCESS.Rapports },
   { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed, roles: MODULE_ACCESS.Restaurant },
   { name: "Storage", href: "/dashboard/store", icon: Package, roles: MODULE_ACCESS.Storage },
   { name: "Boarding", href: "/dashboard/boarding", icon: Home, roles: MODULE_ACCESS.Boarding },
   { name: "Daycare", href: "/dashboard/daycare", icon: Baby, roles: MODULE_ACCESS.Daycare },
-  { 
-    name: "Audit Logs", 
-    href: "/dashboard/audit-logs", 
+  {
+    name: "Audit Logs",
+    href: "/dashboard/audit-logs",
     icon: FileText,
     roles: MODULE_ACCESS["Audit Logs"],
   },
