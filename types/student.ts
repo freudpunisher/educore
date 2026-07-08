@@ -136,6 +136,10 @@ export const studentParentSchema = z.object({
   email: z.string().email().nullable().or(z.literal("")).optional(),
   phone_number: z.string().nullable().or(z.literal("")).optional(),
   is_primary_contact: z.boolean().optional(),
+  job_title: z.string().nullable().optional(),
+  address_quarter: z.string().nullable().optional(),
+  address_commune: z.string().nullable().optional(),
+  address_province: z.string().nullable().optional(),
 }).passthrough().transform((data) => ({
   ...data,
   full_name: data.full_name || `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Parent",

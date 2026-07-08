@@ -9,23 +9,36 @@ export const createStudentSchema = z.object({
     required_error: "Gender is required",
   }),
   date_of_birth: z.string().optional().or(z.literal("")),
+  place_of_birth: z.string().optional().or(z.literal("")),
+  nationality: z.string().optional().or(z.literal("")),
+  religion: z.string().optional().or(z.literal("")),
 
-  parent_first_name: z.string().min(1, "Parent first name is required"),
-  parent_last_name: z.string().min(1, "Parent last name is required"),
-  parent_relationship: z.enum(["mother", "father", "guardian", "other"], {
-    required_error: "Relationship is required",
-  }),
+  parent_first_name: z.string().optional().or(z.literal("")),
+  parent_last_name: z.string().optional().or(z.literal("")),
+  parent_relationship: z.string().optional().or(z.literal("")),
+  parent_job_title: z.string().optional().or(z.literal("")),
+  parent_address_quarter: z.string().optional().or(z.literal("")),
+  parent_address_commune: z.string().optional().or(z.literal("")),
+  parent_address_province: z.string().optional().or(z.literal("")),
   parent_contact: z
     .string()
-    .regex(
-      /^\+?[0-9]{10,15}$/,
-      "Invalid phone number (ex: +243812345678)"
-    ),
+    .optional()
+    .or(z.literal("")),
   parent_email: z
     .string()
     .email("Invalid parent email")
     .optional()
     .or(z.literal("")),
+  father_first_name: z.string().optional().or(z.literal("")),
+  father_last_name: z.string().optional().or(z.literal("")),
+  father_contact: z.string().optional().or(z.literal("")),
+  father_email: z.string().email("Invalid father email").optional().or(z.literal("")),
+  father_job_title: z.string().optional().or(z.literal("")),
+  mother_first_name: z.string().optional().or(z.literal("")),
+  mother_last_name: z.string().optional().or(z.literal("")),
+  mother_contact: z.string().optional().or(z.literal("")),
+  mother_email: z.string().email("Invalid mother email").optional().or(z.literal("")),
+  mother_job_title: z.string().optional().or(z.literal("")),
 });
 
 export type CreateStudentData = z.infer<typeof createStudentSchema>;

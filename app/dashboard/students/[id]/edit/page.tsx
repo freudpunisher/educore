@@ -50,6 +50,20 @@ export default function EditStudentPage() {
       parent_last_name: "",
       parent_contact: "",
       parent_email: "",
+      parent_job_title: "",
+      parent_address_quarter: "",
+      parent_address_commune: "",
+      parent_address_province: "",
+      father_first_name: "",
+      father_last_name: "",
+      father_contact: "",
+      father_email: "",
+      father_job_title: "",
+      mother_first_name: "",
+      mother_last_name: "",
+      mother_contact: "",
+      mother_email: "",
+      mother_job_title: "",
     },
   });
 
@@ -67,6 +81,23 @@ export default function EditStudentPage() {
       setValue("parent_relationship", (parent?.relationship ?? "") as any);
       setValue("parent_contact", parent?.phone ?? parent?.phone_number ?? "");
       setValue("parent_email", parent?.email ?? "");
+      setValue("parent_job_title", parent?.job_title ?? "");
+      setValue("parent_address_quarter", student.address_quarter ?? parent?.address_quarter ?? "");
+      setValue("parent_address_commune", student.address_commune ?? parent?.address_commune ?? "");
+      setValue("parent_address_province", student.address_province ?? parent?.address_province ?? "");
+
+      const fatherParts = (student.father_name ?? "").split(" ");
+      setValue("father_first_name", fatherParts[0] ?? "");
+      setValue("father_last_name", fatherParts.slice(1).join(" ") ?? "");
+      setValue("father_contact", student.father_contact ?? "");
+      setValue("father_job_title", student.father_job_title ?? "");
+
+      const motherParts = (student.mother_name ?? "").split(" ");
+      setValue("mother_first_name", motherParts[0] ?? "");
+      setValue("mother_last_name", motherParts.slice(1).join(" ") ?? "");
+      setValue("mother_contact", student.mother_contact ?? "");
+      setValue("mother_email", student.mother_email ?? "");
+      setValue("mother_job_title", student.mother_job_title ?? "");
     }
   }, [student, setValue]);
 
@@ -280,6 +311,40 @@ export default function EditStudentPage() {
               {errors.parent_relationship && (
                 <p className="text-sm text-destructive">{errors.parent_relationship.message}</p>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Job Title</Label>
+                <Input placeholder="Teacher, Trader, Nurse..." {...register("parent_job_title")} />
+                {errors.parent_job_title && (
+                  <p className="text-sm text-destructive">{errors.parent_job_title.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Quarter</Label>
+                <Input placeholder="Rohero" {...register("parent_address_quarter")} />
+                {errors.parent_address_quarter && (
+                  <p className="text-sm text-destructive">{errors.parent_address_quarter.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Commune</Label>
+                <Input placeholder="Mukaza" {...register("parent_address_commune")} />
+                {errors.parent_address_commune && (
+                  <p className="text-sm text-destructive">{errors.parent_address_commune.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Province</Label>
+                <Input placeholder="Bujumbura Mairie" {...register("parent_address_province")} />
+                {errors.parent_address_province && (
+                  <p className="text-sm text-destructive">{errors.parent_address_province.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

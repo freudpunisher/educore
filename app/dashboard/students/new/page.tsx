@@ -19,9 +19,10 @@ import { useCreateStudent } from "@/hooks/use-create-student";
 import { useAcademicYears, useClassRooms, useEnrollStudent } from "@/hooks/use-academic-data";
 import { createStudentSchema, CreateStudentData } from "@/lib/schemas/student.Schema";
 import { StudentImageCapture } from "@/components/students/student-image-capture";
+import { NATIONALITY_OPTIONS } from "@/constants/nationalities";
 import {
   ArrowLeft, Loader2, User, Users, Phone, Mail,
-  CalendarDays, UserCheck, ImageIcon, School
+  CalendarDays, UserCheck, ImageIcon, School, MapPin, Globe2, BookOpen
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect } from "react";
@@ -60,10 +61,27 @@ export default function NewStudentPage() {
   } = useForm<CreateStudentData>({
     resolver: zodResolver(createStudentSchema),
     defaultValues: {
+      place_of_birth: "",
+      nationality: "Burundian",
+      religion: "",
       parent_first_name: "",
       parent_last_name: "",
       parent_contact: "",
       parent_email: "",
+      parent_job_title: "",
+      parent_address_quarter: "",
+      parent_address_commune: "",
+      parent_address_province: "",
+      father_first_name: "",
+      father_last_name: "",
+      father_contact: "",
+      father_email: "",
+      father_job_title: "",
+      mother_first_name: "",
+      mother_last_name: "",
+      mother_contact: "",
+      mother_email: "",
+      mother_job_title: "",
     },
   });
 
@@ -187,6 +205,44 @@ export default function NewStudentPage() {
                 )}
               </div>
             </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Place of Birth
+                </Label>
+                <Input placeholder="Bujumbura" {...register("place_of_birth")} />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Globe2 className="h-3.5 w-3.5" />
+                  Nationality
+                </Label>
+                <Select
+                  defaultValue="Burundian"
+                  onValueChange={(value) => setValue("nationality", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select nationality" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NATIONALITY_OPTIONS.map((nationality) => (
+                      <SelectItem key={nationality.value} value={nationality.value}>
+                        {nationality.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Religion
+                </Label>
+                <Input placeholder="Christian" {...register("religion")} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -202,14 +258,14 @@ export default function NewStudentPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>First Name <span className="text-destructive">*</span></Label>
+                <Label>First Name</Label>
                 <Input placeholder="Marc" {...register("parent_first_name")} />
                 {errors.parent_first_name && (
                   <p className="text-sm text-destructive">{errors.parent_first_name.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Last Name <span className="text-destructive">*</span></Label>
+                <Label>Last Name</Label>
                 <Input placeholder="Dupont" {...register("parent_last_name")} />
                 {errors.parent_last_name && (
                   <p className="text-sm text-destructive">{errors.parent_last_name.message}</p>
@@ -218,7 +274,7 @@ export default function NewStudentPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Relationship <span className="text-destructive">*</span></Label>
+              <Label>Relationship</Label>
               <Select onValueChange={(v) => setValue("parent_relationship", v as any)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select Relationship" />
@@ -227,6 +283,17 @@ export default function NewStudentPage() {
                   <SelectItem value="mother">Mother</SelectItem>
                   <SelectItem value="father">Father</SelectItem>
                   <SelectItem value="guardian">Guardian</SelectItem>
+                  <SelectItem value="stepmother">Step mother</SelectItem>
+                  <SelectItem value="stepfather">Step father</SelectItem>
+                  <SelectItem value="brother">Brother</SelectItem>
+                  <SelectItem value="sister">Sister</SelectItem>
+                  <SelectItem value="uncle">Uncle</SelectItem>
+                  <SelectItem value="aunt">Aunt</SelectItem>
+                  <SelectItem value="grandfather">Grandfather</SelectItem>
+                  <SelectItem value="grandmother">Grandmother</SelectItem>
+                  <SelectItem value="cousin">Cousin</SelectItem>
+                  <SelectItem value="nephew">Nephew</SelectItem>
+                  <SelectItem value="niece">Niece</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -237,8 +304,42 @@ export default function NewStudentPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
+                <Label>Job Title</Label>
+                <Input placeholder="Teacher, Trader, Nurse..." {...register("parent_job_title")} />
+                {errors.parent_job_title && (
+                  <p className="text-sm text-destructive">{errors.parent_job_title.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Quarter</Label>
+                <Input placeholder="Rohero" {...register("parent_address_quarter")} />
+                {errors.parent_address_quarter && (
+                  <p className="text-sm text-destructive">{errors.parent_address_quarter.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Commune</Label>
+                <Input placeholder="Mukaza" {...register("parent_address_commune")} />
+                {errors.parent_address_commune && (
+                  <p className="text-sm text-destructive">{errors.parent_address_commune.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Province</Label>
+                <Input placeholder="Bujumbura Mairie" {...register("parent_address_province")} />
+                {errors.parent_address_province && (
+                  <p className="text-sm text-destructive">{errors.parent_address_province.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label className="flex items-center gap-2">
-                  <Phone className="h-3.5 w-3.5" /> Phone <span className="text-destructive">*</span>
+                  <Phone className="h-3.5 w-3.5" /> Phone
                 </Label>
                 <Input placeholder="+243812345678" {...register("parent_contact")} />
                 {errors.parent_contact && (
@@ -257,6 +358,74 @@ export default function NewStudentPage() {
                 {errors.parent_email && (
                   <p className="text-sm text-destructive">{errors.parent_email.message}</p>
                 )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="text-sm font-medium">Father Details</div>
+                <div className="grid gap-3">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <Input placeholder="Jean" {...register("father_first_name")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <Input placeholder="Ndayisenga" {...register("father_last_name")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Job Title</Label>
+                    <Input placeholder="Trader, Engineer..." {...register("father_job_title")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5" /> Phone
+                    </Label>
+                    <Input placeholder="+243812345678" {...register("father_contact")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5" /> Email
+                    </Label>
+                    <Input type="email" placeholder="father@example.com" {...register("father_email")} />
+                    {errors.father_email && (
+                      <p className="text-sm text-destructive">{errors.father_email.message}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border p-4 space-y-3">
+                <div className="text-sm font-medium">Mother Details</div>
+                <div className="grid gap-3">
+                  <div className="space-y-2">
+                    <Label>First Name</Label>
+                    <Input placeholder="Marie" {...register("mother_first_name")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Last Name</Label>
+                    <Input placeholder="Ndayisenga" {...register("mother_last_name")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Job Title</Label>
+                    <Input placeholder="Doctor, Banker..." {...register("mother_job_title")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Phone className="h-3.5 w-3.5" /> Phone
+                    </Label>
+                    <Input placeholder="+243812345678" {...register("mother_contact")} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Mail className="h-3.5 w-3.5" /> Email
+                    </Label>
+                    <Input type="email" placeholder="mother@example.com" {...register("mother_email")} />
+                    {errors.mother_email && (
+                      <p className="text-sm text-destructive">{errors.mother_email.message}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>

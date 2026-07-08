@@ -39,7 +39,6 @@ interface StudentDetailViewProps {
 
 const ROLE_TABS: Record<string, string[]> = {
     accountant: ["invoicing"],
-    receptionist: ["documents"],
 };
 
 const TAB_ICONS: Record<string, React.ReactNode> = {
