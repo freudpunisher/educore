@@ -190,6 +190,22 @@ export const studentDetailSchema = z.object({
     class_name: z.string(),
     academic_year: z.string(),
   }).nullable().optional(),
+  // Personal info
+  place_of_birth: z.string().nullable().optional(),
+  nationality: z.string().nullable().optional(),
+  religion: z.string().nullable().optional(),
+  // Father direct fields
+  father_full_name: z.string().nullable().optional(),
+  father_phone_number: z.string().nullable().optional(),
+  father_job_name: z.string().nullable().optional(),
+  // Mother direct fields
+  mother_full_name: z.string().nullable().optional(),
+  mother_phone_number: z.string().nullable().optional(),
+  mother_job_name: z.string().nullable().optional(),
+  // Home address
+  address_parent_quarter: z.string().nullable().optional(),
+  address_parent_commune: z.string().nullable().optional(),
+  address_parent_province: z.string().nullable().optional(),
 }).passthrough().transform((data: any) => ({
   ...data,
   is_validate: data.is_validate ?? data.is_validated ?? false,

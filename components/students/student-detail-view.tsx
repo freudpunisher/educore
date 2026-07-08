@@ -7,8 +7,11 @@ import {
     Users, FileText, Calendar, GraduationCap, Wallet, Activity,
     Sparkles, Award, ClipboardList, Folder, BookOpen, CheckCircle,
     DollarSign, ShieldAlert, LayoutGrid, Package, Trash2,
+<<<<<<< HEAD
     Phone,
     Mail
+=======
+>>>>>>> f33ee93 (the update)
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
 import { useAcademicYears } from "@/hooks/use-academic-data";
@@ -28,7 +31,11 @@ import { ParentContactsTab } from "./tabs/parent-contacts-tab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+<<<<<<< HEAD
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+=======
+
+>>>>>>> f33ee93 (the update)
 import {
     Select,
     SelectContent,
@@ -312,49 +319,15 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
                         </TabsContent>
                     )}
 
-                    {allowedTabs.includes("family") && (
-                        <TabsContent value="family" className="p-6 m-0 space-y-6">
-                            <h3 className="text-lg font-semibold flex items-center gap-2">
-                                <Users className="h-5 w-5 text-muted-foreground" />
-                                Parent / Guardian Contacts
-                            </h3>
-                            {student.parents_info?.length === 0 ? (
-                                <div className="text-center py-10 bg-muted/30 rounded-lg border border-dashed">
-                                    <p className="text-muted-foreground">No family information recorded.</p>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {student.parents_info?.map((p: any, index: number) => (
-                                        <Card key={index} className="relative overflow-hidden group hover:shadow-md transition-shadow">
-                                            {p.is_primary && (
-                                                <div className="absolute top-0 right-0">
-                                                    <Badge className="rounded-tr-none rounded-bl-lg text-[10px] uppercase font-bold" variant="default">Primary</Badge>
-                                                </div>
-                                            )}
-                                            <CardHeader className="pb-2">
-                                                <p className="font-bold text-lg">
-                                                    {p.full_name}
-                                                </p>
-                                                <Badge variant="outline" className="w-fit capitalize text-xs bg-muted/50">
-                                                    {p.relationship}
-                                                </Badge>
-                                            </CardHeader>
-                                            <CardContent className="space-y-3 text-sm">
-                                                <div className="flex items-center gap-3 text-muted-foreground">
-                                                    <div className="p-1.5 bg-primary/5 rounded-full"><Phone className="h-4 w-4 text-primary" /></div>
-                                                    <span>{p.phone || "No phone recorded"}</span>
-                                                </div>
-                                                {p.email && (
-                                                    <div className="flex items-center gap-3 text-muted-foreground">
-                                                        <div className="p-1.5 bg-primary/5 rounded-full"><Mail className="h-4 w-4 text-primary" /></div>
-                                                        <span className="truncate">{p.email}</span>
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </div>
-                            )}
+                    {allowedTabs.includes("parent-info") && (
+                        <TabsContent value="parent-info" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <ParentInfoTab student={student} />
+                        </TabsContent>
+                    )}
+
+                    {allowedTabs.includes("parent-contacts") && (
+                        <TabsContent value="parent-contacts" className="m-0 animate-in fade-in slide-in-from-left-4 duration-300">
+                            <ParentContactsTab student={student} />
                         </TabsContent>
                     )}
 
