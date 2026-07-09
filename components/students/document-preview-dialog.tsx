@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, ExternalLink, FileText, ImageIcon, Loader2, ShieldAlert } from "lucide-react";
-import axiosInstance from "@/lib/axios";
+// import axiosInstance from "@/lib/axios";
+import axios from "axios";
 
 interface DocumentPreviewDialogProps {
     fileUrl: string;
@@ -56,17 +57,29 @@ export function DocumentPreviewDialog({
             setError(false);
             try {
                 // Fetch document as a blob through authenticated axiosInstance
-                const response = await axiosInstance.get(absoluteUrl, {
+                //const response = await axiosInstance.get(absoluteUrl, {
+                //    responseType: "blob"
+                //});
+                const response = await axios.get(absoluteUrl, {
                     responseType: "blob"
                 });
-                
+
                 if (active) {
                     localUrl = window.URL.createObjectURL(response.data);
                     setPreviewUrl(localUrl);
                     setLoading(false);
                 }
-            } catch (err) {
-                console.error("Failed to load secure document via axios:", err);
+            } catch (err: any) {
+                console.error("Document loading error:", err);
+
+                if (err.response) {
+                    console.error("Status:", err.response.status);
+                    console.error("Headers:", err.response.headers);
+                    console.error("Data:", err.response.data);
+                } else {
+                    console.error("Network error:", err.message);
+                }
+
                 if (active) {
                     setError(true);
                     setLoading(false);
