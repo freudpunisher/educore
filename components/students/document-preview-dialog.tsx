@@ -115,7 +115,7 @@ export function DocumentPreviewDialog({
                     Preview
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl rounded-[1.5rem]">
+            <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl rounded-[1.5rem]" style={{ maxWidth: "90vw" }}>
                 <DialogHeader className="p-6 bg-primary text-primary-foreground">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pr-10">
                         <div className="flex items-center gap-4">
