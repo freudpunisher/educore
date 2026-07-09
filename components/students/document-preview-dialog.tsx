@@ -59,14 +59,23 @@ export function DocumentPreviewDialog({
                 const response = await axiosInstance.get(absoluteUrl, {
                     responseType: "blob"
                 });
-                
+
                 if (active) {
                     localUrl = window.URL.createObjectURL(response.data);
                     setPreviewUrl(localUrl);
                     setLoading(false);
                 }
-            } catch (err) {
-                console.error("Failed to load secure document via axios:", err);
+            } catch (err: any) {
+                console.error("Document loading error:", err);
+
+                if (err.response) {
+                    console.error("Status:", err.response.status);
+                    console.error("Headers:", err.response.headers);
+                    console.error("Data:", err.response.data);
+                } else {
+                    console.error("Network error:", err.message);
+                }
+
                 if (active) {
                     setError(true);
                     setLoading(false);
