@@ -8,7 +8,7 @@ export const configClassroomSchema = z.object({
     description: z.string().nullable().optional(),
     classroom_group: z.number(),
     place: z.number(),
-    tutor: z.number(),
+    tutor: z.number().nullable(),
 });
 
 export enum DisciplineRecordStatusEnum {
