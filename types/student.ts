@@ -11,6 +11,7 @@ export const enrollmentInfoSchema = z.object({
 export const studentListSchema = z.object({
   id: z.coerce.number(),
   full_name: z.string().optional(),
+  middle_name: z.string().nullable().optional(),
   enrollment_number: z.string().optional(),
   class_level: z.string().optional().nullable(),
   gender: z.coerce.number().optional(),

@@ -17,6 +17,7 @@ import { FEE_CATEGORIES, INVOICE_STATUS_OPTIONS } from "@/constants/finance";
 
 export default function InvoicesPage() {
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +28,9 @@ export default function InvoicesPage() {
     const [selectedClassRoom, setSelectedClassRoom] = useState<string>("");
     const [selectedEntity, setSelectedEntity] = useState<string>("");
     const [selectedStatus, setSelectedStatus] = useState<string>("");
+    const [selectedStaff, setSelectedStaff] = useState<string>("");
+    const [staffSearchInput, setStaffSearchInput] = useState("");
+    const [debouncedStaffSearch, setDebouncedStaffSearch] = useState("");
     const [studentComboboxOpen, setStudentComboboxOpen] = useState(false);
 
     // Debounce student search
@@ -37,6 +41,14 @@ export default function InvoicesPage() {
         return () => clearTimeout(timer);
     }, [studentSearchInput]);
 
+    // Debounce staff search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedStaffSearch(staffSearchInput);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [staffSearchInput]);
+
     // Fetch filter options
     const { data: studentsData } = useStudents({ search: debouncedStudentSearch || undefined, page_size: 20 });
     const students = studentsData?.results || [];
@@ -46,11 +58,14 @@ export default function InvoicesPage() {
     // Fetch invoices with applied filters
     const { data, isLoading } = useInvoices({
         page,
+        page_size: pageSize,
         student: selectedStudent || undefined,
         academic_year: selectedAcademicYear && selectedAcademicYear !== "all" ? selectedAcademicYear : undefined,
         classroom: selectedClassRoom && selectedClassRoom !== "all" ? selectedClassRoom : undefined,
         entity: selectedEntity && selectedEntity !== "all" ? selectedEntity : undefined,
         status: selectedStatus && selectedStatus !== "all" ? selectedStatus : undefined,
+        staff: selectedStaff === "true" ? "true" : selectedStaff === "false" ? "false" : undefined,
+        staff_search: debouncedStaffSearch || undefined,
         search: searchQuery || undefined,
     });
 
@@ -66,6 +81,9 @@ export default function InvoicesPage() {
         setSelectedClassRoom("all");
         setSelectedEntity("all");
         setSelectedStatus("all");
+        setSelectedStaff("all");
+        setStaffSearchInput("");
+        setDebouncedStaffSearch("");
     };
 
     const handlePrintList = () => {
@@ -204,8 +222,8 @@ export default function InvoicesPage() {
 
             <div className="space-y-6 pt-4">
                 <Card className="border shadow-sm bg-card">
-                    <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
-                        <div className="space-y-2">
+                    <CardContent className="p-6 flex flex-wrap gap-4 items-end overflow-auto">
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student</label>
                             <Popover open={studentComboboxOpen} onOpenChange={setStudentComboboxOpen}>
                                 <PopoverTrigger asChild>
@@ -221,7 +239,7 @@ export default function InvoicesPage() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-full md:w-[250px] p-0">
+                                <PopoverContent className="w-full min-w-[250px] p-0">
                                     <Command>
                                         <div className="relative">
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -260,7 +278,7 @@ export default function InvoicesPage() {
                             </Popover>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Academic Year</label>
                             <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
                                 <SelectTrigger>
@@ -277,7 +295,7 @@ export default function InvoicesPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Classroom</label>
                             <Select value={selectedClassRoom} onValueChange={setSelectedClassRoom}>
                                 <SelectTrigger>
@@ -294,7 +312,7 @@ export default function InvoicesPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Entity</label>
                             <Select value={selectedEntity} onValueChange={setSelectedEntity}>
                                 <SelectTrigger>
@@ -311,7 +329,7 @@ export default function InvoicesPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</label>
                             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                                 <SelectTrigger>
@@ -328,7 +346,30 @@ export default function InvoicesPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[160px] flex-1">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Staff/Student</label>
+                            <Select value={selectedStaff} onValueChange={setSelectedStaff}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All</SelectItem>
+                                    <SelectItem value="false">Students</SelectItem>
+                                    <SelectItem value="true">Staff</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2 min-w-[160px] flex-1">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Staff Name</label>
+                            <Input
+                                placeholder="Search staff..."
+                                value={staffSearchInput}
+                                onChange={(e) => setStaffSearchInput(e.target.value)}
+                                disabled={selectedStaff === "false"}
+                            />
+                        </div>
+
+                        <div className="space-y-2 min-w-[160px] flex-1">
                             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider invisible">Actions</label>
                             <div className="flex gap-2">
                                 <Button
@@ -344,7 +385,7 @@ export default function InvoicesPage() {
                                     variant="outline"
                                     className="flex-1"
                                     onClick={resetFilters}
-                                    disabled={!selectedStudent && (!selectedAcademicYear || selectedAcademicYear === "all") && (!selectedClassRoom || selectedClassRoom === "all") && (!selectedEntity || selectedEntity === "all") && (!selectedStatus || selectedStatus === "all")}
+                                    disabled={!selectedStudent && !staffSearchInput && (!selectedAcademicYear || selectedAcademicYear === "all") && (!selectedClassRoom || selectedClassRoom === "all") && (!selectedEntity || selectedEntity === "all") && (!selectedStatus || selectedStatus === "all") && (!selectedStaff || selectedStaff === "all")}
                                 >
                                     <X className="h-4 w-4 mr-2" />
                                     Clear
@@ -354,7 +395,15 @@ export default function InvoicesPage() {
                     </CardContent>
                 </Card>
 
-                <InvoicesTable invoices={invoices} isLoading={isLoading} />
+                <InvoicesTable
+                    invoices={invoices}
+                    isLoading={isLoading}
+                    totalCount={totalCount}
+                    page={page}
+                    pageSize={pageSize}
+                    onPageChange={setPage}
+                    onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+                />
             </div>
         </div>
     );

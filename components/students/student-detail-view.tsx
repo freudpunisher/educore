@@ -7,12 +7,15 @@ import {
     Users, FileText, Calendar, GraduationCap, Wallet, Activity,
     Sparkles, Award, ClipboardList, Folder, BookOpen, CheckCircle,
     DollarSign, ShieldAlert, LayoutGrid, Package, Trash2,
+    Camera, Loader2,
 } from "lucide-react";
 import { useStudentFinance, useStudentLife, useValidateStudent } from "@/hooks/use-students";
+import { useUpdateStudent } from "@/hooks/use-update-student";
 import { useAcademicYears } from "@/hooks/use-academic-data";
 import { useDeleteStudent } from "@/hooks/use-delete-student";
 import { Button } from "@/components/ui/button";
 import { UploadStudentDocumentDialog } from "./upload-document-dialog";
+import { StudentImageCapture } from "./student-image-capture";
 import { DocumentPreviewDialog } from "./document-preview-dialog";
 import { StudentPvcCardDialog } from "./student-pvc-card-dialog";
 import { AcademicsTab } from "./tabs/academics-tab";
@@ -23,6 +26,13 @@ import { ServicesTab } from "./tabs/services-tab";
 import { InventoryTab } from "./tabs/inventory-tab";
 import { ParentInfoTab } from "./tabs/parent-info-tab";
 import { ParentContactsTab } from "./tabs/parent-contacts-tab";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
@@ -84,6 +94,9 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
     const deleteMutation = useDeleteStudent();
     const { data: academicYears } = useAcademicYears();
     const [selectedYear, setSelectedYear] = useState<string>("current");
+    const [imageDialogOpen, setImageDialogOpen] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const updateImageMutation = useUpdateStudent(student.id);
 
     const activeYearId = selectedYear === "current"
         ? academicYears?.find(y => y.is_current)?.id
@@ -108,20 +121,71 @@ export function StudentDetailView({ student }: StudentDetailViewProps) {
 
     const hasArrears = finance ? parseFloat(finance.outstanding_balance) > 0 : false;
 
+    const handleSaveImage = () => {
+        if (!selectedImage) return;
+        const formData = new FormData();
+        formData.append("image", selectedImage);
+        updateImageMutation.mutate(formData, {
+            onSuccess: () => {
+                setImageDialogOpen(false);
+                setSelectedImage(null);
+            },
+        });
+    };
+
     return (
         <div className="flex flex-col h-full bg-transparent overflow-hidden">
             {/* Header / Overview */}
             <div className="p-8 pb-0 space-y-8 flex-shrink-0">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                     <div className="flex items-center gap-8">
-                        <div className="relative">
-                            <div className="h-28 w-28 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary overflow-hidden border-4 border-background shadow-2xl transition-transform hover:scale-105 duration-500">
-                                {student.image ? (
-                                    <img src={student.image} alt={student.full_name} className="h-full w-full object-cover" />
-                                ) : (
-                                    <Users className="h-12 w-12 opacity-40 shadow-inner" />
-                                )}
-                            </div>
+                        <div className="relative group">
+                            <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <button className="h-28 w-28 rounded-[2rem] bg-primary/5 flex items-center justify-center text-primary overflow-hidden border-4 border-background shadow-2xl transition-transform hover:scale-105 duration-500 relative cursor-pointer">
+                                        {student.image ? (
+                                            <img src={student.image} alt={student.full_name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <Users className="h-12 w-12 opacity-40 shadow-inner" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-[1.7rem]">
+                                            <Camera className="h-8 w-8 text-white" />
+                                        </div>
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Profile Photo</DialogTitle>
+                                    </DialogHeader>
+                                    <StudentImageCapture value={selectedImage} onChange={setSelectedImage} />
+                                    <div className="flex justify-end gap-3 pt-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setImageDialogOpen(false);
+                                                setSelectedImage(null);
+                                            }}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={handleSaveImage}
+                                            disabled={!selectedImage || updateImageMutation.isPending}
+                                        >
+                                            {updateImageMutation.isPending ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                "Save Photo"
+                                            )}
+                                        </Button>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
                             <div className="absolute -bottom-2 -right-2 h-9 w-9 bg-emerald-500 border-4 border-background rounded-full shadow-lg flex items-center justify-center">
                                 <CheckCircle className="h-4 w-4 text-white" />
                             </div>

@@ -22,6 +22,8 @@ export interface InvoiceQueryParams {
     entity?: string;
     status?: string;
     search?: string;
+    staff?: string;
+    staff_search?: string;
 }
 
 export function useInvoices(params: InvoiceQueryParams = { page: 1, page_size: 10 }) {

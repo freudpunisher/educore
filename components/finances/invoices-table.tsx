@@ -4,7 +4,7 @@ import { Invoice } from "@/types/finance";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload, Landmark, AlertTriangle } from "lucide-react";
+import { Receipt, FileText, Calendar, User, DollarSign, ArrowRight, Loader2, Printer, CreditCard, Upload, Landmark, AlertTriangle, ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,9 +21,14 @@ import { cn } from "@/lib/utils";
 interface InvoicesTableProps {
     invoices: Invoice[];
     isLoading: boolean;
+    totalCount?: number;
+    page?: number;
+    pageSize?: number;
+    onPageChange?: (page: number) => void;
+    onPageSizeChange?: (size: number) => void;
 }
 
-export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
+export function InvoicesTable({ invoices, isLoading, totalCount = 0, page = 1, pageSize = 10, onPageChange, onPageSizeChange }: InvoicesTableProps) {
     const payMutation = usePayInvoice();
     const cancelMutation = useCancelInvoice();
     const { data: profile } = useProfile();
@@ -251,7 +256,7 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                 <TableHeader className="bg-muted/50">
                     <TableRow>
                         <TableHead className="w-[180px] font-bold">Reference</TableHead>
-                        <TableHead className="font-bold">Student / Description</TableHead>
+                        <TableHead className="font-bold">Staff/Student / Description</TableHead>
                         <TableHead className="font-bold">Category</TableHead>
                         <TableHead className="font-bold">Period</TableHead>
                         <TableHead className="font-bold">Total</TableHead>
@@ -410,6 +415,70 @@ export function InvoicesTable({ invoices, isLoading }: InvoicesTableProps) {
                     })}
                 </TableBody>
             </Table>
+
+            {totalCount > 0 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className="font-medium">{totalCount}</span>
+                        <span>result{totalCount !== 1 ? "s" : ""}</span>
+                        <span className="mx-1">·</span>
+                        <span>Page {page} of {Math.max(1, Math.ceil(totalCount / pageSize))}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Select
+                            value={String(pageSize)}
+                            onValueChange={(v) => onPageSizeChange?.(Number(v))}
+                        >
+                            <SelectTrigger className="h-8 w-[70px] text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="10">10</SelectItem>
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="50">50</SelectItem>
+                                <SelectItem value="100">100</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-1">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page <= 1}
+                                onClick={() => onPageChange?.(page - 1)}
+                            >
+                                <ChevronLeftIcon className="h-4 w-4" />
+                            </Button>
+                            {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
+                                const totalPages = Math.ceil(totalCount / pageSize);
+                                let start = Math.max(1, page - 2);
+                                const end = Math.min(totalPages, start + 4);
+                                if (end - start < 4) start = Math.max(1, end - 4);
+                                const pageNum = start + i;
+                                if (pageNum > totalPages) return null;
+                                return (
+                                    <Button
+                                        key={pageNum}
+                                        variant={pageNum === page ? "default" : "outline"}
+                                        size="sm"
+                                        className="min-w-[32px]"
+                                        onClick={() => onPageChange?.(pageNum)}
+                                    >
+                                        {pageNum}
+                                    </Button>
+                                );
+                            })}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={page >= Math.ceil(totalCount / pageSize)}
+                                onClick={() => onPageChange?.(page + 1)}
+                            >
+                                <ChevronRightIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Dialog open={isDialogOpen} onOpenChange={(v) => { setIsDialogOpen(v); if (!v) setPaymentError(null); }}>
                 <DialogContent>
