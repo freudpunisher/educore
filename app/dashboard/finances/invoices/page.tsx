@@ -86,6 +86,38 @@ export default function InvoicesPage() {
         setDebouncedStaffSearch("");
     };
 
+    const handleExportCSV = () => {
+        const headers = ["Reference", "Code", "Student", "Description", "Category", "Period", "Total", "Paid", "Balance", "Date", "Status"];
+        const rows = invoices.map((inv: any) => [
+            inv.reference || "",
+            inv.fees_detail?.code || "",
+            inv.student_name || "Institutional",
+            inv.fees_detail?.label || "",
+            inv.fees_detail?.fee_category_name || "",
+            inv.period_name || "",
+            inv.amount || 0,
+            inv.amount_paid || 0,
+            inv.balance || 0,
+            inv.date || "",
+            inv.status_name || "",
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `invoices_${new Date().toISOString().split("T")[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     const handlePrintList = () => {
         const printWindow = window.open('', '_blank');
         if (!printWindow) return;
@@ -199,9 +231,9 @@ export default function InvoicesPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" className="shadow-sm">
+                    <Button variant="outline" className="shadow-sm" onClick={handleExportCSV} disabled={invoices.length === 0}>
                         <Download className="w-4 h-4 mr-2" />
-                        Export Data
+                        Export CSV
                     </Button>
                 </div>
             </div>

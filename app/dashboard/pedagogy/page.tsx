@@ -1,6 +1,6 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,12 @@ import {
   MoreVertical,
   Play,
   ClipboardList,
-  AlertCircle
+  AlertCircle,
+  ArrowUpDown,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  X,
 } from "lucide-react"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts"
 import { useClassRooms, useAcademicYears, useClassRoom } from "@/hooks/use-academic-data"
@@ -43,6 +48,8 @@ import {
   useTeacherCourses,
   useAllCourses,
   useCourseAssessmentPolicies,
+  usePromotionHistory,
+  useRunPromotion,
 } from "@/hooks/use-pedagogy"
 import React, { useMemo, useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -515,6 +522,9 @@ export default function PedagogyPage() {
             <TabsTrigger value="teachers" className="gap-2">
               <BookOpen className="w-4 h-4" /> Teachers
             </TabsTrigger>
+            <TabsTrigger value="promotion-history" className="gap-2">
+              <ArrowUpDown className="w-4 h-4" /> Promotion History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="mt-6">
@@ -668,6 +678,9 @@ export default function PedagogyPage() {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="promotion-history" className="mt-6">
+            <PromotionHistoryTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -1219,6 +1232,207 @@ export default function PedagogyPage() {
         initialTermId={selectedTermId}
         classLevel={selectedClass?.level}
       />
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────
+//  Promotion History Tab
+// ──────────────────────────────────────────────
+function PromotionHistoryTab() {
+  const { data: years = [] } = useAcademicYears()
+  const { data: classrooms = [] } = useClassRooms()
+  const [selectedYearId, setSelectedYearId] = useState<number | undefined>(undefined)
+  const [selectedClassId, setSelectedClassId] = useState<number | undefined>(undefined)
+  const [selectedTermId, setSelectedTermId] = useState<number | undefined>(undefined)
+  const [selectedStatus, setSelectedStatus] = useState<string>("")
+  const { data: terms = [] } = useTerms(selectedYearId)
+
+  const { data: history = [], isLoading } = usePromotionHistory({
+    ...(selectedClassId ? { classroom: selectedClassId } : {}),
+    ...(selectedTermId ? { term: selectedTermId } : {}),
+    ...(selectedStatus && selectedStatus !== "all" ? { status: selectedStatus } : {}),
+  })
+  const runPromotion = useRunPromotion()
+  const [showRunForm, setShowRunForm] = useState(false)
+
+  useEffect(() => {
+    if (years.length > 0 && selectedYearId === undefined) {
+      const current = years.find((y: any) => y.is_current)
+      setSelectedYearId(current ? current.id : years[0].id)
+    }
+  }, [years, selectedYearId])
+
+  useEffect(() => {
+    if (terms.length > 0 && !selectedTermId) {
+      setSelectedTermId(terms[0].id)
+    }
+  }, [terms, selectedTermId])
+
+  const handleRunPromotion = () => {
+    if (!selectedClassId || !selectedYearId || !selectedTermId) {
+      toast.error("Please select a class, academic year, and term")
+      return
+    }
+    runPromotion.mutate({
+      class_room: selectedClassId,
+      academic_year: selectedYearId,
+      term: selectedTermId,
+    })
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ArrowUpDown className="w-5 h-5" />
+              Promotion History
+            </CardTitle>
+            <CardDescription>View promotion history and run new promotions</CardDescription>
+          </div>
+          <div className="flex items-center gap-3">
+            <Select
+              value={selectedClassId?.toString() || ""}
+              onValueChange={(v) => setSelectedClassId(v ? parseInt(v) : undefined)}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select class" />
+              </SelectTrigger>
+              <SelectContent>
+                {classrooms.map((c: any) => (
+                  <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedYearId?.toString() || ""}
+              onValueChange={(v) => setSelectedYearId(parseInt(v))}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y: any) => (
+                  <SelectItem key={y.id} value={y.id.toString()}>
+                    {y.name || `${y.start_year}/${y.end_year}`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedTermId?.toString() || ""}
+              onValueChange={(v) => setSelectedTermId(parseInt(v))}
+            >
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select term" />
+              </SelectTrigger>
+              <SelectContent>
+                {terms.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id.toString()}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) => setSelectedStatus(v)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="promoted">Promoted</SelectItem>
+                <SelectItem value="repeated">Repeated</SelectItem>
+                <SelectItem value="conditional">Conditional</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setShowRunForm(!showRunForm)}>
+              <Play className="w-4 h-4 mr-2" />
+              Run Promotion
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {showRunForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/30 space-y-4">
+              <h3 className="font-semibold text-sm">Run New Promotion</h3>
+              <p className="text-sm text-muted-foreground">
+                This will evaluate all students in the selected class and term, then promote or repeat them based on their performance.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={handleRunPromotion} disabled={runPromotion.isPending}>
+                  {runPromotion.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Confirm & Run Promotion
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowRunForm(false)}>
+                  <X className="w-4 h-4" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {history.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No promotion history found</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>From Class</TableHead>
+                    <TableHead>To Class</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Average</TableHead>
+                    <TableHead>Term</TableHead>
+                    <TableHead>Academic Year</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((h: any) => (
+                    <TableRow key={h.id}>
+                      <TableCell className="font-medium">{h.student_name}</TableCell>
+                      <TableCell>{h.from_class}</TableCell>
+                      <TableCell>{h.to_class || "—"}</TableCell>
+                      <TableCell>
+                        <Badge className={cn(
+                          h.status === "promoted" ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100" :
+                          h.status === "repeated" ? "bg-red-100 text-red-700 hover:bg-red-100" :
+                          "bg-amber-100 text-amber-700 hover:bg-amber-100"
+                        )}>
+                          {h.status === "promoted" ? <CheckCircle2 className="w-3 h-3 mr-1" /> :
+                           h.status === "repeated" ? <XCircle className="w-3 h-3 mr-1" /> :
+                           <AlertTriangle className="w-3 h-3 mr-1" />}
+                          {h.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono font-bold">{h.average}%</TableCell>
+                      <TableCell>{h.term}</TableCell>
+                      <TableCell>{h.academic_year}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(h.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

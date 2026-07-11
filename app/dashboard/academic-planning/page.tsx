@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Circle,
   GraduationCap,
+  Layers,
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
@@ -35,6 +36,7 @@ import {
   useUpdateTerm,
   useDeleteTerm,
 } from "@/hooks/use-academic-planning"
+import { useAssessmentTypes, useCreateAssessmentType, useGradingCategories, useCreateGradingCategory } from "@/hooks/use-pedagogy"
 import { useAuth } from "@/lib/auth-context"
 import toast from "react-hot-toast"
 
@@ -78,6 +80,14 @@ export default function AcademicPlanningPage() {
             <Users className="w-4 h-4" />
             Class Tutor Assignment
           </TabsTrigger>
+          <TabsTrigger value="assessment-types" className="gap-2">
+            <BookOpen className="w-4 h-4" />
+            Assessment Types
+          </TabsTrigger>
+          <TabsTrigger value="grading-categories" className="gap-2">
+            <Layers className="w-4 h-4" />
+            Grading Categories
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="teacher-courses">
@@ -102,6 +112,12 @@ export default function AcademicPlanningPage() {
             teachers={teachers}
             loading={classroomsLoading || teachersLoading}
           />
+        </TabsContent>
+        <TabsContent value="assessment-types">
+          <AssessmentTypesTab />
+        </TabsContent>
+        <TabsContent value="grading-categories">
+          <GradingCategoriesTab />
         </TabsContent>
       </Tabs>
     </div>
@@ -622,6 +638,287 @@ function TutorAssignment({
                           </SelectContent>
                         </Select>
                       </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────
+//  Assessment Types Tab
+// ──────────────────────────────────────────────
+function AssessmentTypesTab() {
+  const { data: types = [], isLoading } = useAssessmentTypes()
+  const createType = useCreateAssessmentType()
+
+  const [showForm, setShowForm] = useState(false)
+  const [code, setCode] = useState("")
+  const [label, setLabel] = useState("")
+  const [category, setCategory] = useState("")
+  const [level, setLevel] = useState("all")
+
+  const resetForm = () => {
+    setCode("")
+    setLabel("")
+    setCategory("")
+    setLevel("all")
+    setShowForm(false)
+  }
+
+  const handleCreate = () => {
+    if (!code || !label || !category) {
+      toast.error("Code, label and category are required")
+      return
+    }
+    createType.mutate(
+      { code, label, category, level },
+      { onSuccess: () => resetForm() }
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Assessment Types
+            </CardTitle>
+            <CardDescription>Define assessment types (e.g. Homework, Midterm, Exam)</CardDescription>
+          </div>
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Type
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {showForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/30 space-y-4">
+              <h3 className="font-semibold text-sm">New Assessment Type</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Code</label>
+                  <Input
+                    placeholder="e.g. HW, MT, FINAL"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Label</label>
+                  <Input
+                    placeholder="e.g. Homework, Midterm"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Category</label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DW">Daily Work</SelectItem>
+                      <SelectItem value="EXAM">Exam</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Level</label>
+                  <Select value={level} onValueChange={setLevel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Levels</SelectItem>
+                      <SelectItem value="O-Level">O-Level</SelectItem>
+                      <SelectItem value="A-Level">A-Level</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCreate} disabled={createType.isPending}>
+                  {createType.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Create
+                </Button>
+                <Button size="sm" variant="ghost" onClick={resetForm}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {types.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No assessment types defined</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Label</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Level</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {types.map((t: any) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-mono text-sm font-bold uppercase">{t.code}</TableCell>
+                      <TableCell className="font-medium">{t.label}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{t.category_label || t.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm capitalize">{t.level || "All Levels"}</span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ──────────────────────────────────────────────
+//  Grading Categories Tab
+// ──────────────────────────────────────────────
+function GradingCategoriesTab() {
+  const { data: categories = [], isLoading } = useGradingCategories()
+  const createCategory = useCreateGradingCategory()
+
+  const [showForm, setShowForm] = useState(false)
+  const [code, setCode] = useState("")
+  const [label, setLabel] = useState("")
+  const [description, setDescription] = useState("")
+
+  const resetForm = () => {
+    setCode("")
+    setLabel("")
+    setDescription("")
+    setShowForm(false)
+  }
+
+  const handleCreate = () => {
+    if (!code || !label) {
+      toast.error("Code and label are required")
+      return
+    }
+    createCategory.mutate(
+      { code, label, description: description || undefined },
+      { onSuccess: () => resetForm() }
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Grading Categories
+            </CardTitle>
+            <CardDescription>Define grading categories (e.g. Daily Work, Exam)</CardDescription>
+          </div>
+          <Button onClick={() => setShowForm(!showForm)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Category
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {showForm && (
+            <div className="mb-6 p-4 border rounded-lg bg-muted/30 space-y-4">
+              <h3 className="font-semibold text-sm">New Grading Category</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Code</label>
+                  <Input
+                    placeholder="e.g. DW, EXAM"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Label</label>
+                  <Input
+                    placeholder="e.g. Daily Work, Exam"
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Description</label>
+                  <Input
+                    placeholder="Optional description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCreate} disabled={createCategory.isPending}>
+                  {createCategory.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Create
+                </Button>
+                <Button size="sm" variant="ghost" onClick={resetForm}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {categories.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No grading categories defined</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Label</TableHead>
+                    <TableHead>Description</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {categories.map((c: any) => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-mono text-sm font-bold uppercase">{c.code}</TableCell>
+                      <TableCell className="font-medium">{c.label}</TableCell>
+                      <TableCell className="text-muted-foreground">{c.description || "—"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

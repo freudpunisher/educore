@@ -161,6 +161,29 @@ export function useCreateAssessmentType() {
   });
 }
 
+export function useCreateGradingCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await axiosInstance.post("/academics/grading-categories/", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["grading-categories"] });
+      toast.success("Grading category created");
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to create grading category";
+      toast.error(message);
+    },
+  });
+}
+
 export function useEnrollments(classId?: number, academicYearId?: number) {
   return useQuery({
     queryKey: ["enrollments", classId, academicYearId],
@@ -428,5 +451,44 @@ export function useStudentTermGrades(enrollment: number, term: number) {
       return raw?.data || raw;
     },
     enabled: !!enrollment && !!term,
+  });
+}
+
+export function usePromotionHistory(filters?: { classroom?: number; term?: number; student?: number; status?: string }) {
+  return useQuery({
+    queryKey: ["promotion-history", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters?.classroom) params.append("classroom", filters.classroom.toString());
+      if (filters?.term) params.append("term", filters.term.toString());
+      if (filters?.student) params.append("student", filters.student.toString());
+      if (filters?.status) params.append("status", filters.status);
+      const { data } = await axiosInstance.get(`/academics/promotions/history/?${params.toString()}`);
+      return data?.data?.history || [];
+    },
+    enabled: true,
+  });
+}
+
+export function useRunPromotion() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { class_room: number; academic_year: number; term: number }) => {
+      const { data } = await axiosInstance.post("/academics/promotions/run/", payload);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["promotion-history"] });
+      toast.success("Promotion completed successfully");
+    },
+    onError: (error: any) => {
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        "Failed to run promotion";
+      toast.error(message);
+    },
   });
 }
