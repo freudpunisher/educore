@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, ExternalLink, FileText, ImageIcon, Loader2, ShieldAlert } from "lucide-react";
-import axiosInstance from "@/lib/axios";
+// import axiosInstance from "@/lib/axios";
+import axios from "axios";
 
 interface DocumentPreviewDialogProps {
     fileUrl: string;
@@ -56,7 +57,10 @@ export function DocumentPreviewDialog({
             setError(false);
             try {
                 // Fetch document as a blob through authenticated axiosInstance
-                const response = await axiosInstance.get(absoluteUrl, {
+                //const response = await axiosInstance.get(absoluteUrl, {
+                //    responseType: "blob"
+                //});
+                const response = await axios.get(absoluteUrl, {
                     responseType: "blob"
                 });
 
