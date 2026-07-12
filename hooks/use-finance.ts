@@ -172,3 +172,28 @@ export function useCancelInvoice() {
         },
     });
 }
+
+export function useFees() {
+    return useQuery({
+        queryKey: ["finance", "fees"],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/finance/fees/");
+            return data?.results || data || [];
+        },
+    });
+}
+
+export function useCreateAnticipatedInvoice() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (payload: { student_id: number; fees_id: number; period_id?: number }) => {
+            const response = await axiosInstance.post("/finance/invoices/create_anticipated/", payload);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
+            queryClient.invalidateQueries({ queryKey: ["finance", "fees"] });
+        },
+    });
+}
