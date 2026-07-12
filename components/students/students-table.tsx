@@ -41,10 +41,12 @@ import {
   Filter,
   Eye,
   Trash2,
+  Receipt,
 } from "lucide-react";
 import { useState } from "react";
 import { Student } from "@/types/student";
 import { EnrollStudentDialog } from "./enroll-student-dialog";
+import { CreateAnticipatedInvoiceDialog } from "./create-anticipated-invoice-dialog";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeleteStudent } from "@/hooks/use-delete-student";
@@ -183,6 +185,7 @@ export default function StudentsTable({
       id: "actions",
       cell: ({ row }) => {
         const [openEnroll, setOpenEnroll] = useState(false);
+        const [openInvoice, setOpenInvoice] = useState(false);
         const student = row.original;
         const alreadyEnrolled = !!student.enrollment_info;
         const deleteMutation = useDeleteStudent();
@@ -217,6 +220,18 @@ export default function StudentsTable({
               </Button>
             )}
 
+            {userRole === "accountant" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOpenInvoice(true)}
+                className="h-8"
+              >
+                <Receipt className="h-4 w-4 mr-1" />
+                Invoice
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="sm"
@@ -232,6 +247,13 @@ export default function StudentsTable({
               studentName={student.full_name}
               open={openEnroll && !alreadyEnrolled}
               onOpenChange={setOpenEnroll}
+            />
+
+            <CreateAnticipatedInvoiceDialog
+              studentId={student.id}
+              studentName={student.full_name}
+              open={openInvoice}
+              onOpenChange={setOpenInvoice}
             />
           </div>
         );
