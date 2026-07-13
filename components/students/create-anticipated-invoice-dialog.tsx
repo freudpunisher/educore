@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Loader2, Receipt } from "lucide-react"
 import { useFees, useCreateAnticipatedInvoice } from "@/hooks/use-finance"
@@ -19,6 +18,15 @@ interface CreateAnticipatedInvoiceDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+const GENERATE_OPTIONS = [
+  { value: "single", label: "Single invoice (current period)" },
+  { value: "term", label: "All academic terms" },
+  { value: "monthly", label: "All months" },
+  { value: "quarterly", label: "All trimesters" },
+  { value: "semiannually", label: "All semesters" },
+  { value: "annually", label: "Annual" },
+]
+
 export function CreateAnticipatedInvoiceDialog({
   studentId,
   studentName,
@@ -29,11 +37,11 @@ export function CreateAnticipatedInvoiceDialog({
   const createInvoice = useCreateAnticipatedInvoice()
 
   const [selectedFeeId, setSelectedFeeId] = useState<string>("")
-  const [generateAllTerms, setGenerateAllTerms] = useState(false)
+  const [generateMode, setGenerateMode] = useState<string>("single")
 
   const reset = () => {
     setSelectedFeeId("")
-    setGenerateAllTerms(false)
+    setGenerateMode("single")
   }
 
   const handleCreate = () => {
@@ -45,13 +53,21 @@ export function CreateAnticipatedInvoiceDialog({
       {
         student_id: studentId,
         fees_id: parseInt(selectedFeeId),
-        generate_all_terms: generateAllTerms,
+        generate_all: generateMode === "single" ? undefined : generateMode,
       },
       {
         onSuccess: (data: any) => {
           toast.success(data?.message || "Invoice(s) created successfully")
           reset()
           onOpenChange(false)
+        },
+        onError: (err: any) => {
+          const message =
+            err?.response?.data?.message ||
+            err?.response?.data?.detail ||
+            err?.message ||
+            "Failed to create invoice(s)"
+          toast.error(message)
         },
       }
     )
@@ -93,15 +109,20 @@ export function CreateAnticipatedInvoiceDialog({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="generate-all-terms"
-              checked={generateAllTerms}
-              onCheckedChange={(checked) => setGenerateAllTerms(checked === true)}
-            />
-            <Label htmlFor="generate-all-terms" className="cursor-pointer text-sm">
-              Generate for all academic terms
-            </Label>
+          <div className="space-y-2">
+            <Label>Generation Mode</Label>
+            <Select value={generateMode} onValueChange={setGenerateMode}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GENERATE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -111,7 +132,7 @@ export function CreateAnticipatedInvoiceDialog({
           </Button>
           <Button onClick={handleCreate} disabled={createInvoice.isPending}>
             {createInvoice.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            {generateAllTerms ? "Generate All" : "Create Invoice"}
+            {generateMode && generateMode !== "single" ? "Generate All" : "Create Invoice"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -193,13 +193,15 @@ export function useCreateAnticipatedInvoice() {
             period_id?: number;
             term_id?: number;
             generate_all_terms?: boolean;
+            generate_all?: string;
         }) => {
             const response = await axiosInstance.post("/finance/invoices/create_anticipated/", payload);
             return response.data;
         },
-        onSuccess: () => {
+        onSuccess: (_data, variables) => {
             queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
             queryClient.invalidateQueries({ queryKey: ["finance", "fees"] });
+            queryClient.invalidateQueries({ queryKey: ["students", "finance", variables.student_id] });
         },
     });
 }
