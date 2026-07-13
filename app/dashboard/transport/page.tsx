@@ -1606,6 +1606,7 @@ function SubscriptionDialog({
 }) {
   const { data: studentsData } = useStudents();
   const { data: itineraryData } = useItineraries();
+  const queryClient = useQueryClient();
 
   const [studentId, setStudentId] = useState<string>("");
   const [itineraryId, setItineraryId] = useState<string>("");
@@ -1616,6 +1617,28 @@ function SubscriptionDialog({
   const [status, setStatus] = useState<TransportStatusEnum>(TransportStatusEnum.Inactive);
   const [openStudentSelect, setOpenStudentSelect] = useState(false);
   const [isValidated, setIsValidated] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
+
+  const { data: existingSubscriptions } = useQuery({
+    queryKey: ["transport-subscriptions-check", studentId],
+    queryFn: async () => {
+      if (!studentId || record) return [];
+      const res = await axiosInstance.get("/transport/subscriptions/", {
+        params: { student: studentId, page_size: 1 }
+      });
+      return res.data?.results || [];
+    },
+    enabled: !!studentId && !record,
+    staleTime: 1000 * 30,
+  });
+
+  useEffect(() => {
+    if (existingSubscriptions && existingSubscriptions.length > 0) {
+      setDuplicateWarning("This student already has a transport subscription. Please deactivate the existing one first.");
+    } else {
+      setDuplicateWarning(null);
+    }
+  }, [existingSubscriptions]);
 
   useEffect(() => {
     if (record && isOpen) {
@@ -1630,6 +1653,7 @@ function SubscriptionDialog({
       setPeriodCategory(PeriodCategory.ANNUALLY.toString());
       setEnrollmentDate(new Date().toISOString().split("T")[0]);
       setStatus(TransportStatusEnum.Inactive);
+      setDuplicateWarning(null);
     }
   }, [record, isOpen]);
 
@@ -1640,6 +1664,10 @@ function SubscriptionDialog({
     e.preventDefault();
     if (!studentId || !itineraryId) {
       toast.error("Please select a student and a route");
+      return;
+    }
+    if (duplicateWarning) {
+      toast.error(duplicateWarning);
       return;
     }
     onSubmit({
@@ -1676,6 +1704,12 @@ function SubscriptionDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+          {duplicateWarning && (
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300 flex items-start gap-2">
+              <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{duplicateWarning}</span>
+            </div>
+          )}
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300">

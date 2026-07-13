@@ -117,9 +117,10 @@ export default function FinancesPage() {
                 <div class="logo-box">
                     <img src="/logo.png" alt="School Logo" />
                     <div class="school-info">
-                        <strong>ACADEMIC EXCELLENCE INSTITUTE</strong><br/>
-                        123 Education Boulevard, Bujumbura<br/>
-                        contact@school.bi | +257 22 00 00 00
+                        <strong>ROOTED IN CHRIST, READY FOR TOMORROW</strong><br/>
+                        GIHOSHA No 7 AVE BUKIRIRO,BUJUMBURA,BURUNDI<br/>
+                        info@discoveryschoolburundi.org | +257 22 23 20 59 <br/>
+                        discoveryschoolburundi.org
                     </div>
                 </div>
                 <div class="statement-title">
@@ -172,7 +173,7 @@ export default function FinancesPage() {
             </div>
 
             <div class="footer">
-                This is a computer-generated document. No signature required.<br/>
+                BCB:00200051833-33, BANCOBU:003924720101-19, BANCOBU-BUS:03924720107, BANCOBU-RESTAURANT:03924720108, LUMICASH:444555, ECOCASH:03030 <br/>
                 &copy; ${new Date().getFullYear()} School Management System. All rights reserved.
             </div>
 

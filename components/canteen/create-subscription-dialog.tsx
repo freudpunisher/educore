@@ -27,7 +27,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, ShieldAlert } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
@@ -67,6 +67,7 @@ export function CreateSubscriptionDialog({
     const [students, setStudents] = useState<
         { id: number; full_name: string; enrollment_number: string }[]
     >([]);
+    const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
     const open = controlledOpen ?? internalOpen;
     const setOpen = (nextOpen: boolean) => {
         onOpenChange?.(nextOpen);
@@ -126,7 +127,30 @@ export function CreateSubscriptionDialog({
         });
     }, [form, open, record]);
 
+    const watchedStudent = form.watch("student");
+
+    useEffect(() => {
+        if (!watchedStudent || record?.id) {
+            setDuplicateWarning(null);
+            return;
+        }
+        api.get<any>("food/subscriptions/", { params: { student: watchedStudent, status: "active", page_size: 1 } })
+            .then((res) => {
+                const results = Array.isArray(res) ? res : res.results || [];
+                if (results.length > 0) {
+                    setDuplicateWarning("This student already has an active meal subscription. Please cancel the existing one first.");
+                } else {
+                    setDuplicateWarning(null);
+                }
+            })
+            .catch(() => setDuplicateWarning(null));
+    }, [watchedStudent, record?.id]);
+
     async function onSubmit(values: SubscriptionFormValues) {
+        if (!record?.id && duplicateWarning) {
+            toast.error(duplicateWarning);
+            return;
+        }
         try {
             if (record?.id) {
                 await api.patch(`food/subscriptions/${record.id}/`, values);
@@ -159,6 +183,12 @@ export function CreateSubscriptionDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        {duplicateWarning && (
+                            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                                <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
+                                <span>{duplicateWarning}</span>
+                            </div>
+                        )}
                         <div className="space-y-4">
                             <FormField
                                 control={form.control}

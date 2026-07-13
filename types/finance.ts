@@ -39,6 +39,8 @@ export const invoiceSchema = z.object({
     date: z.string(), // "2026-03-18 13:26"
     period: nullableNumericIdSchema,
     period_name: z.string().nullable().optional(),
+    term: nullableNumericIdSchema,
+    term_name: z.string().nullable().optional(),
 });
 
 export const paginatedInvoiceSchema = createPaginatedSchema(invoiceSchema);

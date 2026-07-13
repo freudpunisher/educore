@@ -109,9 +109,10 @@ export default function PaymentsPage() {
                     <div class="logo-box">
                         <img src="/logo.png" alt="School Logo" />
                         <div class="school-info">
-                            <strong>ACADEMIC EXCELLENCE INSTITUTE</strong><br/>
-                            123 Education Boulevard, Bujumbura<br/>
-                            Finance Department | +257 22 00 00 00
+                            <strong>ROOTED IN CHRIST, READY FOR TOMORROW</strong><br/>
+                            GIHOSHA No 7 AVE BUKIRIRO,BUJUMBURA,BURUNDI<br/>
+                            info@discoveryschoolburundi.org | +257 22 23 20 59 <br/>
+                            discoveryschoolburundi.org
                         </div>
                     </div>
                     <div class="receipt-meta">

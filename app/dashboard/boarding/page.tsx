@@ -175,6 +175,7 @@ export default function BoardingPage() {
   // Modal states
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [isHousingModalOpen, setIsHousingModalOpen] = useState(false);
+  const [housingDuplicateWarning, setHousingDuplicateWarning] = useState<string | null>(null);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [isExitModalOpen, setIsExitModalOpen] = useState(false);
   const [isBedModalOpen, setIsBedModalOpen] = useState(false);
@@ -350,6 +351,11 @@ export default function BoardingPage() {
       end_date: formData.get("end_date") || null,
     };
 
+    if (!editingHousing && housingDuplicateWarning) {
+      toast.error(housingDuplicateWarning);
+      return;
+    }
+
     try {
       if (editingHousing) {
         await api.put(`boarding/internat/housing/${editingHousing.id}/`, data);
@@ -493,6 +499,23 @@ export default function BoardingPage() {
     const s = students.find((s) => String(s.id) === selectedStudentId);
     return s ? `${s.full_name || s.enrollment_number}` : "";
   }, [selectedStudentId, students]);
+
+  useEffect(() => {
+    if (!selectedStudentId || editingHousing) {
+      setHousingDuplicateWarning(null);
+      return;
+    }
+    const existing = housings.filter(
+      (h) => String(h.student) === selectedStudentId && h.is_active
+    );
+    if (existing.length > 0) {
+      setHousingDuplicateWarning(
+        "This student already has an active housing assignment. Please deactivate the existing one first."
+      );
+    } else {
+      setHousingDuplicateWarning(null);
+    }
+  }, [selectedStudentId, housings, editingHousing]);
 
   // ─── Filters ──────────────────────────────────────────────────────────────
 
@@ -1223,6 +1246,7 @@ export default function BoardingPage() {
           setSelectedStudentId(initId);
           setStudentSearch("");
           setSelectedRoomId(editingHousing ? String(editingHousing.room) : "");
+          setHousingDuplicateWarning(null);
         }
       }}>
         <DialogContent className="max-h-[95vh] overflow-y-auto sm:max-w-2xl lg:max-w-4xl p-0 border-none bg-transparent shadow-none">
@@ -1234,6 +1258,12 @@ export default function BoardingPage() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleHousingSubmit} className="p-8 space-y-8">
+              {housingDuplicateWarning && (
+                <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <span>{housingDuplicateWarning}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* ── Student Section ── */}
                 <div className="space-y-4">
