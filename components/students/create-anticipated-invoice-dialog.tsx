@@ -6,6 +6,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Loader2, Receipt } from "lucide-react"
 import { useFees, useCreateAnticipatedInvoice } from "@/hooks/use-finance"
@@ -28,9 +29,11 @@ export function CreateAnticipatedInvoiceDialog({
   const createInvoice = useCreateAnticipatedInvoice()
 
   const [selectedFeeId, setSelectedFeeId] = useState<string>("")
+  const [generateAllTerms, setGenerateAllTerms] = useState(false)
 
   const reset = () => {
     setSelectedFeeId("")
+    setGenerateAllTerms(false)
   }
 
   const handleCreate = () => {
@@ -42,10 +45,11 @@ export function CreateAnticipatedInvoiceDialog({
       {
         student_id: studentId,
         fees_id: parseInt(selectedFeeId),
+        generate_all_terms: generateAllTerms,
       },
       {
         onSuccess: (data: any) => {
-          toast.success(data?.message || "Invoice created successfully")
+          toast.success(data?.message || "Invoice(s) created successfully")
           reset()
           onOpenChange(false)
         },
@@ -88,6 +92,17 @@ export function CreateAnticipatedInvoiceDialog({
               </Select>
             )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="generate-all-terms"
+              checked={generateAllTerms}
+              onCheckedChange={(checked) => setGenerateAllTerms(checked === true)}
+            />
+            <Label htmlFor="generate-all-terms" className="cursor-pointer text-sm">
+              Generate for all academic terms
+            </Label>
+          </div>
         </div>
 
         <DialogFooter>
@@ -96,7 +111,7 @@ export function CreateAnticipatedInvoiceDialog({
           </Button>
           <Button onClick={handleCreate} disabled={createInvoice.isPending}>
             {createInvoice.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-            Create Invoice
+            {generateAllTerms ? "Generate All" : "Create Invoice"}
           </Button>
         </DialogFooter>
       </DialogContent>

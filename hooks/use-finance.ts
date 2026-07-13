@@ -187,7 +187,13 @@ export function useCreateAnticipatedInvoice() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (payload: { student_id: number; fees_id: number; period_id?: number }) => {
+        mutationFn: async (payload: {
+            student_id: number;
+            fees_id: number;
+            period_id?: number;
+            term_id?: number;
+            generate_all_terms?: boolean;
+        }) => {
             const response = await axiosInstance.post("/finance/invoices/create_anticipated/", payload);
             return response.data;
         },

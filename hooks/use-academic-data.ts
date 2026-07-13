@@ -80,6 +80,18 @@ export function useEnrollStudent() {
   });
 }
 
+export function useTerms(academicYearId?: number) {
+  return useQuery({
+    queryKey: ["terms", academicYearId],
+    queryFn: async () => {
+      const params = academicYearId ? { academic_year: academicYearId } : {};
+      const { data } = await axiosInstance.get("/academics/terms/", { params });
+      return data?.results || data || [];
+    },
+    enabled: true,
+  });
+}
+
 export function useRecentEnrollments(limit: number = 5, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["recent-enrollments", limit],
