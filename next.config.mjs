@@ -15,6 +15,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  allowedDevOrigins: ["192.168.200.126"],
   async rewrites() {
     return [
       {

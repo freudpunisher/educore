@@ -83,7 +83,7 @@ export default function StudentsPage() {
             <Users className="h-8 w-8 text-primary" />
             <CardTitle className="text-3xl">Student List</CardTitle>
           </div>
-          {user?.can?.('users.manage') && (
+          {user?.can?.('manage_students') && (
             <Link href="/dashboard/students/new">
               <Button>
                 <Plus className="w-4 h-4 mr-2" />

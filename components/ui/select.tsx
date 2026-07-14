@@ -7,9 +7,25 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function Select({
+  value,
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />
+  const callbackRef = React.useRef(onValueChange)
+  callbackRef.current = onValueChange
+
+  const stableOnValueChange = React.useCallback((v: string) => {
+    callbackRef.current?.(v)
+  }, [])
+
+  return (
+    <SelectPrimitive.Root
+      data-slot="select"
+      {...(value !== undefined ? { value } : {})}
+      {...(onValueChange !== undefined ? { onValueChange: stableOnValueChange } : {})}
+      {...props}
+    />
+  )
 }
 
 function SelectGroup({
