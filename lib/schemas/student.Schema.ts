@@ -23,6 +23,7 @@ export const createStudentSchema = z.object({
   address_parent_commune: z.string().optional().or(z.literal("")),
   address_parent_province: z.string().optional().or(z.literal("")),
 
+  parent_id: z.coerce.number().int().optional(),
   parent_first_name: z.string().optional().or(z.literal("")),
   parent_last_name: z.string().optional().or(z.literal("")),
   parent_relationship: z.string().optional().or(z.literal("")),
@@ -55,6 +56,7 @@ export const studentEntrySchema = z.object({
 
 export const createStudentsBatchSchema = z.object({
   students: z.array(studentEntrySchema).min(1, "At least one student is required"),
+  parent_id: z.coerce.number().int().optional(),
   parent_first_name: z.string().optional().or(z.literal("")),
   parent_last_name: z.string().optional().or(z.literal("")),
   parent_relationship: z.string().optional().or(z.literal("")),
