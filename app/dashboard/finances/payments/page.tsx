@@ -135,7 +135,6 @@ export default function PaymentsPage() {
               <style>
                 body { font-family: 'Inter', system-ui, sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
                 .receipt-container { max-width: 800px; margin: 0 auto; border: 2px solid #f1f5f9; padding: 40px; border-radius: 24px; position: relative; overflow: hidden; }
-                .watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; color: #f1f5f9; z-index: -1; font-weight: 900; }
                 .header { display: flex; justify-content: space-between; border-bottom: 3px solid #0f172a; padding-bottom: 30px; margin-bottom: 40px; }
                 .logo-box img { height: 70px; margin-bottom: 15px; }
                 .school-info { font-size: 14px; color: #475569; font-weight: 500; }
@@ -158,7 +157,6 @@ export default function PaymentsPage() {
             </head>
             <body>
               <div class="receipt-container">
-                <div class="watermark">OFFICIAL</div>
                 <div class="header">
                     <div class="logo-box">
                         <img src="/logo.png" alt="School Logo" />
