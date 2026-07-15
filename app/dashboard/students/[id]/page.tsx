@@ -5,8 +5,10 @@ import { StudentDetailView } from "@/components/students/student-detail-view";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Edit, AlertCircle, GraduationCap } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function StudentDetailPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const { id } = useParams();
   const studentId = id ? Number(id) : null;
@@ -97,7 +99,7 @@ export default function StudentDetailPage() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-2 shrink-0 pt-1">
-            {!student.is_validate && (
+            {user && !student.is_validate && (user.is("receptionist") || user.is("academic_principal")) && (
               <Button
                 size="sm"
                 variant="outline"
