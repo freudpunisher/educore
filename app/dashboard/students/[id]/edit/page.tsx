@@ -50,6 +50,7 @@ export default function EditStudentPage() {
       last_name: "",
       date_of_birth: "",
       place_of_birth: "",
+      gender: "1",
       nationality: "Burundian",
       religion: "",
       father_full_name: "",
@@ -63,6 +64,7 @@ export default function EditStudentPage() {
       address_parent_province: "",
       parent_first_name: "",
       parent_last_name: "",
+      parent_relationship: "",
       parent_contact: "",
       parent_email: "",
       address: "",
@@ -105,7 +107,7 @@ export default function EditStudentPage() {
     if (!studentId) return;
     const formData = new FormData();
     Object.entries(data).forEach(([key, val]) => {
-      if (val !== undefined && val !== "") formData.append(key, val as string);
+      if (val !== undefined) formData.append(key, val as string);
     });
     if (studentImage) formData.append("image", studentImage);
     updateMutation.mutate(formData, {
@@ -234,7 +236,7 @@ export default function EditStudentPage() {
                   Gender <span className="text-destructive">*</span>
                 </Label>
                 <Select
-                  defaultValue={String(student.gender ?? "") as "0" | "1"}
+                  defaultValue={String(student.gender ?? "1") as "0" | "1"}
                   onValueChange={(v) => setValue("gender", v as "0" | "1")}
                 >
                   <SelectTrigger>
