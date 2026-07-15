@@ -2,18 +2,17 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
+import { ReactNode, useRef } from "react";
 import { AuthProvider } from "@/lib/auth-context";
 export function Providers({ children }: { children: ReactNode }) {
-  // Important: create the client inside the component to avoid SSR issues
-  const queryClient = new QueryClient({
+  const queryClient = useRef(new QueryClient({
     defaultOptions: {
       queries: {
         retry: 1,
         refetchOnWindowFocus: false,
       },
     },
-  });
+  })).current;
 
   return (
     <QueryClientProvider client={queryClient}>
