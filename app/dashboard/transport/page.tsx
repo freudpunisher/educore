@@ -36,7 +36,7 @@ import {
 import { useVehicles, useDrivers, useItineraries, useTransportSubscriptions, useCreateTransportSubscription, useUpdateTransportSubscription, useTransportDashboard, useTransportCheckIns } from "@/hooks/use-transport";
 import { useStudents } from "@/hooks/use-students";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { VehicleSimpleStatusEnum, TransportSubscriptionCreate, TransportStatusEnum, PeriodCategory, PeriodCategoryLabels } from "@/types/transport";
 import { Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -113,6 +113,7 @@ const ROLE_TABS: Record<string, string[]> = {
 
 export default function TransportDashboard() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("transport");
   const allowedTabs = (user?.role && ROLE_TABS[user.role]) || TABS.map((t) => t.value);
   const [activeTab, setActiveTab] = useState("subscriptions");
 
@@ -536,7 +537,7 @@ export default function TransportDashboard() {
                   Manage student transport enrollment and status
                 </p>
               </div>
-              {canManage(user?.role, "transport") && (
+              {canManage && (
                 <Button
                   onClick={() => {
                     setSelectedSubscription(null);
@@ -752,7 +753,7 @@ export default function TransportDashboard() {
                         const isActive = status === "active";
                         return (
                           <div className="flex items-center gap-1">
-                            {!isActive && canManage(user?.role, "transport") && (
+                            {!isActive && canManage && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -781,7 +782,7 @@ export default function TransportDashboard() {
                               </>
                             )}
 
-                            {isActive && canManage(user?.role, "transport") && (
+                            {isActive && canManage && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -867,7 +868,7 @@ export default function TransportDashboard() {
                   <Download className="h-4 w-4" />
                   PDF
                 </Button>
-                {canManage(user?.role, "transport") && (
+                {canManage && (
                   <Button onClick={() => { setNewRouteVehicle(""); setNewRouteFees(""); setNewRouteState(true); setIsCreateRouteModalOpen(true); }}>
                     <Plus className="w-4 h-4 mr-2" /> New Route
                   </Button>
@@ -929,7 +930,7 @@ export default function TransportDashboard() {
                       label: "Actions",
                       render: (_: any, item: any) => (
                         <div className="flex items-center gap-1">
-                          {canManage(user?.role, "transport") && (
+                          {canManage && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1311,7 +1312,7 @@ export default function TransportDashboard() {
                       label: "Actions",
                       render: (_, vehicle: VehicleSimple) => (
                         <div className="flex items-center gap-1">
-                          {canManage(user?.role, "transport") && (
+                          {canManage && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1325,7 +1326,7 @@ export default function TransportDashboard() {
                             </Button>
                           )}
 
-                          {canManage(user?.role, "transport") && (
+                          {canManage && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

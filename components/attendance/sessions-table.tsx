@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -105,6 +105,7 @@ const SESSION_TYPE_CONFIG = {
 
 export function AttendanceSessionsTable() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("academics");
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -259,7 +260,7 @@ export function AttendanceSessionsTable() {
             </div>
 
             {/* Create Dialog */}
-            {canManage(user?.role, "attendance") && (
+            {canManage && (
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2 h-11 shrink-0">
@@ -594,7 +595,7 @@ export function AttendanceSessionsTable() {
 
                           {/* Action */}
                           <TableCell className="text-right">
-                            {canManage(user?.role, "attendance") && (
+                            {canManage && (
                             <div className="flex items-center justify-end gap-2">
                               <Button
                                 size="sm"

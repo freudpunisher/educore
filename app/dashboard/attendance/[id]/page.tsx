@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { useAttendanceSessionDetail, useBulkMarkAttendance, useAttendances, useCreateAttendance, useLockSession } from "@/hooks/use-attendance-sessions";
 import { useStudentsByClassLevel } from "@/hooks/use-discipline";
 import { AttendanceStatusValues, type AttendanceStatusType, type BulkAttendanceItem } from "@/types/attendance";
@@ -105,6 +105,7 @@ export default function TakeAttendancePage() {
   const sessionId = Number(id);
 
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("academics");
   const { data: session, isLoading: sessionLoading } = useAttendanceSessionDetail(id as string);
   const { data: enrollmentsData, isLoading: enrollmentsLoading } = useStudentsByClassLevel(
     session?.classroom || null,
@@ -433,7 +434,7 @@ export default function TakeAttendancePage() {
                     )}
 
                     {/* Action Buttons */}
-                    {!session.is_locked && canManage(user?.role, "attendance") && (
+                    {!session.is_locked && canManage && (
                       <div className="grid grid-cols-3 gap-1.5">
                         <Button
                           size="sm"
@@ -581,7 +582,7 @@ export default function TakeAttendancePage() {
       </Dialog>
 
       {/* Fixed Footer — Save button */}
-      {!session.is_locked && canManage(user?.role, "attendance") && (
+      {!session.is_locked && canManage && (
         <div className="fixed bottom-0 inset-x-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur border-t shadow-2xl px-4 py-4">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="text-sm text-muted-foreground">

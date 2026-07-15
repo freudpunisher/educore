@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { Plus, Download } from "lucide-react";
 import { mockDrivers } from "@/lib/mock/transport";
 
@@ -29,6 +29,7 @@ interface Driver {
 
 export default function DriverPage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("transport");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -110,7 +111,7 @@ export default function DriverPage() {
               <Download className="w-4 h-4 mr-2" />
               Export
             </Button>
-            {canManage(user?.role, "transport") && (
+            {canManage && (
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Driver

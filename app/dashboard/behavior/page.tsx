@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useBehaviorRecords, useUpdateDisciplineRecord } from "@/hooks/use-discipline";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { BehaviorTable } from "@/components/discipline/behavior-table";
 import { BehaviorFilters } from "@/components/discipline/behavior-filters";
 import { BehaviorModal } from "@/components/discipline/behavior-modal";
@@ -24,6 +24,7 @@ import toast from "react-hot-toast";
 
 export default function BehaviorPage() {
     const { user } = useAuth();
+    const { canManage } = useModulePermissions("academics");
     const [page, setPage] = useState(1);
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("all");
@@ -106,7 +107,7 @@ export default function BehaviorPage() {
                     </h1>
                     <p className="text-muted-foreground mt-2 text-lg font-medium">Record and manage disciplinary incidents across the school.</p>
                 </div>
-                {canManage(user?.role, "behavior") && (
+                {canManage && (
                 <Button
                     onClick={() => {
                         setSelectedRecord(null);

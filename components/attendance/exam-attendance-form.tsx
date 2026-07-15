@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { useBulkMarkExamAttendance } from "@/hooks/use-attendance-sessions";
 import { useClassRooms } from "@/hooks/use-academic-data";
 import { useStudentsByClassLevel } from "@/hooks/use-discipline";
@@ -70,6 +70,7 @@ export function ExamAttendanceForm({
   classroomId,
 }: ExamAttendanceFormProps) {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("academics");
   const [records, setRecords] = useState<Record<number, ExamRecord>>({});
   const [search, setSearch] = useState("");
   const [isSaved, setIsSaved] = useState(false);
@@ -290,7 +291,7 @@ export function ExamAttendanceForm({
 
       {/* Save */}
       <div className="flex justify-end">
-        {canManage(user?.role, "attendance") && (
+        {canManage && (
         <Button
           size="lg"
           onClick={handleSave}

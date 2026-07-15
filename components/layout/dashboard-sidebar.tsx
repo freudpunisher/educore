@@ -33,38 +33,46 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/lib/auth-context"
-import { MODULE_ACCESS } from "@/constants/menu-access"
+import { MODULE_ACCESS, MODULE_PERMISSIONS } from "@/constants/menu-access"
 
 type NavItem = {
   name: string
   href?: string
   icon: any
+  module?: string | null
   roles?: string[]
+  moduleAccessKey?: string
   children?: {
     name: string
     href: string
   }[]
 }
 
+function hasModuleAccess(user: { can: (perm: string) => boolean } | null, moduleName: string | null | undefined): boolean {
+  if (!moduleName) return true
+  if (!user) return false
+  return user.can(`${moduleName}.view`) || user.can(`${moduleName}.manage`)
+}
+
 const navigation: NavItem[] = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, module: MODULE_PERMISSIONS.Dashboard },
   {
     name: "Director Dashboard",
     href: "/dashboard/director",
     icon: BarChart3,
     roles: ["director"],
   },
-  { name: "Students", href: "/dashboard/students", icon: Users, roles: MODULE_ACCESS.Students },
-  { name: "Employees", href: "/dashboard/employees", icon: Users, roles: MODULE_ACCESS.Employees },
-  { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck, roles: MODULE_ACCESS.Attendance },
-  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert, roles: MODULE_ACCESS.Behavior },
-  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar, roles: MODULE_ACCESS.Calendar },
-  { name: "Timetable", href: "/dashboard/timetable", icon: Clock, roles: MODULE_ACCESS.Timetable },
-  { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone, roles: MODULE_ACCESS.Announcements },
+  { name: "Students", href: "/dashboard/students", icon: Users, module: MODULE_PERMISSIONS.Students },
+  { name: "Employees", href: "/dashboard/employees", icon: Users, module: MODULE_PERMISSIONS.Employees },
+  { name: "Attendance", href: "/dashboard/attendance", icon: ClipboardCheck, module: MODULE_PERMISSIONS.Attendance },
+  { name: "Behavior", href: "/dashboard/behavior", icon: ShieldAlert, module: MODULE_PERMISSIONS.Behavior },
+  { name: "Calendar", href: "/dashboard/calendar", icon: Calendar, module: MODULE_PERMISSIONS.Calendar },
+  { name: "Timetable", href: "/dashboard/timetable", icon: Clock, module: MODULE_PERMISSIONS.Timetable },
+  { name: "Announcements", href: "/dashboard/announcements", icon: Megaphone, module: MODULE_PERMISSIONS.Announcements },
   {
     name: "Finances",
     icon: DollarSign,
-    roles: MODULE_ACCESS.Finances,
+    module: MODULE_PERMISSIONS.Finances,
     children: [
       { name: "Overview", href: "/dashboard/finances" },
       { name: "Invoices", href: "/dashboard/finances/invoices" },
@@ -73,22 +81,22 @@ const navigation: NavItem[] = [
       { name: "Surpluses", href: "/dashboard/finances/surpluses" },
     ]
   },
-  { name: "Academics", href: "/dashboard/pedagogy", icon: BookOpen, roles: MODULE_ACCESS.Pedagogy },
-  { name: "Academic Planning", href: "/dashboard/academic-planning", icon: PenSquare, roles: MODULE_ACCESS["Academic Planning"] },
-  { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck, roles: MODULE_ACCESS["Course Tracking"] },
-  { name: "Transport", href: "/dashboard/transport", icon: Truck, roles: MODULE_ACCESS.Transport },
-  { name: "Reports", href: "/dashboard/reports", icon: FileText, roles: MODULE_ACCESS.Rapports },
-  { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed, roles: MODULE_ACCESS.Restaurant },
-  { name: "Storage", href: "/dashboard/store", icon: Package, roles: MODULE_ACCESS.Storage },
-  { name: "Boarding", href: "/dashboard/boarding", icon: Home, roles: MODULE_ACCESS.Boarding },
-  { name: "Daycare", href: "/dashboard/daycare", icon: Baby, roles: MODULE_ACCESS.Daycare },
+  { name: "Academics", href: "/dashboard/pedagogy", icon: BookOpen, module: MODULE_PERMISSIONS.Pedagogy, moduleAccessKey: "Pedagogy" },
+  { name: "Academic Planning", href: "/dashboard/academic-planning", icon: PenSquare, module: MODULE_PERMISSIONS["Academic Planning"] },
+  { name: "Course Tracking", href: "/dashboard/academics/tracking", icon: ClipboardCheck, module: MODULE_PERMISSIONS["Course Tracking"] },
+  { name: "Transport", href: "/dashboard/transport", icon: Truck, module: MODULE_PERMISSIONS.Transport },
+  { name: "Reports", href: "/dashboard/reports", icon: FileText, module: MODULE_PERMISSIONS.Rapports, moduleAccessKey: "Rapports" },
+  { name: "Restaurant", href: "/dashboard/canteen", icon: UtensilsCrossed, module: MODULE_PERMISSIONS.Restaurant },
+  { name: "Storage", href: "/dashboard/store", icon: Package, module: MODULE_PERMISSIONS.Storage },
+  { name: "Boarding", href: "/dashboard/boarding", icon: Home, module: MODULE_PERMISSIONS.Boarding },
+  { name: "Daycare", href: "/dashboard/daycare", icon: Baby, module: MODULE_PERMISSIONS.Daycare },
   {
     name: "Audit Logs",
     href: "/dashboard/audit-logs",
     icon: FileText,
-    roles: MODULE_ACCESS["Audit Logs"],
+    module: MODULE_PERMISSIONS["Audit Logs"],
   },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings, roles: MODULE_ACCESS.Settings },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings, module: MODULE_PERMISSIONS.Settings },
 ]
 
 function SidebarItem({
@@ -191,7 +199,17 @@ export function DashboardSidebar() {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
 
   const filteredNavigation = navigation
-    .filter((item) => !item.roles || (user?.role && item.roles.includes(user.role)))
+    .filter((item) => {
+      if (item.roles) {
+        return user?.role && item.roles.includes(user.role)
+      }
+      const accessKey = item.moduleAccessKey || item.name
+      const allowedRoles = MODULE_ACCESS[accessKey as keyof typeof MODULE_ACCESS]
+      if (allowedRoles && user?.role && !(allowedRoles as readonly string[]).includes(user.role)) {
+        return false
+      }
+      return hasModuleAccess(user, item.module)
+    })
     .filter((item) => !item.children || item.children.length > 0 || item.href)
 
   return (

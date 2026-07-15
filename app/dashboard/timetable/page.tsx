@@ -1,7 +1,7 @@
 "use client"
 
 import { useAuth } from "@/lib/auth-context"
-import { canManage } from "@/lib/access-control"
+import { useModulePermissions } from "@/hooks/use-module-permissions"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import {
 
 export default function TimetablePage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("timetable");
   const [selectedClassId, setSelectedClassId] = useState<string>("")
   const [selectedCourseId, setSelectedCourseId] = useState<string>("all")
   const [selectedDay, setSelectedDay] = useState<string>("all")
@@ -128,7 +129,7 @@ export default function TimetablePage() {
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
-          {canManage(user?.role, "timetable") && (
+          {canManage && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>

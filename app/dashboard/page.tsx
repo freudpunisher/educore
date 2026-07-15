@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { formatDistanceToNow } from "date-fns"
-import { MODULE_ACCESS, type ModuleName } from "@/constants/menu-access"
+import { MODULE_ACCESS, MODULE_PERMISSIONS, type ModuleName } from "@/constants/menu-access"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import {
   Users, DollarSign, BookOpen, TrendingUp, Truck, Receipt,
@@ -147,15 +147,18 @@ const MODULE_DATA_FIELDS: Partial<Record<ModuleName, keyof DashboardData>> = {
   Pedagogy: "assessments",
 }
 
-function getAccessibleModules(role: string): ModuleName[] {
+function getAccessibleModules(permissions: string[]): ModuleName[] {
   return (Object.entries(MODULE_ACCESS) as [ModuleName, string[] | null][])
-    .filter(([, roles]) => roles === null || roles.includes(role))
+    .filter(([name]) => {
+      const moduleName = MODULE_PERMISSIONS[name]
+      if (!moduleName) return true
+      return permissions.includes(`${moduleName}.view`) || permissions.includes(`${moduleName}.manage`)
+    })
     .map(([module]) => module)
 }
 
-function getRoleCharts(role: string | undefined, dashboardData: DashboardData | undefined): ChartConfig[] {
-  if (!role) return []
-  const modules = getAccessibleModules(role)
+function getRoleCharts(permissions: string[], dashboardData: DashboardData | undefined): ChartConfig[] {
+  const modules = getAccessibleModules(permissions)
 
   return modules
     .filter((m) => {
@@ -509,7 +512,7 @@ export default function DashboardPage() {
   const kpiCards = buildKpiCards(dashboardData, isDashboardLoading)
   const financeStats = dashboardData?.finance
   const financeByTerm = dashboardData?.finance_by_term
-  const roleCharts = getRoleCharts(user?.role, dashboardData)
+  const roleCharts = getRoleCharts(user?.permissions ?? [], dashboardData)
   const chartConfig = roleCharts.length > 0 ? roleCharts[0] : null
 
   const defaultActivities = getRoleBasedActivities(dashboardData?.role)

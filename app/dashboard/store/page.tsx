@@ -44,7 +44,7 @@ import {
   Power,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -186,6 +186,7 @@ type AccountDetail = {
 
 export default function StorePage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("store");
   const [activeTab, setActiveTab] = useState("inventory");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -633,7 +634,7 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {canManage(user?.role, "storage") && (
+            {canManage && (
               <DropdownMenuItem onClick={() => { setAdjustingInventory(item); setIsAdjustModalOpen(true); }}>
                 <Pencil className="w-4 h-4 mr-2" /> Adjust Stock
               </DropdownMenuItem>
@@ -692,7 +693,7 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {canManage(user?.role, "storage") && (
+            {canManage && (
               <>
                 <DropdownMenuItem onClick={() => { setEditingProduct(item); setIsProductModalOpen(true); }}>
                   <Pencil className="w-4 h-4 mr-2" /> Edit
@@ -834,7 +835,7 @@ export default function StorePage() {
             <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            {canManage(user?.role, "storage") && (
+            {canManage && (
               <DropdownMenuItem onClick={() => { setEditingDistribution(item); setIsDistributionModalOpen(true); }}>
                 <Pencil className="w-4 h-4 mr-2" /> Edit Status
               </DropdownMenuItem>
@@ -941,7 +942,7 @@ export default function StorePage() {
                 <Printer className="w-4 h-4 mr-2 text-green-600" /> Print Receipt
               </DropdownMenuItem>
             )}
-            {canManage(user?.role, "storage") && (
+            {canManage && (
               <DropdownMenuItem onClick={() => handleDeleteSale(item.id)} className="text-red-600">
                 <Trash2 className="w-4 h-4 mr-2" /> Delete Transaction
               </DropdownMenuItem>
@@ -1049,7 +1050,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Products</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">All products with their category and unit of measure</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> New Product
                 </Button>
@@ -1083,7 +1084,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Inventory</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Current stock levels for all products</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> New Product
                 </Button>
@@ -1151,7 +1152,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock List (By Location)</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Manage local stock by sales points or storage depots</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsStoreProductModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" /> Add Location Stock
                 </Button>
@@ -1169,7 +1170,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock Entries</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Restocking and supply records</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingEntry(null); setIsEntryModalOpen(true); }}>
                   <ArrowUp className="w-4 h-4 mr-2" /> New Entry
                 </Button>
@@ -1216,7 +1217,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Stock Exits</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Consumption, assignment and loss records</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => setIsExitModalOpen(true)}>
                   <ArrowDown className="w-4 h-4 mr-2" /> Log Exit
                 </Button>
@@ -1270,7 +1271,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Distributions</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Equipment and supplies assigned to staff, students and departments</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingDistribution(null); setIsDistributionModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> New Distribution
                 </Button>
@@ -1322,7 +1323,7 @@ export default function StorePage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Product Sales</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Record and track sales of uniforms and school items</p>
               </div>
-              {canManage(user?.role, "storage") && (
+              {canManage && (
                 <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsSaleModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" /> Record Sale
                 </Button>

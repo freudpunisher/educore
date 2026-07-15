@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
@@ -148,7 +149,7 @@ export default function BoardingPage() {
   const [activeTab, setActiveTab] = useState("assignments");
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const canManage = user?.role === "boarding";
+  const { canManage } = useModulePermissions("boarding");
   const allTabs = [
     { value: "assignments", label: "Assignments" },
     { value: "rooms", label: "Rooms" },

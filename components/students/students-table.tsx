@@ -42,6 +42,8 @@ import {
   Eye,
   Trash2,
   Receipt,
+  PenSquare,
+  Check,
 } from "lucide-react";
 import { useState } from "react";
 import { Student } from "@/types/student";
@@ -50,6 +52,7 @@ import { CreateAnticipatedInvoiceDialog } from "./create-anticipated-invoice-dia
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeleteStudent } from "@/hooks/use-delete-student";
+import { useValidateStudent } from "@/hooks/use-students";
 
 const PAGE_SIZE = 10;
 const genderLabel = (g?: number) => (g === 1 ? "Male" : g === 0 ? "Female" : "Unknown");
@@ -71,6 +74,8 @@ interface StudentsTableProps {
   onGenderChange: (gender?: number) => void;
   years: any[];
   classes: any[];
+  canManage?: boolean;
+  canDelete?: boolean;
   userRole?: string;
 }
 
@@ -91,6 +96,8 @@ export default function StudentsTable({
   onGenderChange,
   years,
   classes,
+  canManage = false,
+  canDelete = false,
   userRole,
 }: StudentsTableProps) {
   const router = useRouter();
@@ -189,6 +196,7 @@ export default function StudentsTable({
         const student = row.original;
         const alreadyEnrolled = !!student.enrollment_info;
         const deleteMutation = useDeleteStudent();
+        const validateMutation = useValidateStudent();
 
         const handleDelete = () => {
           if (confirm(`Delete student "${student.full_name}"? This action cannot be undone.`)) {
@@ -202,11 +210,36 @@ export default function StudentsTable({
               variant="outline"
               size="sm"
               onClick={() => router.push(`/dashboard/students/${student.id}`)}
-              className="h-8 gap-2"
+              className="h-8 w-8 p-0"
+              title="View"
             >
               <Eye className="h-4 w-4" />
-              View
             </Button>
+
+            {userRole === "receptionist" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/dashboard/students/${student.id}/edit`)}
+                className="h-8 w-8 p-0"
+                title="Edit"
+              >
+                <PenSquare className="h-4 w-4" />
+              </Button>
+            )}
+
+            {userRole === "academic_principal" && !student.is_validated && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => validateMutation.mutate(student.id)}
+                disabled={validateMutation.isPending}
+                className="h-8 w-8 p-0"
+                title="Validate"
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            )}
 
             {userRole === "academic_principal" && student.is_validated && student.registration_paid && (
               <Button
@@ -214,9 +247,10 @@ export default function StudentsTable({
                 size="sm"
                 disabled={alreadyEnrolled}
                 onClick={() => setOpenEnroll(true)}
-                className="h-8"
+                className="h-8 w-8 p-0"
+                title={alreadyEnrolled ? "Already Assigned" : "Assign"}
               >
-                {alreadyEnrolled ? "Already Assigned" : "Assign"}
+                <School className="h-4 w-4" />
               </Button>
             )}
 
@@ -225,22 +259,24 @@ export default function StudentsTable({
                 variant="outline"
                 size="sm"
                 onClick={() => setOpenInvoice(true)}
-                className="h-8"
+                className="h-8 w-8 p-0"
+                title="Invoice"
               >
-                <Receipt className="h-4 w-4 mr-1" />
-                Invoice
+                <Receipt className="h-4 w-4" />
               </Button>
             )}
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
 
             <EnrollStudentDialog
               studentId={student.id}
