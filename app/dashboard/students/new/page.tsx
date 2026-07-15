@@ -348,10 +348,11 @@ export default function NewStudentPage() {
                   {(searchResults || []).map((parent: any) => {
                     const fullName = `${parent.user?.first_name ?? ""} ${parent.user?.last_name ?? ""}`.trim() || "Unnamed";
                     return (
-                      <button
+                      <div
                         key={parent.id}
-                        type="button"
-                        className="w-full text-left flex items-center justify-between p-2 rounded-md text-sm hover:bg-primary/10 transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        className="w-full text-left flex items-center justify-between p-2 rounded-md text-sm hover:bg-primary/10 transition-colors cursor-pointer"
                         onClick={() => {
                           setParentFound(parent);
                           setValue("parent_id", parent.id);
@@ -360,6 +361,12 @@ export default function NewStudentPage() {
                           setValue("parent_contact", parent.phone_number ?? "");
                           setValue("parent_email", parent.user?.email ?? "");
                           setValue("address", parent.address ?? "");
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            (e.target as HTMLElement).click();
+                          }
                         }}
                       >
                         <div className="flex flex-col">
@@ -373,7 +380,7 @@ export default function NewStudentPage() {
                         <Button type="button" variant="outline" size="sm">
                           <Check className="h-3 w-3 mr-1" /> Use this parent
                         </Button>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

@@ -147,7 +147,7 @@ export default function ClassDetailPage() {
                         <TableRow key={enr.id}>
                           <TableCell className="font-medium">{enr.student_name}</TableCell>
                           <TableCell>
-                            <span className="font-mono text-sm text-muted-foreground">{enr.enrollment_number || "-"}</span>
+                            <span className="font-mono text-sm text-muted-foreground">{enr.enrollment_ref || enr.enrollment_number || "-"}</span>
                           </TableCell>
                           <TableCell>{enr.date_enrolled ? new Date(enr.date_enrolled).toLocaleDateString() : "-"}</TableCell>
                           <TableCell>

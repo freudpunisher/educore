@@ -80,10 +80,12 @@ export function usePayInvoice() {
 
 export interface PaymentQueryParams {
     page?: number;
+    page_size?: number;
     search?: string;
     invoice?: number;
     date_from?: string;
     date_to?: string;
+    institution?: number;
 }
 
 export function usePayments(params: PaymentQueryParams = { page: 1 }) {
