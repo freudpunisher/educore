@@ -23,8 +23,9 @@ import {
     Clock,
     FileText,
     Building2,
+    XCircle,
 } from "lucide-react"
-import { usePayments, useInvoices } from "@/hooks/use-finance"
+import { usePayments, useInvoices, useCancelPayment } from "@/hooks/use-finance"
 import { useDebounce } from "@/hooks/use-debounce"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
@@ -47,6 +48,8 @@ export default function PaymentsPage() {
     const debouncedSearch = useDebounce(searchTerm, 500);
     const debouncedDateFrom = useDebounce(dateFrom, 500);
     const debouncedDateTo = useDebounce(dateTo, 500);
+    const [cancellingId, setCancellingId] = useState<number | null>(null);
+    const cancelPayment = useCancelPayment();
 
     const { data: institutions = [] } = useQuery({
         queryKey: ["institutions"],
@@ -223,6 +226,22 @@ export default function PaymentsPage() {
         printWindow.document.close();
     }
 
+    const handleCancelPayment = (paymentId: number) => {
+        if (window.confirm("Are you sure you want to cancel this payment? The invoice will be re-initialized.")) {
+            setCancellingId(paymentId);
+            cancelPayment.mutate(paymentId, {
+                onSuccess: () => {
+                    setCancellingId(null);
+                },
+                onError: (err: any) => {
+                    setCancellingId(null);
+                    const msg = err?.response?.data?.message || "Failed to cancel payment. Only directors can cancel payments.";
+                    alert(msg);
+                },
+            });
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -396,6 +415,7 @@ export default function PaymentsPage() {
                                             <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground whitespace-nowrap">Institution</TableHead>
                                             <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground whitespace-nowrap">Created By</TableHead>
                                             <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground whitespace-nowrap">Creation Date</TableHead>
+                                            <TableHead className="py-5 font-black uppercase tracking-widest text-[10px] text-muted-foreground whitespace-nowrap">Status</TableHead>
                                             <TableHead className="py-5 pr-6 text-right font-black uppercase tracking-widest text-[10px] text-muted-foreground whitespace-nowrap">Action</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -461,13 +481,24 @@ export default function PaymentsPage() {
                                                         </span>
                                                     </div>
                                                 </TableCell>
+                                                <TableCell className="py-5">
+                                                    {payment.cancelled_at ? (
+                                                        <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-200 font-bold text-[10px] uppercase">
+                                                            Cancelled
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200 font-bold text-[10px] uppercase">
+                                                            Active
+                                                        </Badge>
+                                                    )}
+                                                </TableCell>
                                                 <TableCell className="py-5 pr-6 text-right">
                                                     <div className="flex items-center justify-end gap-2">
                                                         {payment.document && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-emerald-500/10"
+                                                                className="rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-emerald-500/10"
                                                                 onClick={() => window.open(payment.document!, '_blank')}
                                                             >
                                                                 <FileText className="w-3.5 h-3.5 mr-1.5" /> Document
@@ -476,18 +507,29 @@ export default function PaymentsPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="rounded-xl opacity-0 group-hover:opacity-100 transition-all bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-indigo-500/10"
+                                                            className="rounded-xl bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-indigo-500/10"
                                                             onClick={() => handlePrintReceipt(payment)}
                                                         >
                                                             <Printer className="w-3.5 h-3.5 mr-1.5" /> Receipt
                                                         </Button>
+                                                        {!payment.cancelled_at && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-rose-500/10"
+                                                                onClick={() => handleCancelPayment(payment.id)}
+                                                                disabled={cancellingId === payment.id}
+                                                            >
+                                                                <XCircle className="w-3.5 h-3.5 mr-1.5" /> {cancellingId === payment.id ? "..." : "Cancel"}
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
                                         {filteredPayments.length === 0 && (
                                             <TableRow>
-                                                <TableCell colSpan={10} className="py-32 text-center">
+                                                <TableCell colSpan={11} className="py-32 text-center">
                                                     <div className="flex flex-col items-center gap-3 opacity-20">
                                                         <Search className="w-16 h-16" />
                                                         <p className="font-black tracking-widest uppercase text-sm text-foreground">No transaction traces detected</p>
