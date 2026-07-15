@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -17,28 +17,44 @@ import {
     ShieldAlert,
     Check,
     ChevronsUpDown,
+    ChevronLeftIcon,
+    ChevronRightIcon,
     Wallet,
     Clock,
     FileText,
+    Building2,
 } from "lucide-react"
 import { usePayments, useInvoices } from "@/hooks/use-finance"
 import { useDebounce } from "@/hooks/use-debounce"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { useQuery } from "@tanstack/react-query"
+import axiosInstance from "@/lib/axios"
 
 export default function PaymentsPage() {
     const [searchTerm, setSearchTerm] = useState("")
     const [invoiceFilter, setInvoiceFilter] = useState("all")
     const [openInvoiceCombo, setOpenInvoiceCombo] = useState(false)
     const [paymentPage, setPaymentPage] = useState(1)
+    const [pageSize, setPageSize] = useState(15)
     const [dateFrom, setDateFrom] = useState("")
     const [dateTo, setDateTo] = useState("")
+    const [institutionFilter, setInstitutionFilter] = useState("all")
 
     const debouncedSearch = useDebounce(searchTerm, 500);
     const debouncedDateFrom = useDebounce(dateFrom, 500);
     const debouncedDateTo = useDebounce(dateTo, 500);
+
+    const { data: institutions = [] } = useQuery({
+        queryKey: ["institutions"],
+        queryFn: async () => {
+            const { data } = await axiosInstance.get("/config/institutions/")
+            return data?.data || data?.results || data || []
+        },
+    })
 
     const { data: invoicesData, isLoading: isInvoicesLoading } = useInvoices({
         page_size: 10000
@@ -51,13 +67,16 @@ export default function PaymentsPage() {
         isError,
     } = usePayments({
         page: paymentPage,
+        page_size: pageSize,
         search: debouncedSearch,
         invoice: invoiceFilter && invoiceFilter !== "all" ? Number(invoiceFilter) : undefined,
         date_from: debouncedDateFrom || undefined,
         date_to: debouncedDateTo || undefined,
+        institution: institutionFilter !== "all" ? Number(institutionFilter) : undefined,
     });
 
     const filteredPayments = paymentsData?.results || [];
+    const totalCount = paymentsData?.count || 0;
 
     const formatReference = (payment: any) => {
         let datePart = "0000-00";
@@ -68,6 +87,38 @@ export default function PaymentsPage() {
         const paddedId = String(payment.id).padStart(4, "0");
         return `PAY-${datePart}-${paddedId}`;
     };
+
+    const handleExportCSV = () => {
+        const headers = [
+            "Reference", "Invoice Reference", "Payment Reference",
+            "Payment Date", "Method", "Amount (FBU)",
+            "Institution", "Created By", "Creation Date"
+        ]
+        const rows = filteredPayments.map((p: any) => [
+            formatReference(p),
+            p.invoice_reference || "",
+            p.payment_reference || "",
+            p.payment_date || "",
+            p.payment_mode_name || "",
+            p.amount || 0,
+            p.institution_name || "",
+            p.created_by_name || "",
+            p.created_at || "",
+        ])
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")),
+        ].join("\n")
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `payments_${new Date().toISOString().split("T")[0]}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    }
 
     const handlePrintReceipt = (payment: any) => {
         const printWindow = window.open('', '_blank');
@@ -180,7 +231,7 @@ export default function PaymentsPage() {
                     <p className="text-muted-foreground font-medium mt-1">Audit trail of all processed school fee transactions</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <Button variant="outline" className="rounded-2xl border-2 hover:bg-muted transition-all font-bold h-12 px-6">
+                    <Button variant="outline" className="rounded-lg border-2 hover:bg-muted transition-all font-bold h-12 px-6" onClick={handleExportCSV} disabled={filteredPayments.length === 0}>
                         <Download className="w-4 h-4 mr-2" />
                         Export Ledger
                     </Button>
@@ -188,7 +239,7 @@ export default function PaymentsPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <Card className="border-none shadow-2xl shadow-primary/5 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-[2rem] p-6 relative overflow-hidden group">
+                <Card className="border shadow-sm bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-xl p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                         <Wallet className="w-16 h-16 rotate-12" />
                     </div>
@@ -198,19 +249,19 @@ export default function PaymentsPage() {
                         <span className="text-[10px] text-emerald-400 font-bold mb-1">+5.2%</span>
                     </div>
                 </Card>
-                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-[2rem] p-6 group hover:translate-y-[-4px] transition-all">
+                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-xl p-6 group hover:translate-y-[-4px] transition-all">
                     <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-1">Success Rate</p>
                     <h3 className="text-2xl font-black text-emerald-600">99.9%</h3>
                     <div className="mt-2 w-full bg-muted h-1 rounded-full overflow-hidden">
                         <div className="bg-emerald-500 h-full w-[99%]" />
                     </div>
                 </Card>
-                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-[2rem] p-6 group hover:translate-y-[-4px] transition-all">
+                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-xl p-6 group hover:translate-y-[-4px] transition-all">
                     <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-1">Avg. Settlement</p>
                     <h3 className="text-2xl font-black text-foreground">450K Fbu</h3>
                     <p className="text-[10px] text-muted-foreground font-bold mt-1">Per transaction</p>
                 </Card>
-                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-[2rem] p-6 group hover:translate-y-[-4px] transition-all">
+                <Card className="border-none shadow-xl shadow-primary/5 bg-card rounded-xl p-6 group hover:translate-y-[-4px] transition-all">
                     <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest mb-1">Monthly Goal</p>
                     <h3 className="text-2xl font-black text-indigo-600">82%</h3>
                     <div className="mt-2 w-full bg-muted h-1 rounded-full overflow-hidden">
@@ -219,14 +270,14 @@ export default function PaymentsPage() {
                 </Card>
             </div>
 
-            <Card className="border-none shadow-2xl shadow-primary/5 bg-card rounded-[2.5rem] overflow-hidden">
+            <Card className="border-none shadow-2xl shadow-primary/5 bg-card rounded-xl overflow-hidden">
                 <CardHeader className="p-8 pb-0">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 placeholder="Trace transaction ID or reference..."
-                                className="pl-12 h-14 bg-muted/50 border-transparent focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all rounded-2xl font-medium"
+                                className="pl-12 h-14 bg-muted/50 border-transparent focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all rounded-lg font-medium"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -237,7 +288,7 @@ export default function PaymentsPage() {
                                     type="date"
                                     value={dateFrom}
                                     onChange={(e) => setDateFrom(e.target.value)}
-                                    className="h-14 bg-muted/50 border-transparent rounded-2xl focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all font-medium w-[150px]"
+                                    className="h-14 bg-muted/50 border-transparent rounded-lg focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all font-medium w-[150px]"
                                     placeholder="Date from"
                                 />
                                 <span className="text-muted-foreground font-bold text-xs">—</span>
@@ -245,7 +296,7 @@ export default function PaymentsPage() {
                                     type="date"
                                     value={dateTo}
                                     onChange={(e) => setDateTo(e.target.value)}
-                                    className="h-14 bg-muted/50 border-transparent rounded-2xl focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all font-medium w-[150px]"
+                                    className="h-14 bg-muted/50 border-transparent rounded-lg focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all font-medium w-[150px]"
                                     placeholder="Date to"
                                 />
                             </div>
@@ -255,7 +306,7 @@ export default function PaymentsPage() {
                                         variant="outline"
                                         role="combobox"
                                         aria-expanded={openInvoiceCombo}
-                                        className="w-[220px] h-14 justify-between bg-muted/50 border-transparent rounded-2xl hover:bg-background hover:shadow-md transition-all font-bold text-muted-foreground"
+                                        className="w-[220px] h-14 justify-between bg-muted/50 border-transparent rounded-lg hover:bg-background hover:shadow-md transition-all font-bold text-muted-foreground"
                                     >
                                         <span className="truncate">
                                             {invoiceFilter && invoiceFilter !== "all"
@@ -265,7 +316,7 @@ export default function PaymentsPage() {
                                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-[300px] p-0 rounded-2xl border-border shadow-2xl" align="end">
+                                <PopoverContent className="w-[300px] p-0 rounded-lg border-border shadow-2xl" align="end">
                                     <Command>
                                         <CommandInput placeholder="Search invoices..." className="h-12 border-none focus:ring-0" />
                                         <CommandList>
@@ -300,6 +351,20 @@ export default function PaymentsPage() {
                                     </Command>
                                 </PopoverContent>
                             </Popover>
+                            <Select value={institutionFilter} onValueChange={setInstitutionFilter}>
+                                <SelectTrigger className="w-[200px] h-14 bg-muted/50 border-transparent rounded-lg focus:bg-background focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-muted-foreground">
+                                    <Building2 className="w-4 h-4 mr-2 shrink-0" />
+                                    <SelectValue placeholder="All Institutions" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-lg">
+                                    <SelectItem value="all" className="font-bold">All Institutions</SelectItem>
+                                    {institutions.map((inst: any) => (
+                                        <SelectItem key={inst.id} value={String(inst.id)} className="font-bold">
+                                            {inst.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </CardHeader>
@@ -317,7 +382,7 @@ export default function PaymentsPage() {
                             <Button variant="outline" onClick={() => window.location.reload()}>Retry Handshake</Button>
                         </div>
                     ) : (
-                        <div className="rounded-[2rem] border border-border overflow-hidden">
+                        <div className="rounded-xl border border-border overflow-hidden">
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader className="bg-muted/50">
@@ -434,34 +499,71 @@ export default function PaymentsPage() {
                                 </Table>
                             </div>
 
-                            <div className="flex items-center justify-between p-6 bg-muted/30">
-                                <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-wider">
-                                    Archive Scanning: <span className="text-foreground">{filteredPayments.length}</span> of <span className="text-foreground">{paymentsData?.count || 0}</span> Entries
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setPaymentPage(p => Math.max(1, p - 1))}
-                                        disabled={paymentPage === 1}
-                                        className="rounded-xl h-10 px-4 hover:bg-background hover:shadow-md transition-all font-bold text-muted-foreground"
-                                    >
-                                        Previous
-                                    </Button>
-                                    <div className="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-black text-white shadow-lg shadow-indigo-200 min-w-[40px] text-center">
-                                        {paymentPage}
+                            {totalCount > 0 && (
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t rounded-b-xl">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <span className="font-medium">{totalCount}</span>
+                                        <span>result{totalCount !== 1 ? "s" : ""}</span>
+                                        <span className="mx-1">·</span>
+                                        <span>Page {paymentPage} of {Math.max(1, Math.ceil(totalCount / pageSize))}</span>
                                     </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setPaymentPage(p => p + 1)}
-                                        disabled={!paymentsData?.next}
-                                        className="rounded-xl h-10 px-4 hover:bg-background hover:shadow-md transition-all font-bold text-muted-foreground"
-                                    >
-                                        Next
-                                    </Button>
+                                    <div className="flex items-center gap-2">
+                                        <Select
+                                            value={String(pageSize)}
+                                            onValueChange={(v) => { setPageSize(Number(v)); setPaymentPage(1) }}
+                                        >
+                                            <SelectTrigger className="h-8 w-[70px] text-xs rounded-xl">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                                <SelectItem value="15">15</SelectItem>
+                                                <SelectItem value="30">30</SelectItem>
+                                                <SelectItem value="50">50</SelectItem>
+                                                <SelectItem value="100">100</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <div className="flex items-center gap-1">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="rounded-xl"
+                                                disabled={paymentPage <= 1}
+                                                onClick={() => setPaymentPage(p => p - 1)}
+                                            >
+                                                <ChevronLeftIcon className="h-4 w-4" />
+                                            </Button>
+                                            {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
+                                                const totalPages = Math.ceil(totalCount / pageSize);
+                                                let start = Math.max(1, paymentPage - 2);
+                                                const end = Math.min(totalPages, start + 4);
+                                                if (end - start < 4) start = Math.max(1, end - 4);
+                                                const pageNum = start + i;
+                                                if (pageNum > totalPages) return null;
+                                                return (
+                                                    <Button
+                                                        key={pageNum}
+                                                        variant={pageNum === paymentPage ? "default" : "outline"}
+                                                        size="sm"
+                                                        className="min-w-[32px] rounded-xl"
+                                                        onClick={() => setPaymentPage(pageNum)}
+                                                    >
+                                                        {pageNum}
+                                                    </Button>
+                                                );
+                                            })}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="rounded-xl"
+                                                disabled={paymentPage >= Math.ceil(totalCount / pageSize)}
+                                                onClick={() => setPaymentPage(p => p + 1)}
+                                            >
+                                                <ChevronRightIcon className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
                 </CardContent>

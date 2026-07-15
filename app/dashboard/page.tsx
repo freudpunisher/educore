@@ -483,6 +483,10 @@ export default function DashboardPage() {
   const isDirector = user?.role === "director"
   const { data: recentEnrollments } = useRecentEnrollments(5, { enabled: isReceptionist })
 
+  const handleYearSelect = useCallback((v: string) => {
+    setAcademicYearId(Number(v));
+  }, []);
+
   const handleExport = useCallback(async (format: "csv" | "pdf") => {
     try {
       const params = new URLSearchParams({ format })
@@ -540,7 +544,7 @@ export default function DashboardPage() {
           {dashboardData?.academic_years && dashboardData.academic_years.length > 0 && (
             <Select
               value={academicYearId?.toString() ?? ""}
-              onValueChange={(v) => setAcademicYearId(Number(v))}
+              onValueChange={handleYearSelect}
             >
               <SelectTrigger className="w-52">
                 <SelectValue placeholder="Academic year" />

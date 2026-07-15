@@ -106,7 +106,7 @@ export default function StudentAcademicDetailsPage() {
             <div>
               <h1 className="text-3xl font-bold">{enrollment.student_name}</h1>
               <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                <Badge variant="secondary" className="font-mono">{enrollment.enrollment_number}</Badge>
+                <Badge variant="secondary" className="font-mono">{enrollment.enrollment_ref || enrollment.enrollment_number}</Badge>
                 <span>•</span>
                 <span className="flex items-center gap-1"><BookOpen className="w-3.5 h-3.5" /> {classItem?.name}</span>
               </div>

@@ -133,7 +133,7 @@ export function GradingDialog({ isOpen, onClose, assessment, classId, classLevel
                   <TableCell className="font-medium">
                     <div className="flex flex-col">
                       <span>{enr.student_name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">{enr.enrollment_number}</span>
+                      <span className="text-xs text-muted-foreground font-mono">{enr.enrollment_ref || enr.enrollment_number}</span>
                     </div>
                   </TableCell>
                   <TableCell>

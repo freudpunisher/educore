@@ -407,7 +407,7 @@ export default function TakeAttendancePage() {
                           {enr.student_name || "—"}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {enr.enrollment_number || ""}
+                          {enr.enrollment_ref || enr.enrollment_number || ""}
                         </p>
                       </div>
                     </div>
