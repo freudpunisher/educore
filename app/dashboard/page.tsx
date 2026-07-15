@@ -450,7 +450,7 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [academicYearId, setAcademicYearId] = useState<number | undefined>(undefined)
-  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard(academicYearId)
+  const { data: dashboardData, isLoading: isDashboardLoading } = useDashboard(academicYearId, !!user)
 
   const isBodyControl = user?.role === "body_control"
 

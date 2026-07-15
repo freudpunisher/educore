@@ -82,7 +82,7 @@ const dashboardSchema = z.object({
 export type DashboardData = z.infer<typeof dashboardSchema>;
 export type AcademicYear = z.infer<typeof academicYearSchema>;
 
-export function useDashboard(academicYearId?: number | null) {
+export function useDashboard(academicYearId?: number | null, enabled = true) {
   const params = academicYearId ? { academic_year_id: academicYearId } : {};
   return useQuery({
     queryKey: ["core", "dashboard", academicYearId],
@@ -92,5 +92,6 @@ export function useDashboard(academicYearId?: number | null) {
       return dashboardSchema.parse(raw);
     },
     staleTime: 1000 * 60 * 2,
+    enabled,
   });
 }
