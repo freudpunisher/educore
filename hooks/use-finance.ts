@@ -165,8 +165,13 @@ export function useCancelPayment() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (paymentId: number) => {
-            const response = await axiosInstance.post(`/finance/payments/${paymentId}/cancel/`);
+        mutationFn: async ({ paymentId, reason, document }: { paymentId: number; reason?: string; document?: File }) => {
+            const formData = new FormData();
+            if (reason) formData.append("reason", reason);
+            if (document) formData.append("document", document);
+            const response = await axiosInstance.post(`/finance/payments/${paymentId}/cancel/`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
             return response.data;
         },
         onSuccess: () => {
