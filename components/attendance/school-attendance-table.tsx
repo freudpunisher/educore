@@ -48,7 +48,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import {
   useSchoolDailyAttendances,
   useBulkMarkSchoolAttendance,
@@ -90,6 +90,7 @@ interface StudentRecord {
 
 export function SchoolAttendanceTable() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("academics");
   const today = format(new Date(), "yyyy-MM-dd");
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedClassroom, setSelectedClassroom] = useState<number | null>(null);
@@ -327,7 +328,7 @@ export function SchoolAttendanceTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        {canManage(user?.role, "attendance") && (
+                        {canManage && (
                           <>
                         {["present", "absent", "late"].map((s) => {
                           const opt = STATUS_OPTIONS.find((o) => o.value === s)!;
@@ -368,7 +369,7 @@ export function SchoolAttendanceTable() {
       {/* Save button */}
       {selectedClassroom && filtered.length > 0 && (
         <div className="flex justify-end pt-2">
-          {canManage(user?.role, "attendance") && (
+          {canManage && (
           <Button
             size="lg"
             onClick={handleSave}
@@ -476,7 +477,7 @@ export function SchoolAttendanceTable() {
               <Button variant="outline" onClick={() => setEditDialog({ open: false, studentId: null })}>
                 Annuler
               </Button>
-              {canManage(user?.role, "attendance") && (
+              {canManage && (
               <Button onClick={saveEdit}>Sauvegarder</Button>
               )}
             </div>

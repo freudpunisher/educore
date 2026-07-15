@@ -28,25 +28,17 @@ type AccessData = {
 };
 
 const MODULE_LABELS: Record<string, string> = {
-  students: "Students",
-  employees: "Employees",
-  attendance: "Attendance",
-  behavior: "Behavior",
-  calendar: "Calendar",
-  timetable: "Timetable",
-  announcements: "Announcements",
-  finances: "Finances",
-  academics: "Academics",
-  "academic-planning": "Academic Planning",
-  "course-tracking": "Course Tracking",
+  users: "Users (Students & Employees)",
+  academics: "Academics (Pedagogy, Planning, Tracking, Attendance...)",
+  finance: "Finance",
   transport: "Transport",
-  reports: "Reports",
-  restaurant: "Restaurant",
-  storage: "Storage",
+  food: "Restaurant",
+  store: "Storage",
   boarding: "Boarding",
   daycare: "Daycare",
-  "audit-logs": "Audit Logs",
-  settings: "Settings",
+  audit: "Audit Logs",
+  system: "Settings",
+  reports: "Reports",
 };
 
 export function PermissionsTab() {

@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axiosInstance from "@/lib/axios";
-import { paginatedEmployeeListSchema, EmployeeListRequest, EmployeeCreateInput } from "@/types/employee";
+import { paginatedEmployeeListSchema, employeeSchema, EmployeeListRequest, EmployeeCreateInput } from "@/types/employee";
 import { toast } from "sonner";
+import { z } from "zod";
+import { createPaginatedSchema } from "@/types/api";
 
 export function useEmployees(params?: EmployeeListRequest) {
   return useQuery({
@@ -103,6 +105,71 @@ export function useToggleEmployeeActive() {
       const message = error.response?.data?.message || "Failed to toggle account status";
       toast.error(message, { duration: 6000 });
     },
+  });
+}
+
+export function useEmployeeDetail(id: number | null) {
+  return useQuery({
+    queryKey: ["employee", id],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get(`users/accounts/${id}/`);
+      const raw = data?.data || data;
+      return employeeSchema.parse(raw);
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+const invoiceSchema = z.object({
+  id: z.number(),
+  reference: z.string().optional(),
+  amount: z.number(),
+  status: z.number().optional(),
+  created_at: z.string().optional(),
+  entity_display: z.string().optional(),
+}).passthrough();
+
+const paginatedInvoiceSchema = createPaginatedSchema(invoiceSchema);
+
+export function useEmployeeInvoices(employeeName: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["employee-invoices", employeeName],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/finance/invoices/", {
+        params: { staff: true, staff_search: employeeName, page_size: 50 },
+      });
+      const rawData = data?.data || data;
+      return paginatedInvoiceSchema.parse(rawData);
+    },
+    enabled: enabled && !!employeeName,
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+const distributionSchema = z.object({
+  id: z.number(),
+  product_name: z.string().optional(),
+  quantity: z.number().optional(),
+  recipient_name: z.string().optional(),
+  distribution_date: z.string().optional(),
+  status: z.string().optional(),
+}).passthrough();
+
+const paginatedDistributionSchema = createPaginatedSchema(distributionSchema);
+
+export function useEmployeeDistributions(employeeName: string | null, enabled = true) {
+  return useQuery({
+    queryKey: ["employee-distributions", employeeName],
+    queryFn: async () => {
+      const { data } = await axiosInstance.get("/store/non-vivres/", {
+        params: { search: employeeName, page_size: 50 },
+      });
+      const rawData = data?.data || data;
+      return paginatedDistributionSchema.parse(rawData);
+    },
+    enabled: enabled && !!employeeName,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

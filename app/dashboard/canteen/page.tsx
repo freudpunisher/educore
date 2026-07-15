@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { useState, useMemo, useEffect } from "react";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { DataTable } from "@/components/ui/data-table";
@@ -183,6 +183,7 @@ export default function CanteenPage() {
   );
 
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("food");
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -455,7 +456,7 @@ export default function CanteenPage() {
         const isActive = row.status === "active";
         return (
           <div className="flex items-center gap-1">
-            {canManage(user?.role, "restaurant") && (
+            {canManage && (
               <>
                 {/* Edit — only for non-active */}
                 {!isActive && (
@@ -752,7 +753,7 @@ export default function CanteenPage() {
         if (isValidated) return <span className="text-slate-400 text-xs">—</span>;
         return (
           <div className="flex items-center gap-1">
-            {canManage(user?.role, "restaurant") && (
+            {canManage && (
               <>
                 <Button
                   variant="outline"
@@ -884,7 +885,7 @@ export default function CanteenPage() {
                   Available meal plans for different dietary needs
                 </p>
               </div>
-              {canManage(user?.role, "restaurant") && (
+              {canManage && (
                 <CreateMealPlanDialog onSuccess={fetchData} />
               )}
             </div>
@@ -959,7 +960,7 @@ export default function CanteenPage() {
                   Available food items with nutritional information
                 </p>
               </div>
-              {canManage(user?.role, "restaurant") && (
+              {canManage && (
                 <CreateFoodItemDialog onSuccess={fetchData} />
               )}
             </div>
@@ -1004,7 +1005,7 @@ export default function CanteenPage() {
                   <Download className="w-4 h-4 mr-2" />
                   Export
                 </Button>
-                {canManage(user?.role, "restaurant") && (
+                {canManage && (
                   <CreateSubscriptionDialog mealPlans={mealPlans} onSuccess={fetchData} />
                 )}
               </div>
@@ -1081,7 +1082,7 @@ export default function CanteenPage() {
                   Dietary restrictions and meal preferences
                 </p>
               </div>
-              {canManage(user?.role, "restaurant") && (
+              {canManage && (
                 <CreatePreferenceDialog mealPlans={mealPlans} onSuccess={fetchData} />
               )}
             </div>
@@ -1223,7 +1224,7 @@ export default function CanteenPage() {
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Meal Attendance</h2>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Student and staff check-in records</p>
               </div>
-              {canManage(user?.role, "restaurant") && (
+              {canManage && (
                 <CreateStaffAttendanceDialog meals={meals} mealPlans={mealPlans} onSuccess={fetchData} />
               )}
             </div>
@@ -1276,7 +1277,7 @@ export default function CanteenPage() {
             </div>
           </TabsContent>
         </Tabs>
-        {canManage(user?.role, "restaurant") && (
+        {canManage && (
           <CreateSubscriptionDialog
             mealPlans={mealPlans}
             onSuccess={fetchData}
@@ -1290,7 +1291,7 @@ export default function CanteenPage() {
             }}
           />
         )}
-        {canManage(user?.role, "restaurant") && (
+        {canManage && (
           <CreateStaffAttendanceDialog
             meals={meals}
             mealPlans={mealPlans}

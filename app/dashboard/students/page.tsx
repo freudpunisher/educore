@@ -10,11 +10,13 @@ import { useParents } from "@/hooks/use-parents";
 import { useState } from "react";
 import { useAcademicYears, useClassRooms } from "@/hooks/use-academic-data";
 import { useAuth } from "@/lib/auth-context";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import Link from "next/link";
 import { KpiGrid, KpiCardData } from "@/components/dashboard/kpi-grid";
 
 export default function StudentsPage() {
   const { user } = useAuth();
+  const { canManage, canDelete } = useModulePermissions("users");
   const [tab, setTab] = useState("students");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -105,7 +107,7 @@ export default function StudentsPage() {
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          {tab === "students" && user?.can?.('manage_students') && (
+          {tab === "students" && (user?.role === "receptionist" || user?.role === "academic_principal") && (
             <Link href="/dashboard/students/new">
               <Button size="sm">
                 <Plus className="w-4 h-4 mr-2" />
@@ -134,6 +136,8 @@ export default function StudentsPage() {
               onGenderChange={onGenderChange}
               years={years}
               classes={classes}
+              canManage={canManage}
+              canDelete={canDelete}
               userRole={user?.role}
             />
           ) : (

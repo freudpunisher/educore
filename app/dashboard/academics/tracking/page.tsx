@@ -16,7 +16,7 @@ import { api } from "@/lib/api"
 import { toast } from "sonner"
 import { ClipboardCheck, RefreshCw, GraduationCap } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { canManage } from "@/lib/access-control"
+import { useModulePermissions } from "@/hooks/use-module-permissions"
 
 type AcademicYear = {
   id: number
@@ -37,6 +37,7 @@ type CourseTracking = {
 
 export default function CourseTrackingPage() {
   const { user } = useAuth()
+  const { canManage } = useModulePermissions("academics")
   const [years, setYears] = useState<AcademicYear[]>([])
   const [selectedYear, setSelectedYear] = useState<string>("")
   const [trackingList, setTrackingList] = useState<CourseTracking[]>([])
@@ -137,7 +138,7 @@ export default function CourseTrackingPage() {
               ))}
             </SelectContent>
           </Select>
-          {canManage(user?.role, "course-tracking") && (
+          {canManage && (
             <Button
               onClick={handleAutoGenerate}
               disabled={scaning || !selectedYear}
@@ -200,7 +201,7 @@ export default function CourseTrackingPage() {
                       <TableCell>{getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          {canManage(user?.role, "course-tracking") ? (
+                          {canManage ? (
                             <Select
                               defaultValue={item.status}
                               onValueChange={(val) => updateStatus(item.id, val)}

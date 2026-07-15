@@ -31,27 +31,29 @@ import {
   AlertTriangle,
   XCircle,
 } from "lucide-react"
-import { useFinanceOverview, useInvoices, usePayments, useCancelInvoice } from "@/hooks/use-finance"
+import { useFinanceOverview, useInvoices, usePayments, useCancelInvoice, useCancelPayment } from "@/hooks/use-finance"
 import { Loader2 } from "lucide-react"
 import { ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Area, AreaChart } from "recharts"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
-import { canManage } from "@/lib/access-control"
+import { useModulePermissions } from "@/hooks/use-module-permissions"
 import { toast } from "@/hooks/use-toast"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function FinancesPage() {
   const { user } = useAuth()
+  const { canManage, canDelete } = useModulePermissions("finance")
   const router = useRouter()
   const { data: overview, isLoading } = useFinanceOverview()
   const cancelMutation = useCancelInvoice()
+  const cancelPaymentMutation = useCancelPayment()
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("invoices")
   const [invoicePage, setInvoicePage] = useState(1)
   const [paymentPage, setPaymentPage] = useState(1)
   const [cancelInvoice, setCancelInvoice] = useState<typeof overview['recentInvoices'][0] | null>(null)
-  const cancelRoles = ["director", "system_admin", "global_control"]
+  const [cancelPayment, setCancelPayment] = useState<any | null>(null)
 
   const { data: invoicesData, isLoading: loadingInvoices, isError: invoicesError } = useInvoices(
     activeTab === "invoices" ? { page: invoicePage, page_size: 10, search: searchTerm || undefined } : { page: 1 }
@@ -200,7 +202,7 @@ export default function FinancesPage() {
             <Download className="w-4 h-4 mr-2" />
             Annual Report
           </Button>
-          {canManage(user?.role, "finance") && (
+          {canManage && (
             <Button className="rounded-2xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all font-bold h-12 px-6">
               <Plus className="w-4 h-4 mr-2" />
               Record Transaction
@@ -348,7 +350,7 @@ export default function FinancesPage() {
             </TabsList>
 
             <div className="flex items-center gap-2">
-              {canManage(user?.role, "finance") && (
+              {canManage && (
                 <Button variant="ghost" className="text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
                   Mark all as reviewed
                 </Button>
@@ -450,15 +452,17 @@ export default function FinancesPage() {
                             >
                               <Eye className="w-4 h-4 text-muted-foreground" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10 rounded-xl hover:bg-background hover:shadow-md transition-all text-primary"
-                              onClick={() => handlePrintStatement(invoice)}
-                            >
-                              <Printer className="w-4 h-4" />
-                            </Button>
-                            {cancelRoles.includes(user?.role || "") && invoice.status === 0 && (
+                            {user?.role === "accountant" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-background hover:shadow-md transition-all text-primary"
+                                onClick={() => handlePrintStatement(invoice)}
+                              >
+                                <Printer className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {user?.role === "director" && invoice.status === 0 && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -573,6 +577,7 @@ export default function FinancesPage() {
                             )}
                           </TableCell>
                           <TableCell className="py-6 pr-8 text-right">
+                            <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -581,6 +586,17 @@ export default function FinancesPage() {
                             >
                               <Eye className="w-4 h-4 text-muted-foreground" />
                             </Button>
+                            {user?.role === "director" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-destructive/10 hover:shadow-md transition-all text-destructive"
+                                onClick={() => setCancelPayment(payment)}
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </Button>
+                            )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -670,6 +686,61 @@ export default function FinancesPage() {
             >
               {cancelMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Cancel Invoice
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!cancelPayment} onOpenChange={(v) => { if (!v) setCancelPayment(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Payment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel payment <strong>PAY-{cancelPayment?.id}</strong>?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="flex justify-between items-center rounded-xl border p-4 bg-muted/30">
+              <div>
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Invoice</span>
+                <span className="font-bold text-foreground">{cancelPayment?.invoice_reference}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block mb-1">Amount</span>
+                <span className="font-bold">{Number(cancelPayment?.amount || 0).toLocaleString("en-US")} FBU</span>
+              </div>
+            </div>
+            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive">
+                Cancelling this payment will reverse the transaction. This is irreversible.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelPayment(null)} disabled={cancelPaymentMutation.isPending}>
+              Keep Payment
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!cancelPayment) return;
+                cancelPaymentMutation.mutate(cancelPayment.id, {
+                  onSuccess: () => {
+                    toast.success(`Payment PAY-${cancelPayment.id} cancelled successfully.`);
+                    setCancelPayment(null);
+                  },
+                  onError: (err: any) => {
+                    const msg = err.response?.data?.message || "Failed to cancel payment.";
+                    toast.error(msg);
+                  }
+                });
+              }}
+              disabled={cancelPaymentMutation.isPending}
+            >
+              {cancelPaymentMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cancel Payment
             </Button>
           </DialogFooter>
         </DialogContent>

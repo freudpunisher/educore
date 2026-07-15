@@ -138,24 +138,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Re-hydration logic
+  // Re-hydration synchrone depuis localStorage, puis refresh async des permissions
   useEffect(() => {
-    const savedUser = localStorage.getItem("user_data");
     const token = localStorage.getItem("access_token");
 
-    if (savedUser && token) {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Étape 1 : restaurer synchrone depuis localStorage (évite les sauts de hooks)
+    const savedUser = localStorage.getItem("user_data");
+    if (savedUser) {
       try {
         const parsedUser = JSON.parse(savedUser);
-        // Add helper methods back since they're not restored by JSON.parse
         parsedUser.is = (role: string) => parsedUser.role === role;
         parsedUser.can = (permission: string) => parsedUser.permissions?.includes(permission) ?? false;
         setUser(parsedUser);
       } catch (err) {
         console.error("Failed to parse saved user data:", err);
-        logout();
       }
     }
     setIsLoading(false);
+
+    // Étape 2 : refresh async des permissions depuis le backend
+    const fetchProfile = async () => {
+      try {
+        const res = await axiosInstance.get("me/");
+        const profile = res.data?.data ?? res.data;
+        const userData = profile.user || profile;
+        const permissions = profile.permissions || (userData as any)?.permissions || [];
+
+        const freshUser: User = {
+          id: profile.id || userData?.id || 0,
+          username: userData?.username || profile.username || "unknown",
+          email: userData?.email || profile.email || "",
+          role: (profile.role as User["role"]) || (userData?.role as User["role"]) || "none",
+          permissions,
+          fullName:
+            userData && (userData.first_name || userData.last_name)
+              ? [userData.first_name, userData.last_name].filter(Boolean).join(" ").trim()
+              : userData?.username || profile.username || "User",
+          isActive: profile.active !== undefined ? !!profile.active : true,
+          is: (role: string) => (profile.role === role || userData?.role === role),
+          can: (permission: string) => permissions.includes(permission),
+        };
+
+        setUser(freshUser);
+        localStorage.setItem("user_data", JSON.stringify(freshUser));
+      } catch (err) {
+        console.error("Failed to refresh user profile:", err);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
   return (

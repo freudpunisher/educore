@@ -5,7 +5,7 @@ import { TransportLayout } from "@/components/transport/transport-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { Plus, MapPin, Users, Clock, Truck } from "lucide-react";
 import { mockItineraries } from "@/lib/mock/transport";
 
@@ -21,6 +21,7 @@ interface Itinerary {
 
 export default function ItineraryPage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("transport");
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredData = useMemo(() => {
@@ -42,7 +43,7 @@ export default function ItineraryPage() {
               View and manage transport routes and schedules
             </p>
           </div>
-          {canManage(user?.role, "transport") && (
+          {canManage && (
             <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
               <Plus className="w-4 h-4 mr-2" />
               New Route

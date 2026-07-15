@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useAuth } from "@/lib/auth-context";
-import { canManage } from "@/lib/access-control";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 
 const FEES_CATEGORIES: Record<number, string> = {
   1: "Registration",
@@ -30,6 +30,7 @@ const FEES_CATEGORIES: Record<number, string> = {
 
 export default function PricingPage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("finance");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -160,7 +161,7 @@ export default function PricingPage() {
           <Button variant="outline" onClick={downloadPDF}>
             <Download className="w-4 h-4 mr-2" /> PDF
           </Button>
-          {canManage(user?.role, "finance") && (
+          {canManage && (
             <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="w-4 h-4 mr-2" /> New Fee
             </Button>
@@ -235,7 +236,7 @@ export default function PricingPage() {
                               onChange={(e) => setEditAmount(e.target.value)}
                               className="w-32 text-right h-8"
                             />
-                            {canManage(user?.role, "finance") && (
+                            {canManage && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -263,7 +264,7 @@ export default function PricingPage() {
                       </TableCell>
                       <TableCell>{fee.priority_name || `Order ${fee.priority}`}</TableCell>
                       <TableCell className="text-right">
-                        {canManage(user?.role, "finance") && (
+                        {canManage && (
                           <Button
                             variant="ghost"
                             size="icon"
@@ -357,7 +358,7 @@ export default function PricingPage() {
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-            {canManage(user?.role, "finance") && (
+            {canManage && (
               <Button onClick={handleCreate} disabled={!newLabel || !newAmount || isCreating}>
                 {isCreating ? "Creating..." : "Create Fee"}
               </Button>

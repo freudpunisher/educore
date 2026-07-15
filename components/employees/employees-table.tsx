@@ -39,8 +39,10 @@ import {
   Trash2,
   Hash,
   RotateCcw,
+  Eye,
 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Employee } from "@/types/employee";
 import { Loader2 } from "lucide-react";
 import { useDeleteEmployee, useRestoreEmployee, useToggleEmployeeActive } from "@/hooks/use-employees";
@@ -94,6 +96,7 @@ const roleLabels: Record<string, string> = {
 
 function ActionsCell({ employee }: { employee: Employee }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const deleteMutation = useDeleteEmployee();
   const restoreMutation = useRestoreEmployee();
   const toggleActiveMutation = useToggleEmployeeActive();
@@ -139,6 +142,14 @@ function ActionsCell({ employee }: { employee: Employee }) {
           {employee.active ? "Active" : "Inactive"}
         </span>
       </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
+      >
+        <Eye className="h-4 w-4" />
+      </Button>
       <Button variant="ghost" size="icon" className="h-8 w-8">
         <Pencil className="h-4 w-4" />
       </Button>

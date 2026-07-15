@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -31,8 +32,9 @@ import { useState, useEffect } from "react";
 
 export default function NewStudentPage() {
   const { user } = useAuth();
+  const { canManage } = useModulePermissions("users");
   const router = useRouter();
-  const canAssignClass = user?.role === "academic_principal";
+  const canAssignClass = canManage;
   const createMutation = useCreateStudent();
   const enrollMutation = useEnrollStudent();
   const { data: years = [], isLoading: loadingYears } = useAcademicYears();
@@ -43,10 +45,10 @@ export default function NewStudentPage() {
   const [parentFound, setParentFound] = useState<any | null>(null);
 
   useEffect(() => {
-    if (!user?.can?.('manage_students')) {
+    if (!canManage) {
       router.push('/dashboard/students');
     }
-  }, [user]);
+  }, [canManage]);
 
   useEffect(() => {
     if (years.length > 0 && selectedYear === null) {

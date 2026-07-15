@@ -17,8 +17,7 @@ export const MODULE_ACCESS = {
   ],
   Behavior: [
     "global_control", "system_admin",
-    "director", "academic_principal", "discipline_principal",
-    "receptionist", "teacher",
+    "director", "academic_principal", "discipline_principal", "teacher",
   ],
   Calendar: [
     "global_control", "system_admin",
@@ -41,11 +40,11 @@ export const MODULE_ACCESS = {
   ],
   Finances: [
     "global_control", "system_admin", "body_control",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
   ],
   Pedagogy: [
     "global_control", "system_admin",
-    "director", "academic_principal", "teacher",
+    "director", "academic_principal","teacher",
   ],
   "Academic Planning": [
     "global_control", "system_admin",
@@ -54,11 +53,11 @@ export const MODULE_ACCESS = {
   "Course Tracking": [
     "global_control", "system_admin",
     "director", "academic_principal",
-    "receptionist", "teacher",
+    "teacher",
   ],
   Transport: [
     "global_control", "system_admin",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
     "transporter", "driver",
   ],
   Rapports: [
@@ -67,22 +66,22 @@ export const MODULE_ACCESS = {
   ],
   Restaurant: [
     "global_control", "system_admin",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
     "restaurant",
   ],
   Storage: [
     "global_control", "system_admin",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
     "storage",
   ],
   Boarding: [
     "global_control", "system_admin",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
     "boarding",
   ],
   Daycare: [
     "global_control", "system_admin",
-    "director", "receptionist", "accountant",
+    "director", "accountant",
     "daycare",
   ],
   "Audit Logs": [
@@ -94,3 +93,27 @@ export const MODULE_ACCESS = {
 } as const satisfies Record<string, string[] | null>
 
 export type ModuleName = keyof typeof MODULE_ACCESS
+
+export const MODULE_PERMISSIONS: Record<string, string | null> = {
+  Dashboard: null,
+  Students: "users",
+  Employees: "users",
+  Attendance: "academics",
+  Behavior: "academics",
+  Calendar: "academics",
+  Timetable: "academics",
+  Announcements: "core",
+  Finances: "finance",
+  Pedagogy: "academics",
+  "Academic Planning": "academics",
+  "Course Tracking": "academics",
+  Transport: "transport",
+  Rapports: "reports",
+  Restaurant: "food",
+  Storage: "store",
+  Boarding: "boarding",
+  Daycare: "daycare",
+  "Audit Logs": "audit",
+  Settings: "system",
+  "Director Dashboard": "core",
+}

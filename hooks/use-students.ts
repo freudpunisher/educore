@@ -279,6 +279,7 @@ export function useValidateStudent() {
       return data;
     },
     onSuccess: (_, studentId) => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["students", "detail", studentId] });
       toast.success("Élève validé avec succès");
     },

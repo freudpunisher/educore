@@ -9,14 +9,13 @@ import { useState, useMemo } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
+import { useModulePermissions } from "@/hooks/use-module-permissions";
 
 const PAGE_SIZE = 10;
 
-const ADMIN_ROLES = ["system_admin", "director", "global_control"];
-
 export default function EmployeesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role && ADMIN_ROLES.includes(user.role);
+  const { canManage } = useModulePermissions("users");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
@@ -84,7 +83,7 @@ export default function EmployeesPage() {
             <CardTitle className="text-3xl">Accounts</CardTitle>
           </div>
           <div className="flex items-center gap-4">
-            {isAdmin && (
+            {canManage && (
               <div className="flex items-center gap-2">
                 <Switch
                   id="show-deleted"
