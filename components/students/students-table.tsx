@@ -207,62 +207,62 @@ export default function StudentsTable({
         return (
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => router.push(`/dashboard/students/${student.id}`)}
-              className="h-8 w-8 p-0"
+              className="rounded-xl bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-indigo-500/10"
               title="View"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="w-4 h-4" />
             </Button>
 
             {userRole === "receptionist" && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => router.push(`/dashboard/students/${student.id}/edit`)}
-                className="h-8 w-8 p-0"
+                className="rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-blue-500/10"
                 title="Edit"
               >
-                <PenSquare className="h-4 w-4" />
+                <PenSquare className="w-4 h-4" />
               </Button>
             )}
 
             {userRole === "academic_principal" && !student.is_validated && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => validateMutation.mutate(student.id)}
                 disabled={validateMutation.isPending}
-                className="h-8 w-8 p-0"
+                className="rounded-xl bg-orange-500/10 text-orange-600 hover:bg-orange-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-orange-500/10"
                 title="Validate"
               >
-                <Check className="h-4 w-4" />
+                <Check className="w-4 h-4" />
               </Button>
             )}
 
             {userRole === "academic_principal" && student.is_validated && student.registration_paid && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 disabled={alreadyEnrolled}
                 onClick={() => setOpenEnroll(true)}
-                className="h-8 w-8 p-0"
+                className="rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-emerald-500/10"
                 title={alreadyEnrolled ? "Already Assigned" : "Assign"}
               >
-                <School className="h-4 w-4" />
+                <School className="w-4 h-4" />
               </Button>
             )}
 
             {userRole === "accountant" && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => setOpenInvoice(true)}
-                className="h-8 w-8 p-0"
+                className="rounded-xl bg-purple-500/10 text-purple-600 hover:bg-purple-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-purple-500/10"
                 title="Invoice"
               >
-                <Receipt className="h-4 w-4" />
+                <Receipt className="w-4 h-4" />
               </Button>
             )}
 
@@ -272,9 +272,10 @@ export default function StudentsTable({
                 size="sm"
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
-                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                className="rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-rose-500/10"
+                title="Delete"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="w-4 h-4" />
               </Button>
             )}
 

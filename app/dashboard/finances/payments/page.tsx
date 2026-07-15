@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { usePayments, useInvoices, useCancelPayment } from "@/hooks/use-finance"
 import { useDebounce } from "@/hooks/use-debounce"
+import Swal from "sweetalert2"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -35,7 +36,22 @@ import { format } from "date-fns"
 import { useQuery } from "@tanstack/react-query"
 import axiosInstance from "@/lib/axios"
 
+const swalStyles = `
+.swal-cancel-payment { padding: 24px 28px !important; }
+.swal-cancel-payment .swal2-title { margin-bottom: 8px !important; }
+.swal-cancel-payment .swal2-html-container { margin: 12px 0 8px !important; }
+`
+
 export default function PaymentsPage() {
+    useEffect(() => {
+        const styleId = "swal-cancel-payment-styles";
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement("style");
+            style.id = styleId;
+            style.textContent = swalStyles;
+            document.head.appendChild(style);
+        }
+    }, []);
     const [searchTerm, setSearchTerm] = useState("")
     const [invoiceFilter, setInvoiceFilter] = useState("all")
     const [openInvoiceCombo, setOpenInvoiceCombo] = useState(false)
@@ -224,20 +240,91 @@ export default function PaymentsPage() {
         printWindow.document.close();
     }
 
-    const handleCancelPayment = (paymentId: number) => {
-        if (window.confirm("Are you sure you want to cancel this payment? The invoice will be re-initialized.")) {
+    const handleCancelPayment = async (paymentId: number) => {
+        const result = await Swal.fire({
+            title: "Cancel Payment?",
+            html: `
+                <div style="text-align: left; padding: 4px 0;">
+                    <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #374151;">Reason for cancellation</label>
+                    <textarea id="swal-reason" class="swal2-textarea" placeholder="Enter the reason..." style="width: 100%; min-height: 80px; border-radius: 8px; border: 1px solid #d1d5db; padding: 10px; font-size: 14px; outline: none; transition: border 0.2s;"></textarea>
+                    <label style="font-weight: 600; font-size: 13px; display: block; margin-top: 20px; margin-bottom: 6px; color: #374151;">Signed document (optional)</label>
+                    <input type="file" id="swal-document" accept=".pdf,.jpg,.jpeg,.png" style="font-size: 13px; width: 100%; padding: 6px 0;" />
+                </div>
+            `,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#e11d48",
+            cancelButtonColor: "#64748b",
+            confirmButtonText: "Yes, cancel it",
+            cancelButtonText: "Keep payment",
+            reverseButtons: true,
+            customClass: {
+                popup: "swal-cancel-payment",
+            },
+            didOpen: () => {
+                const el = document.getElementById("swal-reason") as HTMLTextAreaElement;
+                if (el) el.focus();
+            },
+            preConfirm: () => {
+                const reason = (document.getElementById("swal-reason") as HTMLTextAreaElement)?.value || "";
+                const fileInput = document.getElementById("swal-document") as HTMLInputElement;
+                const file = fileInput?.files?.[0] || null;
+                return { reason, document: file };
+            },
+        });
+        if (result.isConfirmed) {
             setCancellingId(paymentId);
-            cancelPayment.mutate(paymentId, {
-                onSuccess: () => {
-                    setCancellingId(null);
+            cancelPayment.mutate(
+                { paymentId, reason: result.value.reason, document: result.value.document || undefined },
+                {
+                    onSuccess: () => {
+                        setCancellingId(null);
+                        Swal.fire({
+                            title: "Cancelled",
+                            text: "Payment has been cancelled successfully.",
+                            icon: "success",
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+                    },
+                    onError: (err: any) => {
+                        setCancellingId(null);
+                        const msg = err?.response?.data?.message || "Failed to cancel payment. Only directors can cancel payments.";
+                        Swal.fire({
+                            title: "Error",
+                            text: msg,
+                            icon: "error",
+                            confirmButtonColor: "#e11d48",
+                        });
+                    },
                 },
-                onError: (err: any) => {
-                    setCancellingId(null);
-                    const msg = err?.response?.data?.message || "Failed to cancel payment. Only directors can cancel payments.";
-                    alert(msg);
-                },
-            });
+            );
         }
+    };
+
+    const handleViewCancellation = (payment: any) => {
+        Swal.fire({
+            title: "Cancellation Details",
+            html: `
+                <div style="text-align: left;">
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                        <span style="font-size: 11px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 0.05em;">Cancelled</span>
+                        <p style="font-size: 13px; color: #7f1d1d; margin-top: 4px;">${new Date(payment.cancelled_at).toLocaleString()}</p>
+                    </div>
+                    <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #374151;">Reason</label>
+                    <p style="background: #f9fafb; border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #1f2937; margin: 0 0 16px 0; line-height: 1.5; white-space: pre-wrap;">${payment.cancellation_reason || "No reason provided."}</p>
+                    ${payment.cancellation_document ? `
+                        <label style="font-weight: 600; font-size: 13px; display: block; margin-bottom: 6px; color: #374151;">Authorisation document</label>
+                        <a href="${payment.cancellation_document}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 16px; text-decoration: none; color: #6366f1; font-weight: 600; font-size: 13px; hover:background #eef2ff;">
+                            📄 View attached document
+                        </a>
+                    ` : ""}
+                </div>
+            `,
+            icon: "info",
+            confirmButtonColor: "#6366f1",
+            confirmButtonText: "Close",
+        });
     };
 
     return (
@@ -481,9 +568,20 @@ export default function PaymentsPage() {
                                                 </TableCell>
                                                 <TableCell className="py-5">
                                                     {payment.cancelled_at ? (
-                                                        <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-200 font-bold text-[10px] uppercase">
-                                                            Cancelled
-                                                        </Badge>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-200 font-bold text-[10px] uppercase">
+                                                                Cancelled
+                                                            </Badge>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="w-7 h-7 p-0 rounded-full bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white"
+                                                                onClick={() => handleViewCancellation(payment)}
+                                                                title="View cancellation details"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </Button>
+                                                        </div>
                                                     ) : (
                                                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200 font-bold text-[10px] uppercase">
                                                             Active
@@ -496,29 +594,32 @@ export default function PaymentsPage() {
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-emerald-500/10"
+                                                                className="rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-emerald-500/10"
                                                                 onClick={() => window.open(payment.document!, '_blank')}
+                                                                title="Document"
                                                             >
-                                                                <FileText className="w-3.5 h-3.5 mr-1.5" /> Document
+                                                                <FileText className="w-4 h-4" />
                                                             </Button>
                                                         )}
                                                         <Button
                                                             variant="ghost"
                                                             size="sm"
-                                                            className="rounded-xl bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-indigo-500/10"
+                                                            className="rounded-xl bg-indigo-500/10 text-indigo-600 hover:bg-indigo-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-indigo-500/10"
                                                             onClick={() => handlePrintReceipt(payment)}
+                                                            title="Receipt"
                                                         >
-                                                            <Printer className="w-3.5 h-3.5 mr-1.5" /> Receipt
+                                                            <Printer className="w-4 h-4" />
                                                         </Button>
                                                         {!payment.cancelled_at && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
-                                                                className="rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-lg shadow-rose-500/10"
+                                                                className="rounded-xl bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-rose-500/10"
                                                                 onClick={() => handleCancelPayment(payment.id)}
                                                                 disabled={cancellingId === payment.id}
+                                                                title="Cancel"
                                                             >
-                                                                <XCircle className="w-3.5 h-3.5 mr-1.5" /> {cancellingId === payment.id ? "..." : "Cancel"}
+                                                                <XCircle className="w-4 h-4" />
                                                             </Button>
                                                         )}
                                                     </div>
