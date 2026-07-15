@@ -161,6 +161,22 @@ export function useCancelRefund() {
     });
 }
 
+export function useCancelPayment() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (paymentId: number) => {
+            const response = await axiosInstance.post(`/finance/payments/${paymentId}/cancel/`);
+            return response.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["finances", "payments"] });
+            queryClient.invalidateQueries({ queryKey: ["finances", "invoices"] });
+            queryClient.invalidateQueries({ queryKey: ["finance", "surpluses"] });
+        },
+    });
+}
+
 export function useCancelInvoice() {
     const queryClient = useQueryClient();
 

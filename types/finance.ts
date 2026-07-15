@@ -62,6 +62,8 @@ export const paymentSchema = z.object({
     created_by: nullableNumericIdSchema,
     created_by_name: z.string().nullable().optional(),
     created_at: z.string().nullable().optional(),
+    cancelled_at: z.string().nullable().optional(),
+    cancelled_by_name: z.string().nullable().optional(),
 }).passthrough();
 
 export const paginatedPaymentSchema = createPaginatedSchema(paymentSchema);
