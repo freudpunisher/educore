@@ -99,15 +99,15 @@ export default function StudentDetailPage() {
 
           {/* Right: actions */}
           <div className="flex items-center gap-2 shrink-0 pt-1">
-            {user && !student.is_validate && (user.is("receptionist") || user.is("academic_principal")) && (
+            {user && ((user.is("academic_principal") || (user.is("receptionist") && !student.is_validate))) && (
               <Button
                 size="sm"
-                variant="outline"
-                className="gap-2 border-border/60 hover:bg-muted/60 text-sm font-medium"
+                variant="ghost"
+                className="rounded-xl bg-blue-500/10 text-blue-600 hover:bg-blue-600 hover:text-white w-9 h-9 p-0 shadow-lg shadow-blue-500/10"
                 onClick={() => router.push(`/dashboard/students/${studentId}/edit`)}
+                title="Edit"
               >
-                <Edit className="w-3.5 h-3.5" />
-                Edit
+                <Edit className="w-4 h-4" />
               </Button>
             )}
           </div>

@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useQuery } from "@tanstack/react-query"
 import axiosInstance from "@/lib/axios"
+import { useAuth } from "@/lib/auth-context"
 
 const swalStyles = `
 .swal-cancel-payment { padding: 24px 28px !important; }
@@ -52,6 +53,7 @@ export default function PaymentsPage() {
             document.head.appendChild(style);
         }
     }, []);
+    const { user } = useAuth();
     const [searchTerm, setSearchTerm] = useState("")
     const [invoiceFilter, setInvoiceFilter] = useState("all")
     const [openInvoiceCombo, setOpenInvoiceCombo] = useState(false)
@@ -610,7 +612,7 @@ export default function PaymentsPage() {
                                                         >
                                                             <Printer className="w-4 h-4" />
                                                         </Button>
-                                                        {!payment.cancelled_at && (
+                                                        {user?.role === "director" && !payment.cancelled_at && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
