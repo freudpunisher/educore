@@ -37,8 +37,25 @@ const formSchema = z.object({
     name: z.string().min(1, "Name is required"),
     category: z.number({ required_error: "Category is required" }),
     unit: z.number({ required_error: "Unit is required" }),
+    is_payable: z.boolean().default(false),
+    selling_price: z.number().min(0).default(0),
     minimum_stock: z.number().min(0).default(0),
     is_active: z.boolean().default(true),
+}).superRefine((data, ctx) => {
+    if (data.is_payable && (!data.selling_price || data.selling_price <= 0)) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Un produit payant doit avoir un prix de vente supérieur à 0.",
+            path: ["selling_price"],
+        });
+    }
+    if (!data.is_payable && data.selling_price > 0) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Un produit gratuit ne peut pas avoir de prix de vente.",
+            path: ["selling_price"],
+        });
+    }
 });
 
 export function CreateProductDialog({
@@ -57,6 +74,8 @@ export function CreateProductDialog({
         resolver: zodResolver(formSchema),
         defaultValues: {
             name: "",
+            is_payable: false,
+            selling_price: 0,
             minimum_stock: 0,
             is_active: true,
         },
@@ -151,6 +170,36 @@ export function CreateProductDialog({
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="is_payable"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                                    <FormControl>
+                                        <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                        <FormLabel>Produit payant</FormLabel>
+                                        <p className="text-xs text-muted-foreground">Cochez si ce produit est vendu</p>
+                                    </div>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="selling_price"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Prix de vente (BIF)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" step="0.01" placeholder="0" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <FormField
                             control={form.control}

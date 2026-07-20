@@ -8,6 +8,7 @@ export const FEE_CATEGORIES = [
     { label: "Other Fees", value: "7" },
     { label: "Daycare", value: "8" },
     { label: "Boarding", value: "9" },
+    { label: "Store Fees", value: "10" },
 ] as const;
 
 export const INVOICE_STATUS_OPTIONS = [
