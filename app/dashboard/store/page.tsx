@@ -85,6 +85,7 @@ type Product = {
   unit_name: string;
   unit_symbol: string;
   selling_price: string;
+  is_payable: boolean;
   minimum_stock: number;
   is_active: boolean;
 };
@@ -210,6 +211,7 @@ export default function StorePage() {
   const [isDistributionModalOpen, setIsDistributionModalOpen] = useState(false);
   const [isSaleModalOpen, setIsSaleModalOpen] = useState(false);
   const [isAdjustModalOpen, setIsAdjustModalOpen] = useState(false);
+  const [modalIsPayable, setModalIsPayable] = useState(false);
 
   // Edit states
   const [adjustingInventory, setAdjustingInventory] = useState<Inventory | null>(null);
@@ -223,6 +225,9 @@ export default function StorePage() {
   const [currentBuyerType, setCurrentBuyerType] = useState("student");
   const [selectedBuyerId, setSelectedBuyerId] = useState(0);
   const [selectedBuyerName, setSelectedBuyerName] = useState("");
+  const [saleSelectedProductId, setSaleSelectedProductId] = useState<number | null>(null);
+  const [saleUnitPrice, setSaleUnitPrice] = useState<string>("");
+  const [saleQuantity, setSaleQuantity] = useState<number>(1);
 
   // Filters
   const [inventorySearch, setInventorySearch] = useState("");
@@ -276,7 +281,7 @@ export default function StorePage() {
   }, []);
 
   useEffect(() => {
-    if ((isDistributionModalOpen || isSaleModalOpen) && accounts.length === 0) {
+    if (isDistributionModalOpen || isSaleModalOpen) {
       api.get<any>("users/accounts/")
         .then((res) => setAccounts(Array.isArray(res) ? res : res.results || []))
         .catch(() => toast.error("Failed to load accounts"));
@@ -288,11 +293,13 @@ export default function StorePage() {
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const data = {
+    const isPayable = fd.get("is_payable") === "true";
+    const data: Record<string, any> = {
       name: fd.get("name"),
       category: parseInt(fd.get("category") as string),
       unit: parseInt(fd.get("unit") as string),
-      selling_price: fd.get("selling_price") || "0",
+      is_payable: isPayable,
+      selling_price: isPayable ? (fd.get("selling_price") || "0") : "0",
       minimum_stock: parseFloat(fd.get("minimum_stock") as string) || 0,
       is_active: fd.get("is_active") === "true",
     };
@@ -424,8 +431,10 @@ export default function StorePage() {
   const handleSaleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    const productId = parseInt(fd.get("product") as string);
+    const selectedProduct = products.find((p) => p.id === productId);
     const data = {
-      product: parseInt(fd.get("product") as string),
+      product: productId,
       quantity: parseInt(fd.get("quantity") as string),
       unit_price: parseFloat(fd.get("unit_price") as string),
       buyer_name: fd.get("buyer_name"),
@@ -436,7 +445,17 @@ export default function StorePage() {
     };
     try {
       await api.post("store/stock/sales/", data);
-      toast.success("Sale recorded — inventory updated");
+      if (selectedProduct?.is_payable && selectedProduct.selling_price && parseFloat(selectedProduct.selling_price) > 0) {
+        toast.success("Vente enregistrée — facture créée", {
+          description: `Facture pour ${selectedProduct.name}`,
+          action: {
+            label: "Voir la facture",
+            onClick: () => window.open("/dashboard/finance/invoices", "_blank"),
+          },
+        });
+      } else {
+        toast.success("Sale recorded — inventory updated");
+      }
       setIsSaleModalOpen(false);
       fetchData();
     } catch {
@@ -572,6 +591,15 @@ export default function StorePage() {
     });
   }, [distributions, distributionStatusFilter]);
 
+  const sellableProducts = useMemo(() => {
+    const inStockProductIds = new Set(
+      inventory.filter((i) => i.quantity > 0).map((i) => i.product)
+    );
+    return products.filter(
+      (p) => p.is_payable && parseFloat(p.selling_price || "0") > 0 && inStockProductIds.has(p.id)
+    );
+  }, [products, inventory]);
+
   const filteredSales = useMemo(() => {
     return sales.filter((s) => {
       if (saleBuyerTypeFilter !== "all" && s.buyer_type !== saleBuyerTypeFilter) return false;
@@ -668,9 +696,24 @@ export default function StorePage() {
     },
     {
       key: "selling_price" as const,
-      label: "Selling Price",
+      label: "Prix / Statut",
       sortable: true,
-      render: (v: string) => <span className="font-semibold text-slate-900 dark:text-white">{parseFloat(v).toLocaleString()} BIF</span>,
+      render: (v: string, item: Product) => (
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+            item.is_payable
+              ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+          }`}>
+            {item.is_payable ? "Payant" : "Gratuit"}
+          </span>
+          {item.is_payable && (
+            <span className="font-semibold text-slate-900 dark:text-white">
+              {parseFloat(v || "0").toLocaleString()} BIF
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "minimum_stock" as const,
@@ -695,7 +738,7 @@ export default function StorePage() {
           <DropdownMenuContent align="end">
             {canManage && (
               <>
-                <DropdownMenuItem onClick={() => { setEditingProduct(item); setIsProductModalOpen(true); }}>
+                <DropdownMenuItem onClick={() => { setEditingProduct(item); setModalIsPayable(item.is_payable); setIsProductModalOpen(true); }}>
                   <Pencil className="w-4 h-4 mr-2" /> Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleToggleProductStatus(item)} className={item.is_active ? "text-amber-600" : "text-green-600"}>
@@ -1051,7 +1094,7 @@ export default function StorePage() {
                 <p className="text-slate-600 dark:text-slate-400 mt-1">All products with their category and unit of measure</p>
               </div>
               {canManage && (
-                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setModalIsPayable(false); setIsProductModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> New Product
                 </Button>
               )}
@@ -1085,7 +1128,7 @@ export default function StorePage() {
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Current stock levels for all products</p>
               </div>
               {canManage && (
-                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setIsProductModalOpen(true); }}>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setEditingProduct(null); setModalIsPayable(false); setIsProductModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> New Product
                 </Button>
               )}
@@ -1324,7 +1367,7 @@ export default function StorePage() {
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Record and track sales of uniforms and school items</p>
               </div>
               {canManage && (
-                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => setIsSaleModalOpen(true)}>
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setCurrentBuyerType("student"); setSelectedBuyerId(0); setSelectedBuyerName(""); setSaleSelectedProductId(null); setSaleUnitPrice(""); setSaleQuantity(1); setIsSaleModalOpen(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> Record Sale
                 </Button>
               )}
@@ -1414,9 +1457,21 @@ export default function StorePage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Selling Price (BIF)</Label>
-              <Input name="selling_price" type="number" step="0.01" defaultValue={editingProduct?.selling_price ?? 0} required />
+              <Label>Produit payant ?</Label>
+              <Select name="is_payable" defaultValue={String(editingProduct?.is_payable ?? false)} onValueChange={(v) => setModalIsPayable(v === "true")}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="true">Oui — produit payant</SelectItem>
+                  <SelectItem value="false">Non — produit gratuit</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            {modalIsPayable && (
+              <div className="space-y-2">
+                <Label>Selling Price (BIF)</Label>
+                <Input name="selling_price" type="number" step="0.01" defaultValue={editingProduct?.selling_price ?? 0} required />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Minimum Stock Level</Label>
               <Input name="minimum_stock" type="number" step="0.1" defaultValue={editingProduct?.minimum_stock ?? 0} />
@@ -1650,17 +1705,28 @@ export default function StorePage() {
       </Dialog>
 
       {/* Sale Modal */}
-      <Dialog open={isSaleModalOpen} onOpenChange={setIsSaleModalOpen}>
+      <Dialog open={isSaleModalOpen} onOpenChange={(open) => { setIsSaleModalOpen(open); if (!open) { setSaleSelectedProductId(null); setSaleUnitPrice(""); setSaleQuantity(1); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Record a Sale</DialogTitle></DialogHeader>
           <form onSubmit={handleSaleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Product</Label>
-              <Select name="product" required>
+              <Select name="product" required onValueChange={(val) => {
+                const p = sellableProducts.find((x) => x.id === parseInt(val));
+                if (p) {
+                  setSaleSelectedProductId(p.id);
+                  setSaleUnitPrice(p.selling_price);
+                  setSaleQuantity(1);
+                } else {
+                  setSaleSelectedProductId(null);
+                  setSaleUnitPrice("");
+                  setSaleQuantity(1);
+                }
+              }}>
                 <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                 <SelectContent>
-                  {products.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                  {sellableProducts.map((p) => (
+                    <SelectItem key={p.id} value={String(p.id)}>{p.name} — {parseFloat(p.selling_price).toLocaleString()} BIF</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1668,13 +1734,24 @@ export default function StorePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Quantity</Label>
-                <Input name="quantity" type="number" defaultValue={1} min={1} required />
+                <Input name="quantity" type="number" value={saleQuantity} min={1} required
+                  onChange={(e) => setSaleQuantity(parseInt(e.target.value) || 1)} />
               </div>
               <div className="space-y-2">
                 <Label>Unit Sale Price (BIF)</Label>
-                <Input name="unit_price" type="number" step="0.01" placeholder="Selling price" required />
+                <Input name="unit_price" type="number" step="0.01" value={saleUnitPrice} required
+                  onChange={(e) => setSaleUnitPrice(e.target.value)}
+                  placeholder={saleSelectedProductId ? "" : "Select a product first"} />
               </div>
             </div>
+            {saleSelectedProductId && (
+              <div className="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-3 text-center">
+                <span className="text-sm text-green-700 dark:text-green-300">Total</span>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  {(saleQuantity * parseFloat(saleUnitPrice || "0")).toLocaleString()} BIF
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               {["staff", "student"].includes(currentBuyerType) ? (
                 <div className="space-y-2">
