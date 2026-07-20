@@ -291,7 +291,7 @@ export function InvoicesTable({ invoices, isLoading, totalCount = 0, page = 1, p
                                             <User className="h-4 w-4 text-primary" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="font-medium">{invoice.student_name || "Institutional Fee"}</span>
+                                            <span className="font-medium">{invoice.entity_name === "Store Fees" && invoice.buyer_name ? invoice.buyer_name : (invoice.student_name || "Institutional Fee")}</span>
                                             <span className="text-xs text-muted-foreground truncate max-w-[200px]">{invoice.fees_detail?.label}</span>
                                         </div>
                                     </div>

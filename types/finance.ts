@@ -31,6 +31,7 @@ export const invoiceSchema = z.object({
     entity_id: numericIdSchema,
     student_id: nullableNumericIdSchema,
     student_name: z.string().nullable().optional(),
+    buyer_name: z.string().nullable().optional(),
     status: numericIdSchema,
     status_name: z.string(),
     amount: z.string(),
