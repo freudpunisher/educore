@@ -216,7 +216,7 @@ export default function StudentsTable({
               <Eye className="w-4 h-4" />
             </Button>
 
-            {userRole === "receptionist" && (
+            {userRole === "receptionist" && !student.is_validated && (
               <Button
                 variant="ghost"
                 size="sm"
