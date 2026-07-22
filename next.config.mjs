@@ -15,12 +15,12 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  allowedDevOrigins: ["192.168.200.135", "192.168.88.61"],
+  allowedDevOrigins: ["192.168.200.165", "192.168.88.50"],
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: "http://192.168.200.135:8001/api/:path*",
+        destination: "http://192.168.88.50:8000/api/:path*",
       },
     ];
   },

@@ -741,14 +741,12 @@ export default function SettingsPage() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingCategory ? "Edit Category" : "New Category"}</DialogTitle></DialogHeader>
           <form onSubmit={handleCategorySubmit} className="space-y-4">
-            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name ?? ""} required /></div>
+            <div className="space-y-2"><Label>Name</Label><Input name="name" defaultValue={editingCategory?.name ?? ""} placeholder="e.g. Food, Equipment, Cleaning Supplies" required /></div>
             <div className="space-y-2">
               <Label>Type</Label>
               <Select name="type" defaultValue={editingCategory?.type ?? "consumable"}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vivre">Food (Vivre)</SelectItem>
-                  <SelectItem value="non_vivre">Equipment (Non-Vivre)</SelectItem>
                   <SelectItem value="consumable">Consumable</SelectItem>
                   <SelectItem value="non_consumable">Non-consumable</SelectItem>
                 </SelectContent>
